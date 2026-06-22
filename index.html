@@ -244,9 +244,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <i class="ti ti-login" style="margin-right:7px"></i>Sign In
       </button>
     </div>
-    <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid #f0f4f8">
-      <div style="font-size:11px;color:#8a9db0;font-family:'JetBrains Mono',monospace">Default: <strong style="color:#4a6070">admin</strong> / <strong style="color:#4a6070">admin123</strong></div>
-    </div>
   </div>
 </div>
 
@@ -1464,8 +1461,51 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="um-role-badge" style="margin-top:6px"></div>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-outline" onclick="openChangePassword()" style="justify-content:center"><i class="ti ti-lock"></i>Change Password</button>
       <button class="btn btn-outline" onclick="closeModal('modal-user-menu')" style="justify-content:center"><i class="ti ti-x"></i>Close</button>
       <button class="btn btn-red" onclick="doLogout()" style="justify-content:center"><i class="ti ti-logout"></i>Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="modal-change-password">
+  <div class="modal" style="width:min(380px,92vw)">
+    <div class="modal-title">Change Password <button class="btn btn-sm btn-outline" onclick="closeModal('modal-change-password')"><i class="ti ti-x"></i></button></div>
+    <div style="background:rgba(24,95,165,.06);border:1px solid rgba(24,95,165,.2);border-radius:10px;padding:12px 16px;margin-bottom:16px">
+      <div id="cp-user-name" style="font-size:14px;font-weight:700;color:var(--text)"></div>
+      <div id="cp-user-role" style="font-size:12px;color:var(--text2);margin-top:2px"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fg full">
+        <label>Current Password *</label>
+        <div style="position:relative">
+          <input type="password" id="cp-current" placeholder="Enter your current password" style="width:100%;padding-right:42px">
+          <button type="button" onclick="togglePassVis('cp-current','cp-eye-1')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3)"><i id="cp-eye-1" class="ti ti-eye" style="font-size:16px"></i></button>
+        </div>
+      </div>
+      <div class="fg full">
+        <label>New Password *</label>
+        <div style="position:relative">
+          <input type="password" id="cp-new" placeholder="Enter new password (min 6 characters)" style="width:100%;padding-right:42px" oninput="cpCheckStrength()">
+          <button type="button" onclick="togglePassVis('cp-new','cp-eye-2')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3)"><i id="cp-eye-2" class="ti ti-eye" style="font-size:16px"></i></button>
+        </div>
+        <div id="cp-strength-bar" style="height:4px;border-radius:2px;margin-top:6px;background:var(--border);overflow:hidden"><div id="cp-strength-fill" style="height:100%;width:0;border-radius:2px;transition:all .3s"></div></div>
+        <div id="cp-strength-label" style="font-size:11px;color:var(--text3);margin-top:3px"></div>
+      </div>
+      <div class="fg full">
+        <label>Confirm New Password *</label>
+        <div style="position:relative">
+          <input type="password" id="cp-confirm" placeholder="Re-enter new password" style="width:100%;padding-right:42px" oninput="cpCheckMatch()">
+          <button type="button" onclick="togglePassVis('cp-confirm','cp-eye-3')" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3)"><i id="cp-eye-3" class="ti ti-eye" style="font-size:16px"></i></button>
+        </div>
+        <div id="cp-match-msg" style="font-size:11px;margin-top:3px"></div>
+      </div>
+    </div>
+    <div id="cp-error" style="display:none;background:rgba(220,53,69,.08);border:1px solid rgba(220,53,69,.25);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-top:4px"></div>
+    <div class="factions">
+      <button class="btn btn-outline" onclick="closeModal('modal-change-password')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNewPassword()"><i class="ti ti-lock-check"></i> Update Password</button>
     </div>
   </div>
 </div>
@@ -1502,6 +1542,76 @@ function doLogin(){
 }
 function showLoginError(msg){const el=document.getElementById('login-error');if(el){el.textContent=msg;el.style.display='';}document.getElementById('login-pass').value='';}
 function toggleLoginPassVis(){const inp=document.getElementById('login-pass');const ico=document.getElementById('login-eye-icon');if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}else{inp.type='password';ico.className='ti ti-eye';}}
+function openChangePassword(){
+  closeModal('modal-user-menu');
+  if(!_currentUser)return;
+  document.getElementById('cp-user-name').textContent=_currentUser.name;
+  document.getElementById('cp-user-role').textContent=ROLE_LABELS[_currentUser.role]||_currentUser.role;
+  document.getElementById('cp-current').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-confirm').value='';
+  document.getElementById('cp-error').style.display='none';
+  document.getElementById('cp-strength-fill').style.width='0';
+  document.getElementById('cp-strength-label').textContent='';
+  document.getElementById('cp-match-msg').textContent='';
+  openModal('modal-change-password');
+}
+function togglePassVis(inputId,iconId){
+  const inp=document.getElementById(inputId);
+  const ico=document.getElementById(iconId);
+  if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}
+  else{inp.type='password';ico.className='ti ti-eye';}
+}
+function cpCheckStrength(){
+  const val=document.getElementById('cp-new').value;
+  const fill=document.getElementById('cp-strength-fill');
+  const label=document.getElementById('cp-strength-label');
+  let strength=0;
+  if(val.length>=6)strength++;
+  if(val.length>=8)strength++;
+  if(/[A-Z]/.test(val))strength++;
+  if(/[0-9]/.test(val))strength++;
+  if(/[^A-Za-z0-9]/.test(val))strength++;
+  const levels=[
+    {pct:'20%',color:'#dc2626',text:'Very weak'},
+    {pct:'40%',color:'#e8900a',text:'Weak'},
+    {pct:'60%',color:'#f59e0b',text:'Fair'},
+    {pct:'80%',color:'#22c55e',text:'Strong'},
+    {pct:'100%',color:'#15803d',text:'Very strong'},
+  ];
+  const lvl=levels[Math.min(strength,4)];
+  if(val){fill.style.width=lvl.pct;fill.style.background=lvl.color;label.textContent=lvl.text;label.style.color=lvl.color;}
+  else{fill.style.width='0';label.textContent='';}
+  cpCheckMatch();
+}
+function cpCheckMatch(){
+  const newP=document.getElementById('cp-new').value;
+  const conf=document.getElementById('cp-confirm').value;
+  const msg=document.getElementById('cp-match-msg');
+  if(!conf){msg.textContent='';return;}
+  if(newP===conf){msg.textContent='✓ Passwords match';msg.style.color='var(--green)';}
+  else{msg.textContent='✗ Passwords do not match';msg.style.color='var(--red)';}
+}
+function saveNewPassword(){
+  const current=document.getElementById('cp-current').value;
+  const newPass=document.getElementById('cp-new').value;
+  const confirm=document.getElementById('cp-confirm').value;
+  const errEl=document.getElementById('cp-error');
+  const showErr=(msg)=>{errEl.textContent=msg;errEl.style.display='';};
+  errEl.style.display='none';
+  if(!current)return showErr('Please enter your current password');
+  if(!newPass)return showErr('Please enter a new password');
+  if(newPass.length<6)return showErr('New password must be at least 6 characters');
+  if(newPass!==confirm)return showErr('New passwords do not match');
+  if(!_currentUser)return showErr('No user logged in');
+  const user=db.systemUsers.find(u=>u.id===_currentUser.id);
+  if(!user||user.password!==current)return showErr('Current password is incorrect');
+  if(current===newPass)return showErr('New password must be different from current password');
+  user.password=newPass;
+  saveAppState();
+  closeModal('modal-change-password');
+  showToast('Password updated successfully');
+}
 function doLogout(){
   _currentUser=null;
   try{localStorage.removeItem('fastrack_session');}catch(e){}
@@ -2160,6 +2270,13 @@ function printThermalInvoice(inv){
 }
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Wait for Firebase to be ready (it loads from external CDN)
+  try{
+    if(typeof firebase==='undefined'||typeof firebase.firestore==='undefined'){
+      console.warn('Firebase not loaded — retrying in 500ms');
+      await new Promise(r=>setTimeout(r,500));
+    }
+  }catch(e){}
   // Seed defaults first (logo, structure, demo data as fallback)
   seedData();
   // Load any custom role permissions saved previously
@@ -2191,34 +2308,23 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 let _pwaPrompt=null;
 
 // Register inline service worker for offline support and installability
+// Wrapped in try-catch — if the hosting environment blocks blob: URLs, skip gracefully
 (function(){
-  if(!('serviceWorker' in navigator))return;
-  // Build the service worker script as a blob
-  const swCode=`
-const CACHE='fastrack-v1';
-const FILES=[self.registration.scope];
-self.addEventListener('install',e=>{
-  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting()));
-});
-self.addEventListener('activate',e=>{
-  e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
-});
-self.addEventListener('fetch',e=>{
-  if(e.request.method!=='GET')return;
-  e.respondWith(
-    fetch(e.request).then(res=>{
-      if(res&&res.status===200){const c=res.clone();caches.open(CACHE).then(cache=>cache.put(e.request,c));}
-      return res;
-    }).catch(()=>caches.match(e.request).then(r=>r||caches.match(FILES[0])))
-  );
-});
+  try{
+    if(!('serviceWorker' in navigator))return;
+    const swCode=`
+const CACHE='fastrack-v2';
+self.addEventListener('install',e=>{e.waitUntil(self.skipWaiting());});
+self.addEventListener('activate',e=>{e.waitUntil(self.clients.claim());});
+self.addEventListener('fetch',e=>{});
 `;
-  const blob=new Blob([swCode],{type:'application/javascript'});
-  const url=URL.createObjectURL(blob);
-  navigator.serviceWorker.register(url,{scope:'./'}).then(reg=>{
-    console.log('FasTrack SW registered',reg.scope);
-    URL.revokeObjectURL(url);
-  }).catch(e=>console.log('SW registration failed:',e));
+    const blob=new Blob([swCode],{type:'application/javascript'});
+    const url=URL.createObjectURL(blob);
+    navigator.serviceWorker.register(url,{scope:'./'}).then(reg=>{
+      console.log('FasTrack SW registered');
+      URL.revokeObjectURL(url);
+    }).catch(e=>console.log('SW skipped:',e.message));
+  }catch(e){console.log('SW not available:',e.message);}
 })();
 
 // Android Chrome: catch the beforeinstallprompt event
