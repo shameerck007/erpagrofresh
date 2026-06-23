@@ -1799,26 +1799,30 @@ async function _doSave(){
     const dot=document.getElementById('fb-sync-dot');
     if(dot){dot.style.background='#5dcaa5';dot.title='Saved';setTimeout(()=>{if(dot)dot.style.display='none';},2000);}
   }catch(e){
-    console.warn('FB save:',e.message);
+    console.warn('FB save failed, retrying in 4s:',e.message);
     const dot=document.getElementById('fb-sync-dot');
-    if(dot){dot.style.background='#dc2626';dot.title='Save failed';}
-    showToast('Could not save — check connection','amber');
+    if(dot){dot.style.background='#dc2626';dot.title='Save failed — retrying...';}
+    // retry after 4 seconds
+    setTimeout(_doSave,4000);
   }
 }
 async function loadAppState(){
-  try{
-    _showLoadingScreen('Connecting to cloud...');
-    const snap=await _fsdb.collection('fastrack').get();
-    if(snap.empty){_hideLoadingScreen();return false;}
-    const m={};snap.forEach(doc=>{try{m[doc.id]=JSON.parse(doc.data().data||'[]');}catch(e){}});
-    ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
-    if(m.settings){const logo=db.settings.logo;Object.assign(db.settings,m.settings);db.settings.logo=logo;}
-    if(m.counters){const c=m.counters;['nextInvId','nextPoId','nextQuoId','nextDnId','nextSrId'].forEach(k=>{if(c[k])db[k]=c[k];});}
-    if(m.stock)db.stock=m.stock;
-    _hideLoadingScreen();return true;
-  }catch(e){
-    console.warn('FB load:',e.message);_hideLoadingScreen();
-    showToast('Could not connect to cloud','red');return false;
+  while(true){
+    try{
+      _showLoadingScreen('Connecting to cloud...');
+      const snap=await _fsdb.collection('fastrack').get();
+      if(snap.empty){_hideLoadingScreen();return false;}
+      const m={};snap.forEach(doc=>{try{m[doc.id]=JSON.parse(doc.data().data||'[]');}catch(e){}});
+      ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
+      if(m.settings){const logo=db.settings.logo;Object.assign(db.settings,m.settings);db.settings.logo=logo;}
+      if(m.counters){const c=m.counters;['nextInvId','nextPoId','nextQuoId','nextDnId','nextSrId'].forEach(k=>{if(c[k])db[k]=c[k];});}
+      if(m.stock)db.stock=m.stock;
+      _hideLoadingScreen();return true;
+    }catch(e){
+      console.warn('FB load failed, retrying in 3s:',e.message);
+      _showLoadingScreen('Connection failed — retrying...');
+      await new Promise(r=>setTimeout(r,3000));
+    }
   }
 }
 function _showLoadingScreen(msg){
@@ -2126,6 +2130,27 @@ function editUser(id){
 }
 function deleteUser(id){if(!confirm('Delete this user?'))return;db.systemUsers=db.systemUsers.filter(u=>u.id!==id);renderUsersTab();saveAppState();showToast('User deleted','amber');}
 // ── CORE UTILITIES ────────────────────────────────────────────────────────────
+
+// Shared print helper — injects a mobile back button and auto-closes after print
+function _printHTML(html,delay){
+  delay=delay||500;
+  const w=window.open('','_blank');
+  if(!w){showToast('Allow popups to print','amber');return;}
+  // Inject mobile back bar into the HTML before </body>
+  const backBar=`<div id="mobile-print-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-family:sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,.2)">
+    <button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:18px">&#8592;</span> Back to App</button>
+    <button onclick="window.print()" style="background:#fff;border:none;color:#185fa5;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:16px">&#128438;</span> Print</button>
+  </div>
+  <div style="height:64px"></div>
+  <style>@media print{#mobile-print-bar,div[style*="height:64px"]{display:none!important}}</style>`;
+  const injected=html.includes('</body>')?html.replace(/<\/body>/i,backBar+'</body>'):html+backBar;
+  w.document.write(injected);
+  w.document.close();
+  w.focus();
+  // On desktop auto-trigger print; on mobile let the user use the Print button above
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!isMobile)setTimeout(function(){try{w.print();}catch(e){}},delay);
+}
 const today=()=>new Date().toISOString().split('T')[0];
 const ydStr=(n=1)=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().split('T')[0];};
 const uid=()=>'_'+Math.random().toString(36).substr(2,9);
@@ -3046,12 +3071,10 @@ function printProductBarcode(pid){
   const p=getProduct(pid);
   if(!p.barcode){showToast('This product has no barcode set','amber');return;}
   const s=db.settings||{};
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
   const scriptTag='<'+'script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"'+'>'+'<'+'/script'+'>';
   const initScript='<'+'script'+'>'
     +'try{var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.id="bc";document.getElementById("barcode-svg").appendChild(svg);'
-    +'JsBarcode("#bc","'+p.barcode+'",{format:"CODE128",displayValue:false,height:60,margin:4});window.print();'
+    +'JsBarcode("#bc","'+p.barcode+'",{format:"CODE128",displayValue:false,height:60,margin:4});'
     +'}catch(e){document.getElementById("barcode-svg").innerHTML="Could not render barcode image.";}'
     +'<'+'/script'+'>';
   const html='<!DOCTYPE html><html><head><title>Barcode — '+p.name+'</title>'
@@ -3072,7 +3095,7 @@ function printProductBarcode(pid){
     +scriptTag
     +initScript
     +'</body></html>';
-  w.document.write(html);w.document.close();w.focus();
+  _printHTML(html);
 }
 function saveProduct(){
   const eid=document.getElementById('ap-id').value;
@@ -3703,10 +3726,7 @@ function _printReceipt(pmtId){
     +'<div class="footer">Generated by FasTrack · '+fmtDate(today())+'<br>Thank you for your payment · شكراً لدفعكم</div>'
     +'</body></html>';
 
-  var w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write(html);w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 
 function _printReceiptThermal(pmtId){
@@ -3759,10 +3779,7 @@ function _printReceiptThermal(pmtId){
     +'<br><br>'
     +'</body></html>';
 
-  var w=window.open('','_blank','width=380,height=600');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write(html);w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 
 // ── RECEIPT VIEWER ────────────────────────────────────────────────────────────
@@ -4088,10 +4105,7 @@ function printCustomerStatement(){
     +'</div>'
     +'</body></html>';
 
-  var w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write(html);w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 // ── DAMAGES ───────────────────────────────────────────────────────────────────
 function renderDamagePage(){
@@ -4318,14 +4332,11 @@ function printPurchaseOrder(){
   const po=db.purchaseOrders.find(p=>p.id===poId);if(!po)return;
   const body=document.getElementById('po-detail-body');if(!body)return;
   const html=body.innerHTML;
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write('<!DOCTYPE html><html><head><title>'+po.id+'</title>'
+  const html2='<!DOCTYPE html><html><head><title>'+po.id+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:800px;margin:0 auto}'
     +'@media print{body{padding:0;max-width:none}@page{margin:12mm}button,select{display:none!important}}'
-    +'</style></head><body>'+html+'</body></html>');
-  w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+    +'</style></head><body>'+html+'</body></html>';
+  _printHTML(html2);
 }
 function deletePO(id){if(!confirm('Delete PO?'))return;db.purchaseOrders=db.purchaseOrders.filter(p=>p.id!==id);renderPOList();saveAppState();showToast('PO deleted','amber');}
 // ── PURCHASE RETURNS ──────────────────────────────────────────────────────────
@@ -4952,10 +4963,7 @@ function printConsolidatedVat(){
     +'</div>'
     +'</body></html>';
 
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write(html);w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 
 // ── QUOTATIONS ───────────────────────────────────────────────────────────────
@@ -5230,14 +5238,11 @@ function printQuotation(){
   const q=db.quotations.find(x=>x.id===quoId);if(!q)return;
   const body=document.getElementById('quo-view-body');if(!body)return;
   const html=body.innerHTML;
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write('<!DOCTYPE html><html><head><title>'+q.id+'</title>'
+  const html2='<!DOCTYPE html><html><head><title>'+q.id+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:800px;margin:0 auto}'
     +'@media print{body{padding:0;max-width:none}@page{margin:12mm}button,select{display:none!important}}'
-    +'</style></head><body>'+html+'</body></html>');
-  w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+    +'</style></head><body>'+html+'</body></html>';
+  _printHTML(html2);
 }
 function convertQuoteToInvoice(){
   const quoId=document.getElementById('modal-quote-view').dataset.quoId;
@@ -5504,14 +5509,11 @@ function printDeliveryNote(){
   const dn=db.deliveryNotes.find(x=>x.id===dnId);if(!dn)return;
   const body=document.getElementById('dn-view-body');if(!body)return;
   const html=body.innerHTML;
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write('<!DOCTYPE html><html><head><title>'+dn.id+'</title>'
+  const html2='<!DOCTYPE html><html><head><title>'+dn.id+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:800px;margin:0 auto}'
     +'@media print{body{padding:0;max-width:none}@page{margin:12mm}button,select{display:none!important}}'
-    +'</style></head><body>'+html+'</body></html>');
-  w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+    +'</style></head><body>'+html+'</body></html>';
+  _printHTML(html2);
 }
 
 // ── SALES RETURNS ────────────────────────────────────────────────────────────
@@ -5765,14 +5767,11 @@ function printCreditNote(){
   const r=db.salesReturns.find(x=>x.id===srId);if(!r)return;
   const body=document.getElementById('cn-view-body');if(!body)return;
   const html=body.innerHTML;
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write('<!DOCTYPE html><html><head><title>'+r.id+'</title>'
+  const html2='<!DOCTYPE html><html><head><title>'+r.id+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:800px;margin:0 auto}'
     +'@media print{body{padding:0;max-width:none}@page{margin:12mm}button,select{display:none!important}}'
-    +'</style></head><body>'+html+'</body></html>');
-  w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+    +'</style></head><body>'+html+'</body></html>';
+  _printHTML(html2);
 }
 
 // ── SALES REPORT ─────────────────────────────────────────────────────────────
@@ -6237,8 +6236,6 @@ function printCashBookReport(){
   const {fromDate,toDate,openingBalance,entries,totalIn,totalOut,closingBalance}=_cbLastReport;
   const s=db.settings||{};
   const netMovement=totalIn-totalOut;
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
 
   const kpiCard=(label,value,color)=>'<div style="flex:1;min-width:140px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px">'
     +'<div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin-bottom:4px">'+label+'</div>'
@@ -6299,9 +6296,7 @@ function printCashBookReport(){
     +'</tr></thead><tbody>'+rowsHtml+'</tbody></table>'
     +'<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:11px">This Cash Book report reflects cash-method transactions only (excludes bank transfers, cheques, and online payments) &middot; '+(s.nameEn||'FasTrack')+'</div>'
     +'</body></html>';
-  w.document.write(html);
-  w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 // ── SUPPLIER PAYMENTS PAGE (full history) ──────────────────────────────────
 function renderSupplierPaymentsPage(){
@@ -6459,8 +6454,6 @@ function printSupplierStatement(){
   if(!_ssLastData){showToast('Generate a statement first','amber');return;}
   const {sup,months,pos,pmts,rets,totalPurchased,totalPaid,totalReturned,balance,ledger}=_ssLastData;
   const s=db.settings||{};
-  const w=window.open('','_blank');
-  if(!w){showToast('Allow popups to print','amber');return;}
 
   const kCard=(l,v,c)=>'<div style="flex:1;min-width:120px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 14px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:#9ca3af;margin-bottom:4px">'+l+'</div><div style="font-size:15px;font-weight:800;color:'+c+'">'+v+'</div></div>';
 
@@ -6523,8 +6516,7 @@ function printSupplierStatement(){
     +'<div style="margin-top:24px;text-align:center;color:#9ca3af;font-size:11px;padding-top:14px;border-top:1px solid #e5e7eb">This statement is issued by '+(s.nameEn||'FasTrack')+' for reconciliation purposes only &middot; Please contact us for any discrepancies</div>'
     +'</body></html>';
 
-  w.document.write(html);w.document.close();w.focus();
-  setTimeout(function(){w.print();},500);
+  _printHTML(html);
 }
 function exportSupplierPaymentsCSV(){
   const all=db.supplierPayments||[];
@@ -6857,16 +6849,15 @@ function printDepreciationReport(){
   const active=db.assets.filter(a=>a.status==='Active');
   let totalCost=0,totalAccum=0,totalBook=0;
   const rows=active.map(a=>{const d=_calcDepreciation(a,asOfDate);totalCost+=d.cost;totalAccum+=d.accumDep;totalBook+=d.bookValue;return`<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:8px 10px;font-family:monospace;font-size:11px">${a.code}</td><td style="padding:8px 10px;font-weight:600">${a.name}</td><td style="padding:8px 10px">${a.category}</td><td style="padding:8px 10px;text-align:right;font-family:monospace">SAR ${d.cost.toFixed(2)}</td><td style="padding:8px 10px;text-align:center;font-size:12px">${d.life} yrs</td><td style="padding:8px 10px;text-align:right;font-family:monospace;color:#d97706">SAR ${d.annualDep.toFixed(2)}</td><td style="padding:8px 10px;text-align:right;font-family:monospace;color:#dc2626">SAR ${d.accumDep.toFixed(2)}</td><td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:700;color:${d.isFullyDep?'#9ca3af':'#0f6e56'}">SAR ${d.bookValue.toFixed(2)}</td><td style="padding:8px 10px;text-align:center;font-size:12px">${d.isFullyDep?'Fully Dep.':d.remainingYears.toFixed(1)+' yrs'}</td></tr>`;}).join('');
-  const w=window.open('','_blank');if(!w){showToast('Allow popups to print','amber');return;}
-  w.document.write('<!DOCTYPE html><html><head><title>Depreciation Report</title>'
+  const html='<!DOCTYPE html><html><head><title>Depreciation Report</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:1100px;margin:0 auto}table{width:100%;border-collapse:collapse}th{padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;background:#f9fafb}@media print{body{padding:0;max-width:none}@page{margin:12mm}}</style>'
     +'</head><body><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:14px;border-bottom:2px solid #e5e7eb">'
     +'<div>'+companyLogoHtml(40)+'<div style="font-size:18px;font-weight:800">'+(s.nameEn||'FasTrack')+'</div></div>'
     +'<div style="text-align:right"><div style="font-size:22px;font-weight:900;color:#185fa5">DEPRECIATION SCHEDULE</div><div style="font-size:12px;color:#6b7280">As of '+fmtDate(asOfDate)+'</div><div style="font-size:11px;color:#9ca3af">Generated '+fmtDate(today())+'</div></div></div>'
     +'<table><thead><tr><th>Code</th><th>Asset</th><th>Category</th><th style="text-align:right">Cost</th><th style="text-align:center">Life</th><th style="text-align:right">Annual Dep.</th><th style="text-align:right">Accum. Dep.</th><th style="text-align:right">Book Value</th><th style="text-align:center">Remaining</th></tr></thead><tbody>'+rows+'</tbody>'
     +'<tfoot><tr style="background:#f9fafb"><td colspan="3" style="padding:10px;font-weight:700">TOTALS ('+active.length+' active assets)</td><td style="padding:10px;text-align:right;font-family:monospace;font-weight:700">SAR '+totalCost.toFixed(2)+'</td><td></td><td></td><td style="padding:10px;text-align:right;font-family:monospace;font-weight:700;color:#dc2626">SAR '+totalAccum.toFixed(2)+'</td><td style="padding:10px;text-align:right;font-family:monospace;font-weight:700;color:#0f6e56">SAR '+totalBook.toFixed(2)+'</td><td></td></tr></tfoot>'
-    +'</table></body></html>');
-  w.document.close();w.focus();setTimeout(function(){w.print();},500);
+    +'</table></body></html>';
+  _printHTML(html);
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
@@ -6960,8 +6951,22 @@ function _applyTaxModeUI(mode){
 }
 function saveSettings(){
   const s=db.settings||{};
-  s.nameEn=document.getElementById('set-name-en')?.value||s.nameEn;s.nameAr=document.getElementById('set-name-ar')?.value||s.nameAr;s.address=document.getElementById('set-address')?.value||s.address;s.phone=document.getElementById('set-phone')?.value||s.phone;s.email=document.getElementById('set-email')?.value||s.email;s.vatNumber=document.getElementById('set-vat-number')?.value||s.vatNumber;s.crNumber=document.getElementById('set-cr-number')?.value||s.crNumber;s.vatRate=parseFloat(document.getElementById('set-vat-rate')?.value)||15;s.openingCashBalance=parseFloat(document.getElementById('set-opening-cash')?.value)||0;s.taxMode=s.taxMode||'exclusive';
-  db.settings=s;saveAppState();const pn=document.getElementById('prev-name-en');if(pn)pn.textContent=s.nameEn||'FasTrack';const pa=document.getElementById('prev-name-ar');if(pa)pa.textContent=s.nameAr||'';const padr=document.getElementById('prev-address');if(padr)padr.textContent=s.address||'';
+  // Use nullish coalescing so clearing a field to empty string is respected
+  const g=id=>{ const el=document.getElementById(id); return el?el.value:null; };
+  if(g('set-name-en')!==null)s.nameEn=g('set-name-en');
+  if(g('set-name-ar')!==null)s.nameAr=g('set-name-ar');
+  if(g('set-address')!==null)s.address=g('set-address');
+  if(g('set-phone')!==null)s.phone=g('set-phone');
+  if(g('set-email')!==null)s.email=g('set-email');
+  if(g('set-vat-number')!==null)s.vatNumber=g('set-vat-number');
+  if(g('set-cr-number')!==null)s.crNumber=g('set-cr-number');
+  if(g('set-vat-rate')!==null)s.vatRate=parseFloat(g('set-vat-rate'))||15;
+  if(g('set-opening-cash')!==null)s.openingCashBalance=parseFloat(g('set-opening-cash'))||0;
+  s.taxMode=s.taxMode||'exclusive';
+  db.settings=s;saveAppState();
+  const pn=document.getElementById('prev-name-en');if(pn)pn.textContent=s.nameEn||'FasTrack';
+  const pa=document.getElementById('prev-name-ar');if(pa)pa.textContent=s.nameAr||'';
+  const padr=document.getElementById('prev-address');if(padr)padr.textContent=s.address||'';
   showToast('Settings saved');
 }
 function clearSavedData(){
@@ -7345,14 +7350,11 @@ function printInvoiceFromModal(mode){
       html=html.replace(/<div id="zatca-qr-container"[^>]*>[\s\S]*?<\/div>/,
         '<img src="'+qrDataUrl2+'" style="width:128px;height:128px;display:block;border-radius:4px">');
     }
-    const w=window.open('','_blank');
-    if(!w){showToast('Allow popups to print','amber');return;}
-    w.document.write('<!DOCTYPE html><html><head><title>'+inv.id+'</title>'
+    const html2='<!DOCTYPE html><html><head><title>'+inv.id+'</title>'
       +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:800px;margin:0 auto}'
       +'@media print{body{padding:0;max-width:none}@page{margin:12mm}button,select{display:none!important}}'
-      +'</style></head><body>'+html+'</body></html>');
-    w.document.close();w.focus();
-    setTimeout(function(){w.print();},500);
+      +'</style></head><body>'+html+'</body></html>';
+    _printHTML(html2);
   }
 }
 
@@ -7465,12 +7467,7 @@ function printThermalInvoice(inv){
       +'<br><br>'
       +'</body></html>';
 
-    const w=window.open('','_blank','width=400,height=700');
-    if(!w){showToast('Allow popups to print','amber');return;}
-    w.document.write(html);
-    w.document.close();
-    w.focus();
-    setTimeout(function(){w.print();},600);
+    _printHTML(html,600);
   }
 
   // Generate QR using canvas then print
@@ -7483,16 +7480,17 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   seedData();
   // Load any custom role permissions saved previously
   loadSavedPermissions();
-  // Load data from Firebase
+  // Load data from Firebase — retries automatically until connected
   const hasSaved=await loadAppState();
   _fbReady=true;
-  // If Firebase was empty, wipe demo business data — keep only structure
+  // ONLY wipe seed defaults when Firebase is genuinely empty (very first launch ever)
   if(!hasSaved){
     db.products=[];db.customers=[];db.invoices=[];db.payments=[];
     db.transfers=[];db.damages=[];db.expenses=[];db.purchaseOrders=[];
     db.purchaseReturns=[];db.supplierPayments=[];db.salesReturns=[];
     db.quotations=[];db.deliveryNotes=[];db.priceHistory=[];
     db.suppliers=[];db.assets=[];db.assetMaintenance=[];db.dailyOps=[];
+    db.partners=[];db.capitalInvestments=[];
     db.stock={};db.nextInvId=1001;db.nextPoId=1001;db.nextQuoId=1001;
     db.nextDnId=1001;db.nextSrId=1001;
   }
