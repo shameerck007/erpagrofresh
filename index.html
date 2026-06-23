@@ -7254,7 +7254,6 @@ function viewInvoice(invId){
   <!-- ESTIMATE header — no company details -->
   <div style="text-align:center;padding:24px 0 20px;border-bottom:3px solid #e5e7eb;margin-bottom:24px">
     <div style="font-size:36px;font-weight:900;color:#374151;letter-spacing:-1px">ESTIMATE</div>
-    <div style="font-size:13px;color:#9ca3af;margin-top:4px">تقدير السعر · This is not a tax invoice</div>
   </div>
 
   <!-- Bill To + Details -->
@@ -7292,14 +7291,10 @@ function viewInvoice(invId){
   <!-- Total (no VAT) -->
   <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
     <div style="width:min(280px,100%);background:#f9fafb;border-radius:10px;padding:16px 20px;border:1px solid #e5e7eb">
-      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;color:#111827"><span>Total (No VAT)</span><span style="font-family:monospace;color:#374151">SAR ${inv.total.toFixed(2)}</span></div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;color:#111827"><span>Total</span><span style="font-family:monospace;color:#374151">SAR ${inv.total.toFixed(2)}</span></div>
     </div>
   </div>
 
-  <!-- Minimal footer note -->
-  <div style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;color:#9ca3af;font-size:11px">
-    This is an estimate only and is not a tax invoice · هذا تقدير وليس فاتورة ضريبية
-  </div>
   </div>`
   :`
   <div id="printable-invoice">
