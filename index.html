@@ -1515,6 +1515,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div id="ns-stock-errors" style="display:none;background:rgba(220,53,69,.07);border:1px solid rgba(220,53,69,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)"></div>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--text2)"><span>Subtotal (excl. VAT)</span><span id="inv-subtotal-display" style="font-family:var(--mono)">SAR 0.00</span></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0;color:var(--amber)"><span>VAT (<span id="inv-vat-pct">15</span>%)</span><span id="inv-vat-display" style="font-family:var(--mono)">SAR 0.00</span></div><div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding:8px 0 2px;border-top:1px solid var(--border);margin-top:6px"><span>Total (incl. VAT)</span><span id="invoice-total-display" style="font-family:var(--mono);color:var(--green)">SAR 0.00</span></div></div>
     <div class="fgrid"><div class="fg"><label>Amount Paid Now (SAR) <span style="color:var(--red)">*</span></label><input type="number" id="ns-paid" step="0.01" placeholder="Enter 0 if unpaid" required oninput="this.style.borderColor=''"><span style="font-size:11px;color:var(--text3);margin-top:3px;display:block">Required — enter 0 if the customer hasn't paid yet. A payment receipt will be generated automatically if greater than 0</span></div><div class="fg"><label>Notes</label><input type="text" id="ns-notes" placeholder="Optional"></div></div>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:4px;display:flex;align-items:center;gap:12px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;user-select:none" for="ns-is-tax-invoice">
+        <div style="position:relative;flex-shrink:0">
+          <input type="checkbox" id="ns-is-tax-invoice" checked onchange="nsToggleTaxInvoice()" style="width:20px;height:20px;accent-color:var(--green);cursor:pointer">
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)" id="ns-tax-invoice-label">Tax Invoice (VAT included)</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:1px" id="ns-tax-invoice-hint">Uncheck to create an Estimate — no VAT, no company header on printout</div>
+        </div>
+      </label>
+      <span id="ns-tax-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;background:#d1fae5;color:#065f46;flex-shrink:0">TAX INVOICE</span>
+    </div>
     <div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-new-sale')">Cancel</button><button class="btn btn-primary" onclick="saveInvoice()" id="ns-save-btn"><i class="ti ti-receipt"></i> Create Invoice</button></div>
   </div>
 </div>
@@ -2339,6 +2351,9 @@ function openModal(id){
       nsCust.innerHTML=custOpts;
     }
     initInvItems();
+    // reset tax invoice checkbox to checked (default = tax invoice)
+    const nsTaxCb=document.getElementById('ns-is-tax-invoice');
+    if(nsTaxCb){nsTaxCb.checked=true;nsToggleTaxInvoice();}
     // show tax mode indicator
     const tmb=document.getElementById('ns-tax-mode-badge');
     if(tmb){const isIncl=getTaxMode()==='inclusive';tmb.innerHTML='<span style="background:'+(isIncl?'rgba(14,154,138,.1)':'rgba(24,95,165,.1)')+';color:'+(isIncl?'var(--teal)':'var(--green)')+';padding:3px 10px;border-radius:5px;font-family:var(--mono);display:inline-flex;align-items:center;gap:5px"><i class="ti '+(isIncl?'ti-percentage':'ti-plus')+'" style="font-size:11px"></i>'+(isIncl?'Tax Inclusive — prices include VAT':'Tax Exclusive — VAT added on top')+'</span>';}
@@ -3312,7 +3327,7 @@ function renderInvoices(){
     return(!vf||inv.van===vf)&&(c.name.toLowerCase().includes(q)||inv.id.toLowerCase().includes(q));
   }).sort((a,b)=>b.date.localeCompare(a.date));
   const body=document.getElementById('invoices-body');if(!body)return;
-  body.innerHTML=invs.length?invs.map(inv=>{const c=getCustomer(inv.customer);const bal=inv.total-inv.paid;const s=bal<=0?'paid':daysDiff(inv.due)<0?'overdue':daysDiff(inv.due)<=7?'due-soon':'pending';const scls={'paid':'badge-green','overdue':'badge-red','due-soon':'badge-amber','pending':'badge-blue'};const hasPmts=inv.payments&&inv.payments.length>0;const src=invoiceSourceLabel(inv);return`<tr><td style="font-size:12px;font-family:var(--mono);color:var(--text2)">${inv.id}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><strong>${c.name}</strong></td><td><span class="badge ${src.cls}">${src.label}</span></td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal>0?'var(--red)':'var(--text3)'}">${bal>0?'SAR '+bal.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${scls[s]||'badge-gray'}">${s}</span></td><td style="display:flex;gap:5px">${bal>0?`<button class="btn btn-sm btn-primary" data-pay="${inv.id}" title="Record Payment"><i class="ti ti-coin"></i></button>`:''}<button class="btn btn-sm btn-outline" data-view="${inv.id}" title="View / Print Invoice"><i class="ti ti-eye"></i></button>${hasPmts?`<button class="btn btn-sm btn-outline" style="color:var(--green);border-color:var(--green)" data-receipts="${inv.id}" title="View Payment Receipts"><i class="ti ti-receipt"></i></button>`:''}<button class="btn btn-sm btn-danger" data-del="${inv.id}" title="Delete"><i class="ti ti-trash"></i></button></td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text3)">No invoices found</td></tr>`;
+  body.innerHTML=invs.length?invs.map(inv=>{const c=getCustomer(inv.customer);const bal=inv.total-inv.paid;const s=bal<=0?'paid':daysDiff(inv.due)<0?'overdue':daysDiff(inv.due)<=7?'due-soon':'pending';const scls={'paid':'badge-green','overdue':'badge-red','due-soon':'badge-amber','pending':'badge-blue'};const hasPmts=inv.payments&&inv.payments.length>0;const src=invoiceSourceLabel(inv);const estBadge=inv.isEstimate?'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:4px">EST</span>':'';return`<tr><td style="font-size:12px;font-family:var(--mono);color:var(--text2)">${inv.id}${estBadge}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><strong>${c.name}</strong></td><td><span class="badge ${src.cls}">${src.label}</span></td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal>0?'var(--red)':'var(--text3)'}">${bal>0?'SAR '+bal.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${scls[s]||'badge-gray'}">${s}</span></td><td style="display:flex;gap:5px">${bal>0?`<button class="btn btn-sm btn-primary" data-pay="${inv.id}" title="Record Payment"><i class="ti ti-coin"></i></button>`:''}<button class="btn btn-sm btn-outline" data-view="${inv.id}" title="View / Print Invoice"><i class="ti ti-eye"></i></button>${hasPmts?`<button class="btn btn-sm btn-outline" style="color:var(--green);border-color:var(--green)" data-receipts="${inv.id}" title="View Payment Receipts"><i class="ti ti-receipt"></i></button>`:''}<button class="btn btn-sm btn-danger" data-del="${inv.id}" title="Delete"><i class="ti ti-trash"></i></button></td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text3)">No invoices found</td></tr>`;
   // attach click handlers via event delegation (avoids inline onclick escaping issues)
   const tbl=document.getElementById('invoices-body');
   if(tbl){
@@ -3430,7 +3445,20 @@ function nsOnLocationChange(){
   });
   calcInvoiceTotal();
 }
+function nsToggleTaxInvoice(){
+  const isTax=document.getElementById('ns-is-tax-invoice')?.checked!==false;
+  const label=document.getElementById('ns-tax-invoice-label');
+  const hint=document.getElementById('ns-tax-invoice-hint');
+  const badge=document.getElementById('ns-tax-badge');
+  const saveBtn=document.getElementById('ns-save-btn');
+  if(label)label.textContent=isTax?'Tax Invoice (VAT included)':'Estimate (No VAT)';
+  if(hint)hint.textContent=isTax?'Uncheck to create an Estimate — no VAT, no company header on printout':'This will print as an Estimate — no VAT charged, no company details on printout';
+  if(badge){badge.textContent=isTax?'TAX INVOICE':'ESTIMATE';badge.style.background=isTax?'#d1fae5':'#fef3c7';badge.style.color=isTax?'#065f46':'#92400e';}
+  if(saveBtn){saveBtn.innerHTML=isTax?'<i class="ti ti-receipt"></i> Create Invoice':'<i class="ti ti-file-description"></i> Create Estimate';}
+  calcInvoiceTotal();
+}
 function calcInvoiceTotal(){
+  const isEstimate=document.getElementById('ns-is-tax-invoice')?.checked===false;
   let lineSum=0;
   document.querySelectorAll('#invoice-items-list>div[style]').forEach(function(row){
     const qty=parseFloat(row.querySelector('.inv-qty-inp')?.value)||0;
@@ -3439,11 +3467,11 @@ function calcInvoiceTotal(){
     const lt=row.querySelector('.inv-line-total');
     if(lt)lt.textContent=lineTotal>0?'= SAR '+lineTotal.toFixed(2):'';
   });
-  const t=calcTax(lineSum);
+  const t=isEstimate?{sub:lineSum,vat:0,total:lineSum}:calcTax(lineSum);
   const sd=document.getElementById('inv-subtotal-display');if(sd)sd.textContent='SAR '+t.sub.toFixed(2);
-  const vd=document.getElementById('inv-vat-display');if(vd)vd.textContent='SAR '+t.vat.toFixed(2);
+  const vd=document.getElementById('inv-vat-display');if(vd)vd.textContent=isEstimate?'SAR 0.00 (No VAT)':'SAR '+t.vat.toFixed(2);
   const td=document.getElementById('invoice-total-display');if(td)td.textContent='SAR '+t.total.toFixed(2);
-  const vl=document.getElementById('inv-vat-pct');if(vl)vl.textContent=getTaxMode()==='inclusive'?Math.round(getVatRate()*100)+'% incl.':Math.round(getVatRate()*100)+'%';
+  const vl=document.getElementById('inv-vat-pct');if(vl)vl.textContent=isEstimate?'No VAT':(getTaxMode()==='inclusive'?Math.round(getVatRate()*100)+'% incl.':Math.round(getVatRate()*100)+'%');
 }
 function saveInvoice(){
   if(_currentUser&&_currentUser.role==='accountant')return showToast('Accountants are not authorized to create invoices','red');
@@ -3457,6 +3485,7 @@ function saveInvoice(){
   const paidRaw=document.getElementById('ns-paid')?.value;
   const paid=parseFloat(paidRaw)||0;
   const notes=document.getElementById('ns-notes')?.value||'';
+  const isEstimate=document.getElementById('ns-is-tax-invoice')?.checked===false;
   if(!cid)return showToast('Select a customer','red');
   if(!loc)return showToast('Select stock location','red');
   if(paidRaw===''||paidRaw===undefined||paidRaw===null){
@@ -3477,7 +3506,7 @@ function saveInvoice(){
   if(!stockOk)return;
   if(!items.length)return showToast('Add at least one item','red');
   const lineSum=items.reduce((s,i)=>s+i.total,0);
-  const taxRes=calcTax(lineSum);
+  const taxRes=isEstimate?{sub:lineSum,vat:0,total:lineSum}:calcTax(lineSum);
   const total=+taxRes.total.toFixed(2);
   if(paid>total){
     const paidEl=document.getElementById('ns-paid');
@@ -3486,7 +3515,7 @@ function saveInvoice(){
   }
   items.forEach(it=>addStock(it.product,loc,-it.qty));
   const invId='INV-'+db.nextInvId++;
-  const newInv={id:invId,date,customer:cid,van,warehouse:loc,items,subtotal:+taxRes.sub.toFixed(2),vatAmount:+taxRes.vat.toFixed(2),total,paid,due,notes,taxMode:getTaxMode(),payments:[],createdBy:_currentUser?.name||'Unknown'};
+  const newInv={id:invId,date,customer:cid,van,warehouse:loc,items,subtotal:+taxRes.sub.toFixed(2),vatAmount:+taxRes.vat.toFixed(2),total,paid,due,notes,taxMode:isEstimate?'none':getTaxMode(),isEstimate:isEstimate||false,payments:[],createdBy:_currentUser?.name||'Unknown'};
   db.invoices.push(newInv);
   // if an initial payment was collected at the time of sale, create a receipt voucher for it
   if(paid>0){
@@ -7219,7 +7248,60 @@ function viewInvoice(invId){
   document.getElementById('modal-invoice-view').dataset.invId=invId;
 
   // build invoice HTML
-  const html=`
+  const isEst=inv.isEstimate===true;
+  const html=isEst?`
+  <div id="printable-invoice">
+  <!-- ESTIMATE header — no company details -->
+  <div style="text-align:center;padding:24px 0 20px;border-bottom:3px solid #e5e7eb;margin-bottom:24px">
+    <div style="font-size:36px;font-weight:900;color:#374151;letter-spacing:-1px">ESTIMATE</div>
+    <div style="font-size:13px;color:#9ca3af;margin-top:4px">تقدير السعر · This is not a tax invoice</div>
+  </div>
+
+  <!-- Bill To + Details -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;padding:16px;background:#f9fafb;border-radius:10px">
+    <div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin-bottom:5px">Prepared For</div>
+      <div style="font-size:15px;font-weight:700;color:#111827">${c.name}</div>
+      ${c.area?'<div style="font-size:12px;color:#6b7280;margin-top:2px">'+c.area+'</div>':''}
+      ${c.phone?'<div style="font-size:12px;color:#6b7280">'+c.phone+'</div>':''}
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin-bottom:5px">Estimate #</div>
+      <div style="font-size:14px;font-family:monospace;font-weight:700;color:#374151">${inv.id}</div>
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#9ca3af;margin-bottom:5px;margin-top:10px">Date</div>
+      <div style="font-size:14px;font-weight:600;color:#111827">${fmtDate(inv.date)}</div>
+    </div>
+  </div>
+
+  <!-- Items Table -->
+  <table style="width:100%;border-collapse:collapse;margin-bottom:20px">
+    <thead>
+      <tr style="background:#f3f4f6">
+        <th style="padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Product</th>
+        <th style="padding:10px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Unit</th>
+        <th style="padding:10px 12px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Qty</th>
+        <th style="padding:10px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Unit Price</th>
+        <th style="padding:10px 12px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${inv.items.map(it=>{const p=getProduct(it.product);return'<tr style="border-bottom:1px solid #f3f4f6"><td style="padding:11px 12px;font-weight:500;color:#111827">'+p.name+'</td><td style="padding:11px 12px;text-align:center;font-size:13px;color:#6b7280">'+p.unit+'</td><td style="padding:11px 12px;text-align:center;font-family:monospace;font-weight:600">'+it.qty+'</td><td style="padding:11px 12px;text-align:right;font-family:monospace">SAR '+it.price.toFixed(2)+'</td><td style="padding:11px 12px;text-align:right;font-family:monospace;font-weight:600">SAR '+(it.qty*it.price).toFixed(2)+'</td></tr>';}).join('')}
+    </tbody>
+  </table>
+
+  <!-- Total (no VAT) -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:32px">
+    <div style="width:min(280px,100%);background:#f9fafb;border-radius:10px;padding:16px 20px;border:1px solid #e5e7eb">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:16px;font-weight:800;color:#111827"><span>Total (No VAT)</span><span style="font-family:monospace;color:#374151">SAR ${inv.total.toFixed(2)}</span></div>
+    </div>
+  </div>
+
+  <!-- Minimal footer note -->
+  <div style="border-top:1px solid #e5e7eb;padding-top:16px;text-align:center;color:#9ca3af;font-size:11px">
+    This is an estimate only and is not a tax invoice · هذا تقدير وليس فاتورة ضريبية
+  </div>
+  </div>`
+  :`
   <div id="printable-invoice">
   <!-- Header -->
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:2px solid #e5e7eb">
@@ -7329,8 +7411,8 @@ function viewInvoice(invId){
   const body=document.getElementById('inv-view-body');
   if(body)body.innerHTML=html;
   document.getElementById('modal-invoice-view').classList.add('open');
-  // Generate ZATCA QR after DOM update
-  setTimeout(function(){generateZatcaQR(inv,'zatca-qr-container');},80);
+  // Generate ZATCA QR after DOM update (only for tax invoices)
+  if(!isEst)setTimeout(function(){generateZatcaQR(inv,'zatca-qr-container');},80);
 }
 function printInvoiceFromModal(mode){
   mode=mode||'a4';
