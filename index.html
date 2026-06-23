@@ -1541,7 +1541,8 @@ function doLogout(){
   const e=document.getElementById('login-error');if(e)e.style.display='none';
   document.getElementById('login-screen').style.display='flex';
 }
-// ── FIREBASE CONFIGURATION & PERSISTENCE ────────────────────────────────────
+// ── PERSISTENCE ──────────────────────────────────────────────────────────────
+// ── FIREBASE CONFIGURATION ───────────────────────────────────────────────────
 const firebaseConfig={apiKey:"AIzaSyBAQMDdZHfnygAYBJaA23hP0N2TqCWUA20",authDomain:"fastrack-agrofres.firebaseapp.com",projectId:"fastrack-agrofres",storageBucket:"fastrack-agrofres.firebasestorage.app",messagingSenderId:"860204860828",appId:"1:860204860828:web:e6e8394cf8f3c9c8663459"};
 firebase.initializeApp(firebaseConfig);
 const _fsdb=firebase.firestore();
@@ -1588,11 +1589,144 @@ async function loadAppState(){
     showToast('Could not connect to cloud','red');return false;
   }
 }
+function _showLoadingScreen(msg){
+  let el=document.getElementById('fb-loading-screen');
+  if(!el){el=document.createElement('div');el.id='fb-loading-screen';el.style.cssText='position:fixed;inset:0;background:#042c53;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif';el.innerHTML='<div style="font-size:24px;font-weight:800;margin-bottom:8px">FasTrack ERP</div><div id="fb-loading-msg" style="font-size:14px;opacity:.7;margin-bottom:28px">'+msg+'</div><div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#5dcaa5;border-radius:50%;animation:fbspin 1s linear infinite"></div><style>@keyframes fbspin{to{transform:rotate(360deg)}}</style>';document.body.appendChild(el);}
+  else{const m=document.getElementById('fb-loading-msg');if(m)m.textContent=msg;el.style.display='flex';}
+}
+function _hideLoadingScreen(){const el=document.getElementById('fb-loading-screen');if(el)el.style.display='none';}
 function restoreSession(){
   try{const r=localStorage.getItem('fastrack_session');if(!r)return false;const s=JSON.parse(r);const u=db.systemUsers.find(u=>u.id===s.id&&u.username===s.username&&u.status==='active');if(!u)return false;_currentUser=u;return true;}catch(e){return false;}
 }
-function loadSavedPermissions(){
-  try{const r=localStorage.getItem('fastrack_perms');if(!r)return;const s=JSON.parse(r);Object.keys(s).forEach(role=>{if(ROLE_PERMISSIONS[role]!==undefined)ROLE_PERMISSIONS[role]=s[role];});}catch(e){}
+function applyRBAC(){
+  if(!_currentUser)return;
+  const allowed=ROLE_PERMISSIONS[_currentUser.role]||[];
+  document.querySelectorAll('.ni[data-access]').forEach(ni=>{const page=ni.getAttribute('data-access');ni.style.display=allowed.includes(page)?'':'none';});
+  const settingsNi=document.querySelector('.ni[onclick*="settings"]');
+  if(settingsNi)settingsNi.style.display=_currentUser.role==='admin'?'':'none';
+}
+function hasAccess(page){if(!_currentUser)return false;return(ROLE_PERMISSIONS[_currentUser.role]||[]).includes(page)||page==='dashboard';}
+// Returns the locations the current user is allowed to use for stock/invoicing.
+// Admin = all locations. Others = their assignedLocations array.
+function getUserLocations(){
+  if(!_currentUser)return[];
+  if(_currentUser.role==='admin')return[...db.warehouses.map(w=>w.id),...db.vans.map(v=>v.name)];
+  return _currentUser.assignedLocations||[];
+}
+function getUserLocationOpts(placeholder){
+  const locs=getUserLocations();
+  const whLocs=locs.filter(l=>db.warehouses.some(w=>w.id===l));
+  const vanLocs=locs.filter(l=>db.vans.some(v=>v.name===l));
+  let opts=placeholder?`<option value="">${placeholder}</option>`:'';
+  if(whLocs.length)opts+='<optgroup label="Warehouses">'+whLocs.map(l=>{const w=db.warehouses.find(x=>x.id===l);return`<option value="${l}">${w?w.name:l}</option>`;}).join('')+'</optgroup>';
+  if(vanLocs.length)opts+='<optgroup label="Vans">'+vanLocs.map(l=>{const v=db.vans.find(x=>x.name===l);return`<option value="${l}">${v?v.name+' — '+v.rep:l}</option>`;}).join('')+'</optgroup>';
+  return opts;
+}
+function updateSidebarUser(){
+  if(!_currentUser)return;
+  const initials=_currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const av=document.getElementById('sidebar-avatar');if(av)av.textContent=initials;
+  const un=document.getElementById('sidebar-uname');if(un)un.textContent=_currentUser.name;
+  const ur=document.getElementById('sidebar-urole');if(ur)ur.textContent=ROLE_LABELS[_currentUser.role]||_currentUser.role;
+  const mav=document.getElementById('mobile-header-avatar');if(mav)mav.textContent=initials;
+}
+function showUserMenu(){
+  if(!_currentUser)return;
+  const initials=_currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const av=document.getElementById('um-avatar');if(av)av.textContent=initials;
+  const nm=document.getElementById('um-name');if(nm)nm.textContent=_currentUser.name;
+  const rb=document.getElementById('um-role-badge');
+  if(rb){const rc=ROLE_COLORS[_currentUser.role]||{bg:'#e8edf2',color:'var(--text2)'};rb.innerHTML=`<span style="background:${rc.bg};color:${rc.color};font-size:11px;padding:3px 10px;border-radius:6px;font-family:var(--mono)">${ROLE_LABELS[_currentUser.role]||_currentUser.role}</span>`;}
+  document.getElementById('modal-user-menu').classList.add('open');
+}
+
+// ── USER MANAGEMENT ──────────────────────────────────────────────────────────
+function switchSettingsTab(tab,btn){
+  document.querySelectorAll('#settings-tabs .tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('settings-panel-company').style.display=tab==='company'?'':'none';
+  document.getElementById('settings-panel-users').style.display=tab==='users'?'':'none';
+  if(tab==='users')renderUsersTab();
+}
+function renderUsersTab(){renderRoleSummaryCards();renderUsersTable();renderRolePermsGrid();}
+function renderRoleSummaryCards(){
+  const el=document.getElementById('role-summary-cards');if(!el)return;
+  el.innerHTML=['admin','warehouse','van_sales','accountant'].map(role=>{
+    const count=db.systemUsers.filter(u=>u.role===role&&u.status==='active').length;
+    const rc=ROLE_COLORS[role];const ico=ROLE_ICONS[role];
+    return`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--sha)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:36px;height:36px;border-radius:9px;background:${rc.bg};display:flex;align-items:center;justify-content:center"><i class="ti ${ico}" style="font-size:18px;color:${rc.color}"></i></div><div style="font-size:13px;font-weight:600">${ROLE_LABELS[role]}</div></div><div style="font-size:28px;font-weight:700;color:${rc.color};font-family:var(--mono)">${count}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">active user${count!==1?'s':''}</div></div>`;
+  }).join('');
+}
+function renderUsersTable(){
+  const body=document.getElementById('users-table-body');if(!body)return;
+  body.innerHTML=db.systemUsers.map(u=>{
+    const rc=ROLE_COLORS[u.role]||{bg:'#e8edf2',color:'var(--text2)'};
+    const initials=u.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const isMe=_currentUser&&u.id===_currentUser.id;
+    const locs=u.assignedLocations&&u.assignedLocations.length?u.assignedLocations:null;
+    const locBadges=locs?locs.map(l=>{const isVan=db.vans.some(v=>v.name===l);return'<span style="font-size:10px;background:'+(isVan?'rgba(46,125,209,.1)':'rgba(14,154,138,.1)')+';color:'+(isVan?'var(--blue)':'var(--teal)')+';padding:2px 8px;border-radius:4px;font-family:var(--mono);display:inline-flex;align-items:center;gap:4px;margin:1px"><i class="ti '+(isVan?'ti-truck':'ti-building-warehouse')+'" style="font-size:11px"></i>'+l+'</span>';}).join(' '):'<span style="font-size:11px;color:var(--text3)">'+(u.role==='admin'?'All locations':'—')+'</span>';
+    return`<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:${rc.bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${rc.color}">${initials}</div><div><div style="font-weight:500;font-size:13px">${u.name}${isMe?'<span style="font-size:10px;background:#d4f5e3;color:#156b3a;padding:1px 6px;border-radius:4px;margin-left:6px;font-family:var(--mono)">you</span>':''}</div><div style="font-size:11px;color:var(--text3)">${u.notes||'—'}</div></div></div></td><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${u.username}</td><td><span style="background:${rc.bg};color:${rc.color};font-size:11px;padding:3px 9px;border-radius:5px;font-family:var(--mono)">${ROLE_LABELS[u.role]||u.role}</span></td><td style="font-size:12px">${locBadges}</td><td><span class="badge ${u.status==='active'?'badge-green':'badge-gray'}">${u.status}</span></td><td style="font-size:11px;color:var(--text3)">${u.lastLogin||'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editUser('${u.id}')"><i class="ti ti-edit"></i></button>${!isMe?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+  }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No users</td></tr>';
+}
+function renderRolePermsGrid(){
+  const el=document.getElementById('role-perms-body');if(!el)return;
+  const roles=['admin','warehouse','van_sales','accountant'];
+  // Group pages into categories for better readability
+  const groups=[
+    {label:'Core',pages:['dashboard','daily']},
+    {label:'Sales',pages:['sales','sales-returns','sales-report','quotations','delivery-notes']},
+    {label:'Customers',pages:['customers','customer-statement']},
+    {label:'Inventory',pages:['stock','warehouses','damages']},
+    {label:'Purchasing',pages:['po','purchase-returns','suppliers','supplier-payments','supplier-statement']},
+    {label:'Finance',pages:['expenses','reports','pl','vat','cash-book']},
+    {label:'Operations',pages:['fleet','assets']},
+    {label:'Admin',pages:['settings']},
+  ];
+  const locked=['dashboard']; // always on for everyone, can't be removed
+  let html='';
+  groups.forEach(g=>{
+    // group header row
+    html+=`<tr><td colspan="5" style="padding:8px 14px 4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);background:var(--bg3);border-top:1px solid var(--border)">${g.label}</td></tr>`;
+    g.pages.forEach(page=>{
+      const isLocked=locked.includes(page);
+      const cells=roles.map(role=>{
+        const hasIt=(ROLE_PERMISSIONS[role]||[]).includes(page);
+        const forceOn=isLocked; // dashboard forced on
+        return`<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border)"><label style="display:inline-flex;align-items:center;justify-content:center;cursor:${forceOn?'not-allowed':'pointer'};position:relative"><input type="checkbox" data-page="${page}" data-role="${role}" ${hasIt?'checked':''} ${forceOn?'disabled':''} onchange="rolePermsOnChange(this)" style="width:18px;height:18px;accent-color:var(--green);cursor:${forceOn?'not-allowed':'pointer'}"></label></td>`;
+      }).join('');
+      html+=`<tr class="rpm-row" style="transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><td style="padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><i class="ti ${_pageIcon(page)}" style="font-size:14px;color:var(--text3);flex-shrink:0"></i><span>${PERM_LABELS[page]||page}</span>${isLocked?'<span style="font-size:10px;color:var(--text3);margin-left:4px">(always on)</span>':''}</td>${cells}</tr>`;
+    });
+  });
+  el.innerHTML=html;
+  // hide saved message
+  const msg=document.getElementById('role-perms-saved-msg');if(msg)msg.style.display='none';
+}
+function _pageIcon(page){
+  const icons={dashboard:'ti-layout-dashboard',daily:'ti-calendar-event',sales:'ti-receipt',
+    'sales-returns':'ti-rotate-2','sales-report':'ti-chart-line',quotations:'ti-file-invoice',
+    'delivery-notes':'ti-truck',customers:'ti-users','customer-statement':'ti-file-description',
+    stock:'ti-package',warehouses:'ti-building-warehouse',damages:'ti-alert-triangle',
+    po:'ti-clipboard-list','purchase-returns':'ti-arrow-back',suppliers:'ti-building-store',
+    'supplier-payments':'ti-cash-banknote','supplier-statement':'ti-file-analytics',
+    expenses:'ti-receipt-tax',reports:'ti-chart-bar',pl:'ti-chart-pie-2',
+    vat:'ti-receipt-tax','cash-book':'ti-cash',fleet:'ti-steering-wheel',
+    assets:'ti-building-factory-2',settings:'ti-settings'};
+  return icons[page]||'ti-circle';
+}
+function rolePermsOnChange(cb){
+  const page=cb.dataset.page;const role=cb.dataset.role;
+  if(cb.checked){if(!ROLE_PERMISSIONS[role].includes(page))ROLE_PERMISSIONS[role].push(page);}
+  else{ROLE_PERMISSIONS[role]=ROLE_PERMISSIONS[role].filter(p=>p!==page);}
+  // live apply — update current user's access immediately
+  if(_currentUser)applyRBAC();
+}
+function rolePermsSelectAll(){
+  const all=Object.keys(PERM_LABELS);
+  Object.keys(ROLE_PERMISSIONS).forEach(role=>{
+    all.forEach(p=>{if(!ROLE_PERMISSIONS[role].includes(p))ROLE_PERMISSIONS[role].push(p);});
+  });
+  renderRolePermsGrid();
+  if(_currentUser)applyRBAC();
 }
 function saveRolePermissions(){
   try{localStorage.setItem('fastrack_perms',JSON.stringify(ROLE_PERMISSIONS));}catch(e){}
@@ -1600,17 +1734,260 @@ function saveRolePermissions(){
   const msg=document.getElementById('role-perms-saved-msg');if(msg){msg.style.display='';setTimeout(()=>msg.style.display='none',3500);}
   showToast('Permissions saved');
 }
-function _showLoadingScreen(msg){
-  let el=document.getElementById('fb-loading-screen');
-  if(!el){el=document.createElement('div');el.id='fb-loading-screen';el.style.cssText='position:fixed;inset:0;background:#042c53;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:sans-serif';el.innerHTML='<div style="font-size:24px;font-weight:800;margin-bottom:8px">FasTrack ERP</div><div id="fb-loading-msg" style="font-size:14px;opacity:.7;margin-bottom:28px">'+msg+'</div><div style="width:48px;height:48px;border:4px solid rgba(255,255,255,.2);border-top-color:#5dcaa5;border-radius:50%;animation:fbspin 1s linear infinite"></div><style>@keyframes fbspin{to{transform:rotate(360deg)}}</style>';document.body.appendChild(el);}
-  else{const m=document.getElementById('fb-loading-msg');if(m)m.textContent=msg;el.style.display='flex';}
+function loadSavedPermissions(){
+  try{const r=localStorage.getItem('fastrack_perms');if(!r)return;const s=JSON.parse(r);Object.keys(s).forEach(role=>{if(ROLE_PERMISSIONS[role]!==undefined)ROLE_PERMISSIONS[role]=s[role];});}catch(e){}
 }
-function _hideLoadingScreen(){const el=document.getElementById('fb-loading-screen');if(el)el.style.display='none';}
-function clearSavedData(){
-  if(!confirm('Delete ALL data from Firebase? Cannot be undone.'))return;
-  _fsdb.collection('fastrack').get().then(snap=>{const b=_fsdb.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();}).then(()=>{localStorage.removeItem('fastrack_session');showToast('Data cleared — reloading...','amber');setTimeout(()=>location.reload(),1500);}).catch(e=>showToast('Error: '+e.message,'red'));
+function toggleUserForm(){
+  const p=document.getElementById('user-form-panel');
+  if(!p)return;
+  const showing=p.style.display!=='none'&&p.style.display!=='';
+  if(showing){p.style.display='none';return;}
+  document.getElementById('uf-id').value='';
+  document.getElementById('uf-name').value='';
+  document.getElementById('uf-username').value='';
+  document.getElementById('uf-password').value='';
+  document.getElementById('uf-role').value='warehouse';
+  document.getElementById('uf-status').value='active';
+  document.getElementById('uf-notes').value='';
+  document.getElementById('user-form-title').textContent='New User';
+  p.style.display='';
+  ufRoleChange();
 }
-function getMonths(){const months=[];for(let i=11;i>=0;i--){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-i);const key=d.toISOString().slice(0,7);const label=d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});months.push({key,label});}return months;}
+function ufRoleChange(){
+  const role=document.getElementById('uf-role')?.value;
+  // Show/hide location selector — admin sees all, no picker needed
+  const lg=document.getElementById('uf-location-group');
+  if(lg)lg.style.display=role==='admin'?'none':'';
+  if(role!=='admin')_renderLocationCards();
+  // permissions preview
+  const perms=ROLE_PERMISSIONS[role]||[];
+  const pl=document.getElementById('uf-perm-list');
+  if(pl)pl.innerHTML=perms.map(p=>`<span style="background:rgba(24,95,165,.1);color:var(--green);font-size:10px;padding:2px 8px;border-radius:4px;font-family:var(--mono)">${PERM_LABELS[p]||p}</span>`).join('');
+}
+function _renderLocationCards(selected){
+  var cards=document.getElementById('uf-location-cards');if(!cards)return;
+  var role=document.getElementById('uf-role')?.value||'';
+  var locs=[
+    ...db.warehouses.map(function(w){return{id:w.id,label:w.name,sub:w.location||'',type:'wh',icon:'ti-building-warehouse',clr:'var(--teal)',bg:'rgba(14,154,138,.1)'}}),
+    ...db.vans.map(function(v){return{id:v.name,label:v.name,sub:v.rep,type:'van',icon:'ti-truck',clr:'var(--blue)',bg:'rgba(46,125,209,.1)'}})
+  ];
+  var filtered=role==='van_sales'?locs.filter(function(l){return l.type==='van';}):locs;
+  var hint=document.getElementById('uf-location-hint');
+  if(hint)hint.textContent=role==='van_sales'?'Van Sales: assign one van only.':role==='warehouse'?'Select warehouses (and optionally vans) this user can access.':'Select which locations this user can access for stock and invoicing.';
+  cards.innerHTML=filtered.map(function(loc){
+    var isSel=!!(selected&&selected.includes(loc.id));
+    var bdr=isSel?('2px solid '+loc.clr):'2px solid var(--border)';
+    var bg2=isSel?loc.bg:'var(--card)';
+    var ibg=isSel?(loc.clr+'33'):'var(--bg3)';
+    var iclr=isSel?loc.clr:'var(--text3)';
+    var lclr=isSel?loc.clr:'var(--text)';
+    var cbg=isSel?loc.clr:'transparent';
+    var cbdr=isSel?('2px solid '+loc.clr):'2px solid var(--border)';
+    var chk=isSel?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':'';
+    var stock=_locStockSummary(loc.id);
+    return [
+      '<div class="loc-sel-card" data-loc-id="'+loc.id+'" ',
+      'style="cursor:pointer;border:'+bdr+';background:'+bg2+';border-radius:10px;padding:12px 14px;transition:all .15s;user-select:none">',
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">',
+      '<div style="width:28px;height:28px;border-radius:7px;background:'+ibg+';display:flex;align-items:center;justify-content:center;flex-shrink:0">',
+      '<i class="ti '+loc.icon+'" style="font-size:15px;color:'+iclr+'"></i></div>',
+      '<div style="flex:1;min-width:0">',
+      '<div style="font-size:13px;font-weight:600;color:'+lclr+'">'+loc.label+'</div>',
+      '<div style="font-size:11px;color:var(--text3)">'+loc.sub+'</div>',
+      '</div>',
+      '<div class="loc-check" style="width:18px;height:18px;border-radius:50%;border:'+cbdr+';background:'+cbg+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'+chk+'</div>',
+      '</div>'+stock+'</div>'
+    ].join('');
+  }).join('');
+  // attach click handlers after rendering
+  cards.querySelectorAll('.loc-sel-card').forEach(function(card){
+    card.addEventListener('click',function(){_toggleLocCard(this.dataset.locId);});
+  });
+}
+function _locStockSummary(locId){
+  const items=db.products.map(p=>({name:p.name,qty:stockAt(p.id,locId)})).filter(x=>x.qty>0).slice(0,3);
+  if(!items.length)return'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">No stock</div>';
+  return'<div style="font-size:10px;color:var(--text3);font-family:var(--mono)">'+items.map(x=>x.name+': <strong>'+x.qty+'</strong>').join(' · ')+(db.products.filter(p=>stockAt(p.id,locId)>0).length>3?' …':'')+'</div>';
+}
+function _toggleLocCard(locId){
+  var cards=document.getElementById('uf-location-cards');if(!cards)return;
+  var role=document.getElementById('uf-role')?.value||'';
+  var allLocs=[
+    ...db.warehouses.map(function(w){return{id:w.id,clr:'var(--teal)',bg:'rgba(14,154,138,.1)'}}),
+    ...db.vans.map(function(v){return{id:v.name,clr:'var(--blue)',bg:'rgba(46,125,209,.1)'}})
+  ];
+  // for van_sales single-select: deselect all first
+  if(role==='van_sales'){
+    cards.querySelectorAll('.loc-sel-card').forEach(function(c){
+      var ld=c.dataset.locId;var ll=allLocs.find(function(x){return x.id===ld;})||{clr:'var(--teal)',bg:'rgba(14,154,138,.1)'};
+      c.style.border='2px solid var(--border)';c.style.background='var(--card)';
+      var chk=c.querySelector('.loc-check');if(chk){chk.style.border='2px solid var(--border)';chk.style.background='transparent';chk.innerHTML='';}
+      var ico=c.querySelector('i');if(ico)ico.style.color='var(--text3)';
+      var lbl=c.querySelector('[style*="font-weight:600"]');if(lbl)lbl.style.color='var(--text)';
+    });
+  }
+  // find this card and toggle
+  var card=null;
+  cards.querySelectorAll('.loc-sel-card').forEach(function(c){if(c.dataset.locId===locId)card=c;});
+  if(!card)return;
+  var loc=allLocs.find(function(x){return x.id===locId;})||{clr:'var(--teal)',bg:'rgba(14,154,138,.1)'};
+  var curBorder=card.style.border||'';
+  var isSelected=curBorder.indexOf('var(--border)')===-1&&curBorder.length>0;
+  if(isSelected){
+    // deselect
+    card.style.border='2px solid var(--border)';card.style.background='var(--card)';
+    var chk=card.querySelector('.loc-check');if(chk){chk.style.border='2px solid var(--border)';chk.style.background='transparent';chk.innerHTML='';}
+    var ico=card.querySelector('i');if(ico)ico.style.color='var(--text3)';
+    var lbl=card.querySelector('[style*="font-weight:600"]');if(lbl)lbl.style.color='var(--text)';
+  }else{
+    // select
+    card.style.border='2px solid '+loc.clr;card.style.background=loc.bg;
+    var chk=card.querySelector('.loc-check');if(chk){chk.style.border='2px solid '+loc.clr;chk.style.background=loc.clr;chk.innerHTML='<i class="ti ti-check" style="font-size:11px;color:#fff"></i>';}
+    var ico=card.querySelector('i');if(ico)ico.style.color=loc.clr;
+    var lbl=card.querySelector('[style*="font-weight:600"]');if(lbl)lbl.style.color=loc.clr;
+  }
+}
+function _getSelectedLocs(){
+  var selected=[];
+  var cards=document.getElementById('uf-location-cards');if(!cards)return selected;
+  cards.querySelectorAll('.loc-sel-card').forEach(function(c){
+    var b=c.style.border||'';
+    if(b.length>0&&b.indexOf('var(--border)')===-1)selected.push(c.dataset.locId);
+  });
+  return selected;
+}
+function saveUser(){
+  const id=document.getElementById('uf-id').value;
+  const name=document.getElementById('uf-name').value.trim();
+  const uname=document.getElementById('uf-username').value.trim().toLowerCase();
+  const pass=document.getElementById('uf-password').value;
+  const role=document.getElementById('uf-role').value;
+  if(!name)return showToast('Full name required','red');
+  if(!uname)return showToast('Username required','red');
+  if(db.systemUsers.find(u=>u.username.toLowerCase()===uname&&u.id!==id))return showToast('Username taken','red');
+  // get assigned locations
+  const assignedLocations=role==='admin'?[]:_getSelectedLocs();
+  if(role!=='admin'&&assignedLocations.length===0)return showToast('Assign at least one location','red');
+  const data={name,username:uname,role,assignedLocations,status:document.getElementById('uf-status').value,notes:document.getElementById('uf-notes').value};
+  if(id){const u=db.systemUsers.find(x=>x.id===id);if(u){Object.assign(u,data);if(pass)u.password=pass;}saveAppState();showToast('User updated');}
+  else{if(!pass)return showToast('Password required','red');db.systemUsers.push({id:uid(),...data,password:pass,lastLogin:null});}
+  document.getElementById('user-form-panel').style.display='none';
+  renderUsersTab();
+}
+function editUser(id){
+  const u=db.systemUsers.find(x=>x.id===id);if(!u)return;
+  document.getElementById('uf-id').value=id;
+  document.getElementById('uf-name').value=u.name;
+  document.getElementById('uf-username').value=u.username;
+  document.getElementById('uf-password').value='';
+  document.getElementById('uf-role').value=u.role;
+  document.getElementById('uf-status').value=u.status;
+  document.getElementById('uf-notes').value=u.notes||'';
+  document.getElementById('user-form-title').textContent='Edit — '+u.name;
+  document.getElementById('user-form-panel').style.display='';
+  // render location cards then apply saved selections
+  ufRoleChange();
+  if(u.assignedLocations&&u.assignedLocations.length){
+    // re-render with pre-selected
+    _renderLocationCards(u.assignedLocations);
+  }
+}
+function deleteUser(id){if(!confirm('Delete this user?'))return;db.systemUsers=db.systemUsers.filter(u=>u.id!==id);renderUsersTab();saveAppState();showToast('User deleted','amber');}
+// ── CORE UTILITIES ────────────────────────────────────────────────────────────
+const today=()=>new Date().toISOString().split('T')[0];
+const ydStr=(n=1)=>{const d=new Date();d.setDate(d.getDate()-n);return d.toISOString().split('T')[0];};
+const uid=()=>'_'+Math.random().toString(36).substr(2,9);
+const fmt=(n)=>'SAR '+Number(n).toLocaleString('en-SA',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtShort=(n)=>'SAR '+Number(n).toLocaleString('en-SA',{minimumFractionDigits:0,maximumFractionDigits:0});
+const fmtDate=(d)=>d?new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'-';
+// Returns an <img> tag for the company logo (for print/document headers), or '' if no logo set
+// Returns a human-readable label + badge class for where an invoice's stock was actually deducted from
+// (a specific warehouse, a van, or "Customer Collected" walk-in pickup with no delivery vehicle)
+function invoiceSourceLabel(inv){
+  const locId=inv.warehouse||inv.van||'';
+  if(!locId)return{label:'—',cls:'badge-gray'};
+  const wh=db.warehouses.find(w=>w.id===locId);
+  if(wh)return{label:wh.name,cls:'badge-amber'};
+  if(db.vans.some(v=>v.name===locId))return{label:locId,cls:locId==='Van 1'?'badge-green':'badge-blue'};
+  if(locId==='Customer Collected')return{label:'Customer Collected',cls:'badge-gray'};
+  return{label:locId,cls:'badge-gray'};
+}
+function companyLogoHtml(maxHeight){
+  maxHeight=maxHeight||56;
+  const s=db.settings||{};
+  if(!s.logo)return '';
+  return '<img src="'+s.logo+'" style="max-height:'+maxHeight+'px;max-width:180px;object-fit:contain;display:block;margin-bottom:8px">';
+}
+const addDays=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];};
+const getProduct=(id)=>db.products.find(p=>p.id===id)||{id,name:id,unit:'Cartoon',price:0,wh1:0,wh2:0,van1:0,van2:0,min:10};
+const getCustomer=(id)=>db.customers.find(c=>c.id===id)||{id,name:'Walk-in',phone:'',area:'',van:'',outstanding:0};
+const getVatRate=()=>((db.settings&&db.settings.vatRate)||15)/100;
+const getTaxMode=()=>(db.settings&&db.settings.taxMode)||'exclusive'; // 'inclusive' or 'exclusive'
+// Given an entered price and taxMode, calculate subtotal and VAT
+// inclusive: price already contains VAT → sub = price/(1+rate), vat = price - sub
+// exclusive: price is pre-tax → sub = price, vat = price * rate
+function calcTax(lineTotal){
+  const rate=getVatRate();
+  if(getTaxMode()==='inclusive'){
+    const sub=lineTotal/(1+rate);
+    const vat=lineTotal-sub;
+    return{sub:+sub.toFixed(4),vat:+vat.toFixed(4),total:lineTotal};
+  }else{
+    const vat=lineTotal*rate;
+    return{sub:lineTotal,vat:+vat.toFixed(4),total:+(lineTotal+vat).toFixed(4)};
+  }
+}
+// Format tax mode label for UI
+function taxModeLabel(){return getTaxMode()==='inclusive'?'Tax Inclusive':'Tax Exclusive (+ VAT)';}
+const daysDiff=(s)=>{const d=new Date(s),n=new Date();n.setHours(0,0,0,0);return Math.round((d-n)/864e5);};
+// Generic stock model: every product can have a p.stock{} map keyed by
+// location id (warehouse id like 'WH1', 'WH2', 'WH3'... or van name like
+// 'Van 1', 'Van 2', 'Van 3'...). This supports ANY number of warehouses/vans.
+// Legacy fields (p.wh1, p.wh2, p.van1, p.van2) are still read as a fallback
+// for the first two warehouses/vans on products created before this change.
+function _legacyKey(loc){
+  if(loc==='WH1')return 'wh1';
+  if(loc==='WH2')return 'wh2';
+  const idx=db.vans.findIndex(v=>v.name===loc);
+  if(idx===0)return 'van1';
+  if(idx===1)return 'van2';
+  return null;
+}
+function stockAt(pid,loc){
+  const p=getProduct(pid);if(!p)return 0;
+  // prefer the generic stock map if this location has an entry there
+  if(p.stock&&Object.prototype.hasOwnProperty.call(p.stock,loc))return p.stock[loc]||0;
+  // fall back to legacy fixed fields for WH1/WH2/Van1/Van2
+  const lk=_legacyKey(loc);
+  if(lk)return p[lk]||0;
+  return 0;
+}
+function setStock(pid,loc,qty){
+  const p=db.products.find(x=>x.id===pid);if(!p)return;
+  qty=Math.max(0,qty);
+  const lk=_legacyKey(loc);
+  // if this product already tracks the location via a legacy field
+  // (and has no override in p.stock), keep using the legacy field —
+  // otherwise store in the generic map. This keeps old data consistent
+  // while allowing new warehouses/vans (WH3, Van 3, ...) to work.
+  if(lk&&!(p.stock&&Object.prototype.hasOwnProperty.call(p.stock,loc))){
+    p[lk]=qty;
+    return;
+  }
+  if(!p.stock)p.stock={};
+  p.stock[loc]=qty;
+}
+function addStock(pid,loc,delta){setStock(pid,loc,stockAt(pid,loc)+delta);}
+function allLocations(){return[...db.warehouses.map(w=>w.id),...db.vans.map(v=>v.name)];}
+function invStatus(inv){const bal=inv.total-inv.paid;if(bal<=0)return'paid';const dd=daysDiff(inv.due);if(dd<0)return'overdue';if(dd<=7)return'due-soon';return'pending';}
+function statusBadge(s){const map={paid:'badge-green',overdue:'badge-red','due-soon':'badge-amber',pending:'badge-blue',draft:'badge-gray',approved:'badge-teal',sent:'badge-blue',received:'badge-green',partial:'badge-amber'};return`<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;}
+function rcColor(r){return r>=80?'var(--green)':r>=55?'var(--amber)':'var(--red)';}
+function rcBadge(r){return r>=80?'badge-green':r>=55?'badge-amber':'badge-red';}
+function getMonths(){
+  const months=[];const now=new Date();
+  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');const label=d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});months.push({key,label});}
+  return months;
+}
 
 // ── DATABASE ─────────────────────────────────────────────────────────────────
 const db={products:[],customers:[],invoices:[],payments:[],dailyOps:[],transfers:[],damages:[],expenses:[],purchaseOrders:[],purchaseReturns:[],supplierPayments:[],assets:[],assetMaintenance:[],systemUsers:[],vans:[],warehouses:[],suppliers:[],priceHistory:[],quotations:[],deliveryNotes:[],salesReturns:[],settings:{},nextInvId:1001,nextPoId:1001,nextQuoId:1001,nextDnId:1001,nextSrId:1001};
@@ -6314,9 +6691,8 @@ function saveSettings(){
   showToast('Settings saved');
 }
 function clearSavedData(){
-  if(!confirm('This will clear all saved data and reset the app to demo data on next reload. Are you sure?'))return;
-  try{localStorage.removeItem('fastrack_db');localStorage.removeItem('fastrack_session');}catch(e){}
-  showToast('Saved data cleared — reload the page to reset','amber');
+  if(!confirm('Delete ALL data from Firebase? Cannot be undone.'))return;
+  _fsdb.collection('fastrack').get().then(snap=>{const b=_fsdb.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();}).then(()=>{localStorage.removeItem('fastrack_session');showToast('Data cleared — reloading...','amber');setTimeout(()=>location.reload(),1500);}).catch(e=>showToast('Error: '+e.message,'red'));
 }
 // ── PRINT INVOICE ─────────────────────────────────────────────────────────────
 function printZatcaInvoice(invId){
