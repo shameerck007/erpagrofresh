@@ -181,11 +181,39 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   .factions{flex-direction:column-reverse}
   .factions .btn{width:100%;justify-content:center}
   body{padding-bottom:0}
+  /* Table horizontal scroll with momentum */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* Page header buttons wrap and fill width */
+  .pghdr>div:last-child{display:flex;flex-wrap:wrap;gap:8px;width:100%}
+  .pghdr>div:last-child .btn{flex:1;min-width:120px;justify-content:center}
+  /* Card header action buttons */
+  .card-hdr{flex-wrap:wrap;gap:8px}
+  /* Distribution filters wrap */
+  #dist-filter-year,#dist-filter-month,#dist-filter-partner{flex:1;min-width:80px;font-size:13px!important}
+  /* Invoice item rows on mobile */
+  #invoice-items-list>div[style]{flex-wrap:wrap}
+  /* Better touch targets for icon-only buttons */
+  .btn.btn-sm{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
+  /* Login screen */
+  #login-screen>div{padding:28px 20px!important;border-radius:16px!important}
+  /* Modal title */
+  .modal-title{font-size:16px!important;padding-bottom:16px}
+  /* Status badge in tables */
+  .badge{white-space:nowrap}
+  /* Prevent text zoom on input focus iOS */
+  input[type="text"],input[type="number"],input[type="date"],input[type="email"],input[type="password"],select,textarea{font-size:16px!important}
 }
 @media(max-width:480px){
   .kpi-grid{grid-template-columns:1fr 1fr}
   .pgtitle{font-size:16px}
   #main{padding:68px 10px 76px!important}
+  /* Stack 2-col KPIs tighter */
+  .kpi-card .kpi-label{font-size:10px}
+  /* Smaller action buttons */
+  td .btn.btn-sm{min-width:34px;min-height:34px;padding:0 6px!important}
+  /* Print bar bigger on small phones */
+  #mobile-print-bar{padding:14px 12px!important}
+  #mobile-print-bar button{padding:12px 16px!important;font-size:14px!important}
 }
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c5d0db;border-radius:3px}
 </style>
@@ -886,27 +914,71 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- PARTNERS CAPITAL -->
 <div class="page" id="page-partners">
   <div class="pghdr" style="flex-wrap:wrap;gap:12px">
-    <div><div class="pgtitle">Partners Capital</div><div class="pgsub">Manage partner investments and capital contributions</div></div>
+    <div><div class="pgtitle">Partners Capital</div><div class="pgsub">Capital investments, profit distribution and partner balances</div></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-outline" onclick="openModal('modal-add-partner')"><i class="ti ti-user-plus"></i> Add Partner</button>
-      <button class="btn btn-primary" onclick="openModal('modal-add-capital')"><i class="ti ti-plus"></i> Add Capital</button>
+      <button class="btn btn-outline" onclick="openModal('modal-add-capital')"><i class="ti ti-plus"></i> Add Capital</button>
+      <button class="btn btn-primary" onclick="openDistributeModal()"><i class="ti ti-cash"></i> Distribute Profit</button>
     </div>
   </div>
+
+  <!-- KPIs -->
   <div id="partners-kpi-strip" class="kpi-grid" style="margin-bottom:18px"></div>
+
+  <!-- Partners + Chart -->
   <div class="two-col" style="margin-bottom:18px">
     <div class="card">
       <div class="card-hdr"><span class="card-title"><i class="ti ti-users" style="color:var(--blue);margin-right:6px"></i>Partners</span></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Partner</th><th>Share %</th><th>Total Capital</th><th>Last Investment</th><th>Actions</th></tr></thead><tbody id="partners-list-body"></tbody></table></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Partner</th><th>Share %</th><th>Capital In</th><th>Profit Taken</th><th>Net Balance</th><th>Actions</th></tr></thead><tbody id="partners-list-body"></tbody></table></div>
     </div>
     <div class="card">
-      <div class="card-hdr"><span class="card-title"><i class="ti ti-chart-pie-2" style="color:var(--teal);margin-right:6px"></i>Capital Distribution</span></div>
+      <div class="card-hdr"><span class="card-title"><i class="ti ti-chart-pie-2" style="color:var(--teal);margin-right:6px"></i>Capital Share %</span></div>
       <canvas id="partners-pie-chart" style="max-height:220px"></canvas>
       <div id="partners-pie-legend" style="margin-top:14px;display:flex;flex-wrap:wrap;gap:10px"></div>
     </div>
   </div>
+
+  <!-- Profit Distribution History -->
   <div class="card">
-    <div class="card-hdr"><span class="card-title">Capital Investment History</span><span class="badge bgr" id="cap-inv-count" style="font-size:10px">0 entries</span></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Partner</th><th>Amount (SAR)</th><th>Notes</th><th>Recorded By</th><th>Actions</th></tr></thead><tbody id="cap-inv-body"></tbody></table></div>
+    <div class="card-hdr" style="flex-wrap:wrap;gap:10px">
+      <span class="card-title"><i class="ti ti-cash" style="color:var(--green);margin-right:6px"></i>Profit Distribution History</span>
+      <span class="badge badge-green" id="dist-count" style="font-size:10px">0 entries</span>
+      <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center">
+        <select id="dist-filter-year" onchange="renderPartnersPage()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)"><option value="">All Years</option></select>
+        <select id="dist-filter-month" onchange="renderPartnersPage()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)">
+          <option value="">All Months</option>
+          <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+          <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+          <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+          <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+        </select>
+        <select id="dist-filter-partner" onchange="renderPartnersPage()" style="font-size:12px;padding:5px 10px;border:1px solid var(--border2);border-radius:7px;background:var(--bg3);color:var(--text)"><option value="">All Partners</option></select>
+        <button class="btn btn-sm btn-outline" onclick="printDistributionReport('all')"><i class="ti ti-printer"></i> Print All</button>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Partner</th><th>Share %</th><th>Total Pool</th><th>Amount (SAR)</th><th>Notes</th><th>Actions</th></tr></thead><tbody id="dist-body"></tbody></table></div>
+    <div id="dist-footer" style="padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;align-items:center"></div>
+  </div>
+</div>
+
+<!-- MODAL: DISTRIBUTE PROFIT -->
+<div class="modal-overlay" id="modal-distribute">
+  <div class="modal" style="width:min(520px,92vw)">
+    <div class="modal-title">Distribute Profit <button class="btn btn-sm btn-outline" onclick="closeModal('modal-distribute')"><i class="ti ti-x"></i></button></div>
+    <div class="fgrid">
+      <div class="fg"><label>Distribution Date *</label><input type="date" id="dist-date"></div>
+      <div class="fg"><label>Total Amount to Distribute (SAR) *</label><input type="number" id="dist-total" min="0.01" step="0.01" placeholder="e.g. 5000" oninput="calcDistributionShares()"></div>
+      <div class="fg full"><label>Notes</label><input type="text" id="dist-notes" placeholder="e.g. Q2 profit share, June distribution"></div>
+    </div>
+    <div id="dist-shares-preview" style="margin:14px 0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;display:none">
+      <div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px"><i class="ti ti-calculator" style="margin-right:5px"></i>Per-Partner Breakdown</div>
+      <div id="dist-shares-list"></div>
+      <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font-size:13px;font-weight:700">
+        <span>Total</span><span id="dist-shares-total" style="font-family:var(--mono);color:var(--green)">SAR 0.00</span>
+      </div>
+      <div id="dist-no-share-warn" style="display:none;margin-top:8px;font-size:12px;color:var(--amber);background:rgba(232,144,10,.1);border-radius:6px;padding:8px 10px"><i class="ti ti-alert-triangle" style="margin-right:5px"></i>Some partners have no share % set — they will receive SAR 0. Set their share % in the partner details first.</div>
+    </div>
+    <div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-distribute')">Cancel</button><button class="btn btn-primary" onclick="saveDistribution()"><i class="ti ti-cash"></i> Record Distribution</button></div>
   </div>
 </div>
 
@@ -940,10 +1012,28 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   </div>
 </div>
 
+<!-- CUSTOM CONFIRM / ALERT DIALOG -->
+<div id="app-dialog-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div id="app-dialog-box" style="background:var(--card);border-radius:20px;width:min(400px,92vw);box-shadow:0 24px 80px rgba(0,0,0,.25);overflow:hidden;animation:dialogIn .2s cubic-bezier(.34,1.56,.64,1)">
+    <div id="app-dialog-header" style="padding:24px 24px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+      <div id="app-dialog-icon" style="width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0"></div>
+      <div id="app-dialog-title" style="font-size:17px;font-weight:700;color:var(--text);line-height:1.3"></div>
+    </div>
+    <div id="app-dialog-body" style="padding:12px 24px 24px;text-align:center;font-size:14px;color:var(--text2);line-height:1.6"></div>
+    <div id="app-dialog-sub" style="display:none;margin:0 24px 16px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:var(--mono);font-size:12px;color:var(--text2);word-break:break-all;text-align:center"></div>
+    <div id="app-dialog-btns" style="display:flex;gap:10px;padding:0 20px 20px"></div>
+  </div>
+</div>
+<style>
+@keyframes dialogIn{from{opacity:0;transform:scale(.88) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@media(max-width:600px){
+  #app-dialog-overlay{align-items:flex-end!important;padding:0}
+  #app-dialog-box{width:100%!important;border-radius:20px 20px 0 0!important;padding-bottom:env(safe-area-inset-bottom)}
+}
+</style>
 <!-- CASH BOOK -->
 <div class="page" id="page-cash-book">
   <div class="pghdr" style="flex-wrap:wrap;gap:12px">
-    <div><div class="pgtitle">Cash Book</div><div class="pgsub">Track physical cash in and out, with a running balance</div></div>
     <button class="btn btn-outline" onclick="exportCashBookCSV()"><i class="ti ti-download"></i> Export CSV</button>
     <button class="btn btn-primary" onclick="printCashBookReport()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
   </div>
@@ -1501,9 +1591,9 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   </div>
 </div>
 <!-- ALL MODALS -->
-<div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
+<div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg"><label>Item Code <span style="font-size:10px;color:var(--text3);font-weight:400">(optional)</span></label><input type="text" id="ap-code" placeholder="e.g. TOM-001" style="font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
 <!-- ADD CUSTOMER -->
-<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg"><label>Full Name *</label><input type="text" id="ac-name"></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number</label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15"></div><div class="fg"><label>CR Number</label><input type="text" id="ac-cr" placeholder="1010123456"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
+<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg"><label>Full Name *</label><input type="text" id="ac-name"></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
 <!-- NEW SALE MODAL -->
 <div class="modal-overlay" id="modal-new-sale">
   <div class="modal" style="width:min(680px,96vw)">
@@ -1802,7 +1892,7 @@ function saveAppState(){
 async function _doSave(){
   try{
     const batch=_fsdb.batch(),col=_fsdb.collection('fastrack');
-    const dm={products:db.products,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments};
+    const dm={products:db.products,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments,distributions:db.distributions};
     Object.entries(dm).forEach(([k,v])=>batch.set(col.doc(k),{data:JSON.stringify(v)}));
     batch.set(col.doc('settings'),{data:JSON.stringify({...db.settings,logo:null})});
     batch.set(col.doc('counters'),{data:JSON.stringify({nextInvId:db.nextInvId,nextPoId:db.nextPoId,nextQuoId:db.nextQuoId,nextDnId:db.nextDnId,nextSrId:db.nextSrId})});
@@ -1825,7 +1915,7 @@ async function loadAppState(){
       const snap=await _fsdb.collection('fastrack').get();
       if(snap.empty){_hideLoadingScreen();return false;}
       const m={};snap.forEach(doc=>{try{m[doc.id]=JSON.parse(doc.data().data||'[]');}catch(e){}});
-      ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
+      ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments','distributions'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
       if(m.settings){const logo=db.settings.logo;Object.assign(db.settings,m.settings);db.settings.logo=logo;}
       if(m.counters){const c=m.counters;['nextInvId','nextPoId','nextQuoId','nextDnId','nextSrId'].forEach(k=>{if(c[k])db[k]=c[k];});}
       if(m.stock)db.stock=m.stock;
@@ -1854,6 +1944,7 @@ function applyRBAC(){
   if(settingsNi)settingsNi.style.display=_currentUser.role==='admin'?'':'none';
 }
 function hasAccess(page){if(!_currentUser)return false;return(ROLE_PERMISSIONS[_currentUser.role]||[]).includes(page)||page==='dashboard';}
+function isAdmin(){return _currentUser&&_currentUser.role==='admin';}
 // Returns the locations the current user is allowed to use for stock/invoicing.
 // Admin = all locations. Others = their assignedLocations array.
 function getUserLocations(){
@@ -1983,7 +2074,27 @@ function saveRolePermissions(){
   showToast('Permissions saved');
 }
 function loadSavedPermissions(){
-  try{const r=localStorage.getItem('fastrack_perms');if(!r)return;const s=JSON.parse(r);Object.keys(s).forEach(role=>{if(ROLE_PERMISSIONS[role]!==undefined)ROLE_PERMISSIONS[role]=s[role];});}catch(e){}
+  try{
+    // Version key — bump this whenever new pages/permissions are added to force cache refresh
+    const PERM_VERSION='v3';
+    const storedVersion=localStorage.getItem('fastrack_perms_version');
+    if(storedVersion!==PERM_VERSION){
+      // Stale cache — clear it and save the current hardcoded defaults
+      localStorage.removeItem('fastrack_perms');
+      localStorage.setItem('fastrack_perms_version',PERM_VERSION);
+      return;// use hardcoded defaults as-is
+    }
+    const r=localStorage.getItem('fastrack_perms');
+    if(!r)return;
+    const s=JSON.parse(r);
+    // Merge: always include pages from hardcoded defaults so new pages are never missing
+    Object.keys(s).forEach(role=>{
+      if(ROLE_PERMISSIONS[role]!==undefined){
+        const merged=[...new Set([...ROLE_PERMISSIONS[role],...s[role]])];
+        ROLE_PERMISSIONS[role]=merged;
+      }
+    });
+  }catch(e){}
 }
 function toggleUserForm(){
   const p=document.getElementById('user-form-panel');
@@ -2140,8 +2251,95 @@ function editUser(id){
     _renderLocationCards(u.assignedLocations);
   }
 }
-function deleteUser(id){if(!confirm('Delete this user?'))return;db.systemUsers=db.systemUsers.filter(u=>u.id!==id);renderUsersTab();saveAppState();showToast('User deleted','amber');}
-// ── CORE UTILITIES ────────────────────────────────────────────────────────────
+function deleteUser(id){showConfirm('Delete User','This user will be permanently removed from the system.',null,true).then(ok=>{if(!ok)return;db.systemUsers=db.systemUsers.filter(u=>u.id!==id);renderUsersTab();saveAppState();showToast('User deleted','amber');});}
+// ── CUSTOM DIALOG (replaces browser confirm/alert) ────────────────────────────
+function _showDialog({icon,iconBg,iconColor,title,body,sub,buttons}){
+  return new Promise(resolve=>{
+    const overlay=document.getElementById('app-dialog-overlay');
+    const box=document.getElementById('app-dialog-box');
+    const iconEl=document.getElementById('app-dialog-icon');
+    const titleEl=document.getElementById('app-dialog-title');
+    const bodyEl=document.getElementById('app-dialog-body');
+    const subEl=document.getElementById('app-dialog-sub');
+    const btnsEl=document.getElementById('app-dialog-btns');
+    if(!overlay)return resolve(false);
+    iconEl.innerHTML=icon||'';
+    iconEl.style.background=iconBg||'rgba(24,95,165,.12)';
+    iconEl.style.color=iconColor||'var(--blue)';
+    titleEl.textContent=title||'';
+    bodyEl.innerHTML=body||'';
+    if(sub){subEl.textContent=sub;subEl.style.display='block';}else{subEl.style.display='none';}
+    btnsEl.innerHTML='';
+    (buttons||[{label:'OK',value:true,primary:true}]).forEach(btn=>{
+      const b=document.createElement('button');
+      b.textContent=btn.label;
+      b.style.cssText='flex:1;padding:13px 16px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:opacity .15s';
+      if(btn.primary){b.style.background=btn.danger?'var(--red)':'var(--blue)';b.style.color='#fff';}
+      else{b.style.background='var(--bg3)';b.style.color='var(--text)';}
+      b.onclick=()=>{overlay.style.display='none';document.body.style.overflow='';resolve(btn.value);};
+      btnsEl.appendChild(b);
+    });
+    // re-trigger animation
+    box.style.animation='none';requestAnimationFrame(()=>{box.style.animation='';});
+    overlay.style.display='flex';
+    document.body.style.overflow='hidden';
+  });
+}
+function showConfirm(title,body,sub,danger){
+  return _showDialog({
+    icon:danger?'<i class="ti ti-alert-triangle"></i>':'<i class="ti ti-help-circle"></i>',
+    iconBg:danger?'rgba(220,53,69,.12)':'rgba(232,144,10,.12)',
+    iconColor:danger?'var(--red)':'var(--amber)',
+    title,body,sub,
+    buttons:[
+      {label:'Cancel',value:false,primary:false},
+      {label:danger?'Yes, Delete':'Confirm',value:true,primary:true,danger:danger||false}
+    ]
+  });
+}
+function showAlert(title,body,type){
+  const cfg={
+    success:{icon:'<i class="ti ti-circle-check"></i>',bg:'rgba(14,154,138,.12)',color:'var(--green)'},
+    warning:{icon:'<i class="ti ti-alert-triangle"></i>',bg:'rgba(232,144,10,.12)',color:'var(--amber)'},
+    error:{icon:'<i class="ti ti-circle-x"></i>',bg:'rgba(220,53,69,.12)',color:'var(--red)'},
+    info:{icon:'<i class="ti ti-info-circle"></i>',bg:'rgba(24,95,165,.12)',color:'var(--blue)'},
+  }[type||'info']||{icon:'<i class="ti ti-info-circle"></i>',bg:'rgba(24,95,165,.12)',color:'var(--blue)'};
+  return _showDialog({icon:cfg.icon,iconBg:cfg.bg,iconColor:cfg.color,title,body,buttons:[{label:'OK',value:true,primary:true}]});
+}
+function showPrompt(title,body,placeholder,inputType){
+  inputType=inputType||'text';
+  return new Promise(resolve=>{
+    const overlay=document.getElementById('app-dialog-overlay');
+    const box=document.getElementById('app-dialog-box');
+    const iconEl=document.getElementById('app-dialog-icon');
+    const titleEl=document.getElementById('app-dialog-title');
+    const bodyEl=document.getElementById('app-dialog-body');
+    const subEl=document.getElementById('app-dialog-sub');
+    const btnsEl=document.getElementById('app-dialog-btns');
+    if(!overlay)return resolve(null);
+    iconEl.innerHTML='<i class="ti ti-edit"></i>';
+    iconEl.style.background='rgba(24,95,165,.12)';iconEl.style.color='var(--blue)';
+    titleEl.textContent=title||'';
+    const inputId='dlg-inp-'+Date.now();
+    bodyEl.innerHTML=(body?'<div style="margin-bottom:12px">'+body+'</div>':'')
+      +'<input id="'+inputId+'" type="'+inputType+'" placeholder="'+(placeholder||'')+'" style="width:100%;padding:12px 14px;border:2px solid var(--border2);border-radius:10px;font-size:15px;font-family:var(--font);background:var(--bg3);color:var(--text);outline:none;transition:border-color .15s" onfocus="this.style.borderColor=\'var(--blue)\'" onblur="this.style.borderColor=\'var(--border2)\';">';
+    subEl.style.display='none';
+    btnsEl.innerHTML='';
+    const makeBtn=(label,bg,color,cb)=>{const b=document.createElement('button');b.textContent=label;b.style.cssText='flex:1;padding:13px 16px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);background:'+bg+';color:'+color;b.onclick=cb;btnsEl.appendChild(b);};
+    makeBtn('Cancel','var(--bg3)','var(--text)',()=>{overlay.style.display='none';document.body.style.overflow='';resolve(null);});
+    makeBtn('OK','var(--blue)','#fff',()=>{const v=document.getElementById(inputId)?.value||'';overlay.style.display='none';document.body.style.overflow='';resolve(v);});
+    box.style.animation='none';requestAnimationFrame(()=>{box.style.animation='';});
+    overlay.style.display='flex';
+    document.body.style.overflow='hidden';
+    setTimeout(()=>{
+      const inp=document.getElementById(inputId);if(!inp)return;inp.focus();
+      inp.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){const v=inp.value||'';overlay.style.display='none';document.body.style.overflow='';resolve(v);}
+        if(e.key==='Escape'){overlay.style.display='none';document.body.style.overflow='';resolve(null);}
+      });
+    },220);
+  });
+}
 
 // Shared print helper — injects a mobile back button and auto-closes after print
 function _printHTML(html,delay){
@@ -2286,6 +2484,7 @@ function seedData(){
   };
   db.partners=[];
   db.capitalInvestments=[];
+  db.distributions=[];
 }
 
 function navigate(page){
@@ -2324,6 +2523,8 @@ function openModal(id){
   populateSelects();
   const overlay=document.getElementById(id);if(!overlay)return;
   overlay.classList.add('open');
+  // Lock body scroll on iOS when modal opens
+  document.body.style.overflow='hidden';
   overlay.querySelectorAll('input[type="date"]').forEach(inp=>{if(!inp.value)inp.value=today();});
   if(id==='modal-new-sale'){
     document.getElementById('ns-inv-number').textContent='INV-'+db.nextInvId;
@@ -2391,7 +2592,11 @@ function openModal(id){
     const stBy=document.getElementById('st-by');if(stBy)stBy.value=_currentUser?.name||'';
   }
 }
-function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('open');}
+function closeModal(id){
+  const el=document.getElementById(id);if(el)el.classList.remove('open');
+  // Restore scroll if no other modals open
+  if(!document.querySelector('.modal-overlay.open'))document.body.style.overflow='';
+}
 function showToast(msg,color='green'){
   const cols={green:'#185fa5',amber:'#e8900a',red:'#dc3545',blue:'#2e7dd1'};
   const t=document.createElement('div');
@@ -2836,7 +3041,7 @@ function renderPricesPanel(){
   // dynamic location columns: all warehouses then all vans
   const locs=[...db.warehouses.map(w=>({key:w.id,label:w.name})),...db.vans.map(v=>({key:v.name,label:v.name}))];
   const locHeaders=locs.map(l=>'<th>'+l.label+'</th>').join('');
-  el.innerHTML=`<div class="toolbar" style="margin-bottom:14px"><div class="sbox"><i class="ti ti-search"></i><input type="text" placeholder="Search products..." id="price-search" oninput="renderPricesPanel()"></div><button class="btn btn-outline btn-sm" onclick="openBarcodeLookup()"><i class="ti ti-scan"></i> Scan to Find</button><button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="ti ti-plus"></i> Add Product</button></div><div class="card"><div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Unit</th><th>Barcode</th><th>Current Price</th>${locHeaders}<th>Total</th><th>Last Changed</th><th>Actions</th></tr></thead><tbody id="prices-body"></tbody></table></div></div>`;
+  el.innerHTML=`<div class="toolbar" style="margin-bottom:14px"><div class="sbox"><i class="ti ti-search"></i><input type="text" placeholder="Search products..." id="price-search" oninput="renderPricesPanel()"></div><button class="btn btn-outline btn-sm" onclick="openBarcodeLookup()"><i class="ti ti-scan"></i> Scan to Find</button><button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="ti ti-plus"></i> Add Product</button></div><div class="card"><div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Code</th><th>Unit</th><th>Barcode</th><th>Current Price</th>${locHeaders}<th>Total</th><th>Last Changed</th><th>Actions</th></tr></thead><tbody id="prices-body"></tbody></table></div></div>`;
   const q=(document.getElementById('price-search')?.value||'').toLowerCase();
   const rows=db.products.filter(p=>p.name.toLowerCase().includes(q));
   document.getElementById('prices-body').innerHTML=rows.map(p=>{
@@ -2844,7 +3049,7 @@ function renderPricesPanel(){
     const prev=hist[0];
     const locCells=locs.map(l=>'<td style="font-family:var(--mono)">'+stockAt(p.id,l.key)+'</td>').join('');
     const total=locs.reduce((s,l)=>s+stockAt(p.id,l.key),0);
-    return`<tr><td><strong>${p.name}</strong></td><td style="font-size:12px;color:var(--text2)">${p.unit}</td><td style="font-family:var(--mono);font-size:11px;color:${p.barcode?'var(--text2)':'var(--text3)'}">${p.barcode||'—'}</td><td style="font-family:var(--mono);font-weight:700;color:var(--green)">SAR ${p.price.toFixed(2)}</td>${locCells}<td style="font-family:var(--mono);font-weight:600">${total}</td><td style="font-size:12px;color:var(--text2)">${prev?fmtDate(prev.date):'—'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')"><i class="ti ti-pencil"></i></button>${p.barcode?`<button class="btn btn-sm btn-outline" onclick="printProductBarcode('${p.id}')" title="Print barcode label"><i class="ti ti-printer"></i></button>`:''}<button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
+    return`<tr><td><strong>${p.name}</strong></td><td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${p.itemCode||'—'}</td><td style="font-size:12px;color:var(--text2)">${p.unit}</td><td style="font-family:var(--mono);font-size:11px;color:${p.barcode?'var(--text2)':'var(--text3)'}">${p.barcode||'—'}</td><td style="font-family:var(--mono);font-weight:700;color:var(--green)">SAR ${p.price.toFixed(2)}</td>${locCells}<td style="font-family:var(--mono);font-weight:600">${total}</td><td style="font-size:12px;color:var(--text2)">${prev?fmtDate(prev.date):'—'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')"><i class="ti ti-pencil"></i></button>${p.barcode?`<button class="btn btn-sm btn-outline" onclick="printProductBarcode('${p.id}')" title="Print barcode label"><i class="ti ti-printer"></i></button>`:''}<button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('');
 }
 function renderPriceHistoryPanel(){
@@ -2874,6 +3079,7 @@ function openAddProductModal(){
   // clear all form fields including hidden ap-id to prevent editing wrong product
   document.getElementById('ap-id').value='';
   document.getElementById('ap-name').value='';
+  document.getElementById('ap-code').value='';
   document.getElementById('ap-unit').value='Cartoon';
   document.getElementById('ap-price').value='';
   document.getElementById('ap-min').value='10';
@@ -2888,6 +3094,7 @@ function editProduct(pid){
   const p=getProduct(pid);
   document.getElementById('ap-id').value=pid;
   document.getElementById('ap-name').value=p.name;
+  document.getElementById('ap-code').value=p.itemCode||'';
   document.getElementById('ap-unit').value=p.unit;
   document.getElementById('ap-price').value=p.price;
   document.getElementById('ap-min').value=p.min||10;
@@ -2957,13 +3164,36 @@ function openBarcodeScanner(targetInputId){
   }
 }
 let _lastBarcodeScan='';let _lastBarcodeScanTime=0;
+function _beepScan(success){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    if(success===false){
+      // error tone: low short buzz
+      const o=ctx.createOscillator();const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='square';o.frequency.setValueAtTime(220,ctx.currentTime);
+      g.gain.setValueAtTime(0.3,ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+      o.start(ctx.currentTime);o.stop(ctx.currentTime+0.25);
+    }else{
+      // success tone: short high beep like a retail scanner
+      const o=ctx.createOscillator();const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='sine';o.frequency.setValueAtTime(1800,ctx.currentTime);
+      g.gain.setValueAtTime(0.4,ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+      o.start(ctx.currentTime);o.stop(ctx.currentTime+0.15);
+    }
+  }catch(e){}
+}
 function _onBarcodeDetected(code){
   if(!code)return;
   // debounce: ignore the same code re-firing from consecutive camera frames within 2s
   const now=Date.now();
   if(code===_lastBarcodeScan&&(now-_lastBarcodeScanTime)<2000)return;
   _lastBarcodeScan=code;_lastBarcodeScanTime=now;
-  // brief vibration feedback if supported
+  // beep + vibration feedback
+  _beepScan(true);
   if(navigator.vibrate)navigator.vibrate(120);
 
   if(_barcodeTargetInput==='__lookup__'){
@@ -2990,6 +3220,7 @@ function _onBarcodeDetected(code){
 function _addScannedInvoiceItem(code){
   const p=db.products.find(x=>x.barcode===code);
   if(!p){
+    _beepScan(false);// error tone — product not found
     _flashScannerStatus('No product matches barcode '+code,'red');
     return;
   }
@@ -3065,10 +3296,19 @@ function _checkBarcodeDuplicate(){
   }
 }
 function generateProductBarcode(){
-  // generates a simple unique internal code, e.g. FT-481027-3
-  const code='FT'+Date.now().toString().slice(-9);
   const el=document.getElementById('ap-barcode');
-  if(el){el.value=code;_checkBarcodeDuplicate();}
+  if(!el)return;
+  const existing=el.value.trim();
+  if(existing){
+    showConfirm('Replace Barcode?','Generating a new barcode will invalidate any printed labels with the current one.',existing,'warning').then(ok=>{
+      if(!ok)return;
+      const code='FT'+Date.now().toString().slice(-9);
+      el.value=code;_checkBarcodeDuplicate();
+    });
+    return;
+  }
+  const code='FT'+Date.now().toString().slice(-9);
+  el.value=code;_checkBarcodeDuplicate();
 }
 // Quick "scan to find" lookup, usable from the Products & Stock pages
 function openBarcodeLookup(){openBarcodeScanner('__lookup__');}
@@ -3102,10 +3342,10 @@ function printProductBarcode(pid){
     +'.label .price{font-size:15px;font-weight:800;color:#185fa5;margin-top:6px}'
     +'@media print{body{background:#fff}.label{border:none}@page{margin:8mm}}'
     +'</style></head><body>'
-    +'<div class="label"><div class="pname">'+p.name+'</div><div class="co">'+(s.nameEn||'FasTrack')+'</div>'
+    +'<div class="label"><div class="pname">'+p.name+'</div>'
+    +'<div class="co" style="direction:rtl;font-family:Arial,sans-serif">'+(s.nameAr||s.nameEn||'FasTrack')+'</div>'
     +'<div id="barcode-svg"></div>'
     +'<div class="code">'+p.barcode+'</div>'
-    +'<div class="price">SAR '+p.price.toFixed(2)+' / '+p.unit+'</div>'
     +'</div>'
     +scriptTag
     +initScript
@@ -3115,6 +3355,7 @@ function printProductBarcode(pid){
 function saveProduct(){
   const eid=document.getElementById('ap-id').value;
   const name=document.getElementById('ap-name').value.trim();
+  const itemCode=document.getElementById('ap-code')?.value.trim().toUpperCase()||'';
   const unit=document.getElementById('ap-unit').value;
   const price=parseFloat(document.getElementById('ap-price').value)||0;
   const min=parseInt(document.getElementById('ap-min').value)||10;
@@ -3133,19 +3374,19 @@ function saveProduct(){
     const p=db.products.find(x=>x.id===eid);
     if(p){
       if(p.price!==price&&price>0)db.priceHistory.push({id:'ph'+Date.now(),product:eid,old:p.price,new:price,date:today(),by:_currentUser?.name||'Admin',note:'Manual update'});
-      Object.assign(p,{name,unit,price,min,barcode});
+      Object.assign(p,{name,itemCode,unit,price,min,barcode});
       Object.keys(stockVals).forEach(function(loc){setStock(eid,loc,stockVals[loc]);});
     }
     showToast('Product updated');
   }else{
     const newId='p'+Date.now();
-    db.products.push({id:newId,name,unit,price,min,barcode});
+    db.products.push({id:newId,name,itemCode,unit,price,min,barcode});
     Object.keys(stockVals).forEach(function(loc){setStock(newId,loc,stockVals[loc]);});
     showToast('Product added');
   }
   closeModal('modal-add-product');renderStockPage();saveAppState();
 }
-function deleteProduct(pid){if(!confirm('Delete this product?'))return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();saveAppState();showToast('Deleted','amber');}
+function deleteProduct(pid){const p=db.products.find(x=>x.id===pid);showConfirm('Delete Product',p?'Delete "'+p.name+'"? This cannot be undone.':'Delete this product?',null,true).then(ok=>{if(!ok)return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();saveAppState();showToast('Deleted','amber');});}
 // ── WAREHOUSES / STOCK ────────────────────────────────────────────────────────
 function renderWarehouses(){
   const kpis=document.getElementById('wh-kpis');
@@ -3327,7 +3568,7 @@ function renderInvoices(){
     return(!vf||inv.van===vf)&&(c.name.toLowerCase().includes(q)||inv.id.toLowerCase().includes(q));
   }).sort((a,b)=>b.date.localeCompare(a.date));
   const body=document.getElementById('invoices-body');if(!body)return;
-  body.innerHTML=invs.length?invs.map(inv=>{const c=getCustomer(inv.customer);const bal=inv.total-inv.paid;const s=bal<=0?'paid':daysDiff(inv.due)<0?'overdue':daysDiff(inv.due)<=7?'due-soon':'pending';const scls={'paid':'badge-green','overdue':'badge-red','due-soon':'badge-amber','pending':'badge-blue'};const hasPmts=inv.payments&&inv.payments.length>0;const src=invoiceSourceLabel(inv);const estBadge=inv.isEstimate?'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:4px">EST</span>':'';return`<tr><td style="font-size:12px;font-family:var(--mono);color:var(--text2)">${inv.id}${estBadge}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><strong>${c.name}</strong></td><td><span class="badge ${src.cls}">${src.label}</span></td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal>0?'var(--red)':'var(--text3)'}">${bal>0?'SAR '+bal.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${scls[s]||'badge-gray'}">${s}</span></td><td style="display:flex;gap:5px">${bal>0?`<button class="btn btn-sm btn-primary" data-pay="${inv.id}" title="Record Payment"><i class="ti ti-coin"></i></button>`:''}<button class="btn btn-sm btn-outline" data-view="${inv.id}" title="View / Print Invoice"><i class="ti ti-eye"></i></button>${hasPmts?`<button class="btn btn-sm btn-outline" style="color:var(--green);border-color:var(--green)" data-receipts="${inv.id}" title="View Payment Receipts"><i class="ti ti-receipt"></i></button>`:''}<button class="btn btn-sm btn-danger" data-del="${inv.id}" title="Delete"><i class="ti ti-trash"></i></button></td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text3)">No invoices found</td></tr>`;
+  body.innerHTML=invs.length?invs.map(inv=>{const c=getCustomer(inv.customer);const bal=inv.total-inv.paid;const s=bal<=0?'paid':daysDiff(inv.due)<0?'overdue':daysDiff(inv.due)<=7?'due-soon':'pending';const scls={'paid':'badge-green','overdue':'badge-red','due-soon':'badge-amber','pending':'badge-blue'};const hasPmts=inv.payments&&inv.payments.length>0;const src=invoiceSourceLabel(inv);const estBadge=inv.isEstimate?'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;background:#fef3c7;color:#92400e;margin-left:4px">EST</span>':'';return`<tr><td style="font-size:12px;font-family:var(--mono);color:var(--text2)">${inv.id}${estBadge}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><strong>${c.name}</strong></td><td><span class="badge ${src.cls}">${src.label}</span></td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal>0?'var(--red)':'var(--text3)'}">${bal>0?'SAR '+bal.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${scls[s]||'badge-gray'}">${s}</span></td><td style="display:flex;gap:5px">${bal>0?`<button class="btn btn-sm btn-primary" data-pay="${inv.id}" title="Record Payment"><i class="ti ti-coin"></i></button>`:''}<button class="btn btn-sm btn-outline" data-view="${inv.id}" title="View / Print Invoice"><i class="ti ti-eye"></i></button>${hasPmts?`<button class="btn btn-sm btn-outline" style="color:var(--green);border-color:var(--green)" data-receipts="${inv.id}" title="View Payment Receipts"><i class="ti ti-receipt"></i></button>`:''}<button class="btn btn-sm btn-outline" onclick="editInvoiceModal&&editInvoiceModal('${inv.id}')" title="Edit" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" data-del="${inv.id}" title="Delete"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:28px;color:var(--text3)">No invoices found</td></tr>`;
   // attach click handlers via event delegation (avoids inline onclick escaping issues)
   const tbl=document.getElementById('invoices-body');
   if(tbl){
@@ -3344,12 +3585,13 @@ function renderInvoices(){
   }
 }
 function deleteInvoice(id){
-  if(!confirm('Delete this invoice? Stock will be restored.'))return;
+  showConfirm('Delete Invoice','This invoice will be permanently deleted and stock will be restored.',null,true).then(ok=>{if(!ok)return;
   const inv=db.invoices.find(i=>i.id===id);if(!inv)return;
   // restore stock
   inv.items.forEach(it=>{const loc=inv.van||'WH1';addStock(it.product,loc,it.qty);});
   db.invoices=db.invoices.filter(i=>i.id!==id);
   renderInvoices();showToast('Invoice deleted','amber');
+  });
 }
 // New invoice modal
 function initInvItems(){const body=document.getElementById('invoice-items-list');if(body)body.innerHTML='';addInvoiceItem();}
@@ -3377,7 +3619,7 @@ function addInvoiceItem(){
     +'<div class="inv-line-total" style="margin-top:4px;font-size:11px;font-family:var(--mono);color:var(--green);text-align:right;min-height:14px"></div>'
     +'</div>'
     // Remove
-    +'<div style="padding-top:20px"><button class="inv-del-btn" style="background:#fde8e8;border:none;border-radius:8px;padding:9px;cursor:pointer;color:var(--red);display:flex;align-items:center"><i class="ti ti-trash" style="font-size:16px"></i></button></div>'
+    +'<div style="padding-top:20px">'+( isAdmin()?'<button class="inv-del-btn" style="background:#fde8e8;border:none;border-radius:8px;padding:9px;cursor:pointer;color:var(--red);display:flex;align-items:center"><i class="ti ti-trash" style="font-size:16px"></i></button>':'')+'</div>'
     +'</div>';
   body.appendChild(row);
   // attach delete handler
@@ -3710,7 +3952,7 @@ function _printReceipt(pmtId){
     // Header
     +'<div class="hdr">'
     +'<div>'+companyLogoHtml(40)+'<div class="co-name">'+(s.nameEn||'FasTrack')+'</div>'
-    +(s.nameAr?'<div class="co-sub" style="direction:rtl">'+s.nameAr+'</div>':'')
+    +(s.nameAr?'<div class="co-sub" style="text-align:left">'+s.nameAr+'</div>':'')
     +(s.address?'<div class="co-sub">'+s.address+'</div>':'')
     +(s.phone?'<div class="co-sub">'+s.phone+'</div>':'')
     +(s.vatNumber?'<div class="co-sub">VAT: '+s.vatNumber+'</div>':'')
@@ -3777,7 +4019,7 @@ function _printReceiptThermal(pmtId){
     +'</style></head><body>'
     +(s.logo?'<div class="c" style="margin-bottom:4px"><img src="'+s.logo+'" style="max-width:60mm;max-height:18mm;object-fit:contain"></div>':'')
     +'<div class="c big">'+(s.nameEn||'FasTrack')+'</div>'
-    +(s.nameAr?'<div class="c" style="direction:rtl;font-size:11px">'+s.nameAr+'</div>':'')
+    +(s.nameAr?'<div class="c" style="font-size:11px">'+s.nameAr+'</div>':'')
     +(s.phone?'<div class="c" style="font-size:10px">'+s.phone+'</div>':'')
     +(s.vatNumber?'<div class="c" style="font-size:10px">VAT: '+s.vatNumber+'</div>':'')
     +'<div class="line"></div>'
@@ -3879,7 +4121,7 @@ function renderCustomers(){
     const invs=db.invoices.filter(i=>i.customer===c.id);
     const total=invs.reduce((s,i)=>s+i.total,0);const bal=invs.reduce((s,i)=>s+(i.total-i.paid),0);
     const lastInv=invs.sort((a,b)=>b.date.localeCompare(a.date))[0];
-    return`<tr><td><strong>${c.name}</strong></td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
+    return`<tr><td><strong>${c.name}</strong></td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('')||`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No customers found</td></tr>`;
 }
 function saveCustomer(){
@@ -3892,13 +4134,22 @@ function saveCustomer(){
   const vatNumber=document.getElementById('ac-vat')?.value.trim()||'';
   const crNumber=document.getElementById('ac-cr')?.value.trim()||'';
   const notes=document.getElementById('ac-notes')?.value||'';
-  if(!name)return showToast('Customer name required','red');
+  if(!name)return showToast('Customer name is required','red');
+  // VAT must be exactly 15 digits if provided
+  if(vatNumber&&!/^\d{15}$/.test(vatNumber)){
+    document.getElementById('ac-vat').style.borderColor='var(--red)';
+    return showToast('VAT number must be exactly 15 digits','red');
+  }
+  // CR must be exactly 10 digits if provided
+  if(crNumber&&!/^\d{10}$/.test(crNumber)){
+    document.getElementById('ac-cr').style.borderColor='var(--red)';
+    return showToast('CR number must be exactly 10 digits','red');
+  }
   // Van sales users can only create/edit customers assigned to their own van
   const isVanUser=_currentUser&&_currentUser.role==='van_sales';
   if(isVanUser){
     const userLocs=getUserLocations();
     if(!userLocs.includes(van)){
-      // force their assigned van regardless of what was submitted
       van=userLocs.find(l=>db.vans.some(v=>v.name===l))||van;
     }
     if(eid){
@@ -3912,7 +4163,7 @@ function saveCustomer(){
 }
 function openAddCustomerModal(){
   document.getElementById('ac-id').value='';
-  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.style.borderColor='';}});
   openModal('modal-add-customer');
 }
 function editCustomer(cid){
@@ -3934,10 +4185,11 @@ function deleteCustomer(cid){
   const c=getCustomer(cid);
   const isVanUser=_currentUser&&_currentUser.role==='van_sales';
   if(isVanUser&&!getUserLocations().includes(c.van))return showToast('You can only delete customers on your van','red');
-  if(!confirm('Delete this customer?'))return;
+  showConfirm('Delete Customer','This customer and all associated data will be removed.',null,true).then(ok=>{if(!ok)return;
   db.customers=db.customers.filter(c=>c.id!==cid);
   db.invoices=db.invoices.filter(i=>i.customer!==cid);
   renderCustomers();saveAppState();showToast('Deleted','amber');
+  });
 }
 // ── CUSTOMER STATEMENT ────────────────────────────────────────────────────────
 let _csSelectedMonths=[];let _csCustomer='';let _csDropdownOpen=false;
@@ -4086,7 +4338,7 @@ function printCustomerStatement(){
     +'<div>'
     +companyLogoHtml(48)
     +'<div style="font-size:20px;font-weight:800;color:#0f1f2e">'+(s.nameEn||'FasTrack')+'</div>'
-    +(s.nameAr?'<div style="font-size:13px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':'')
+    +(s.nameAr?'<div style="font-size:13px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':'')
     +(s.address?'<div style="font-size:11px;color:#6b7280;margin-top:6px">'+s.address+'</div>':'')
     +(s.phone?'<div style="font-size:11px;color:#6b7280">'+s.phone+'</div>':'')
     +(s.email?'<div style="font-size:11px;color:#6b7280">'+s.email+'</div>':'')
@@ -4172,14 +4424,15 @@ function renderDamageLog(){
   const rows=db.damages.filter(d=>{const p=getProduct(d.product);return(!lf||d.location===lf)&&(p.name.toLowerCase().includes(q)||(d.reason||'').toLowerCase().includes(q));}).sort((a,b)=>b.date.localeCompare(a.date));
   const cnt=document.getElementById('dmg-count');if(cnt)cnt.textContent=rows.length+' records';
   const body=document.getElementById('dmg-log-body');if(!body)return;
-  body.innerHTML=rows.length?rows.map(d=>{const p=getProduct(d.product);return`<tr><td style="font-size:12px">${fmtDate(d.date)}</td><td><strong>${p.name}</strong></td><td><span class="badge badge-gray">${d.location}</span></td><td style="font-family:var(--mono);color:var(--red);font-weight:600">${d.qty}</td><td style="font-family:var(--mono);color:var(--red)">${fmtShort(d.qty*d.price)}</td><td style="font-size:12px;color:var(--text2)">${d.reason||'—'}</td><td style="font-size:12px;color:var(--text2)">${d.reporter||'—'}</td><td style="font-size:12px;color:var(--text2)">${d.notes||'—'}</td><td><button class="btn btn-sm btn-danger" onclick="deleteDamage('${d.id}')"><i class="ti ti-trash"></i></button></td></tr>`;}).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No damage records</td></tr>`;
+  body.innerHTML=rows.length?rows.map(d=>{const p=getProduct(d.product);return`<tr><td style="font-size:12px">${fmtDate(d.date)}</td><td><strong>${p.name}</strong></td><td><span class="badge badge-gray">${d.location}</span></td><td style="font-family:var(--mono);color:var(--red);font-weight:600">${d.qty}</td><td style="font-family:var(--mono);color:var(--red)">${fmtShort(d.qty*d.price)}</td><td style="font-size:12px;color:var(--text2)">${d.reason||'—'}</td><td style="font-size:12px;color:var(--text2)">${d.reporter||'—'}</td><td style="font-size:12px;color:var(--text2)">${d.notes||'—'}</td><td>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteDamage('${d.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;}).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No damage records</td></tr>`;
 }
 function deleteDamage(id){
-  if(!confirm('Delete damage record? Stock will be restored.'))return;
+  showConfirm('Delete Damage Record','Stock will be restored for this damage entry.',null,true).then(ok=>{if(!ok)return;
   const d=db.damages.find(x=>x.id===id);if(!d)return;
   addStock(d.product,d.location,d.qty);
   db.damages=db.damages.filter(x=>x.id!==id);
   renderDamageLog();showToast('Record deleted','amber');
+  });
 }
 // ── PURCHASE ORDERS ───────────────────────────────────────────────────────────
 function renderPOPage(){
@@ -4194,7 +4447,7 @@ function renderPOList(){
   let rows=db.purchaseOrders.filter(po=>_poTab==='all'||po.status===_poTab).filter(po=>po.id.toLowerCase().includes(q)||(po.supplier||'').toLowerCase().includes(q)).sort((a,b)=>b.date.localeCompare(a.date));
   const body=document.getElementById('po-list-body');if(!body)return;
   const scls={draft:'badge-gray',approved:'badge-teal',sent:'badge-blue',received:'badge-green',partial:'badge-amber'};
-  body.innerHTML=rows.length?rows.map(po=>`<tr><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${po.id}</td><td style="font-size:12px">${fmtDate(po.date)}</td><td><strong>${po.supplier}</strong></td><td style="font-family:var(--mono)">${po.items?.length||0} items</td><td style="font-family:var(--mono);font-weight:600">SAR ${po.total.toFixed(2)}</td><td><span class="badge badge-gray">${po.wh||'—'}</span></td><td><span class="badge ${scls[po.status]||'badge-gray'}">${po.status}</span></td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewPODetail('${po.id}')"><i class="ti ti-eye"></i></button>${po.status!=='received'?`<button class="btn btn-sm btn-primary" onclick="openReceivePO('${po.id}')"><i class="ti ti-package-import"></i></button>`:''}<button class="btn btn-sm btn-danger" onclick="deletePO('${po.id}')"><i class="ti ti-trash"></i></button></td></tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No purchase orders found</td></tr>`;
+  body.innerHTML=rows.length?rows.map(po=>`<tr><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${po.id}</td><td style="font-size:12px">${fmtDate(po.date)}</td><td><strong>${po.supplier}</strong></td><td style="font-family:var(--mono)">${po.items?.length||0} items</td><td style="font-family:var(--mono);font-weight:600">SAR ${po.total.toFixed(2)}</td><td><span class="badge badge-gray">${po.wh||'—'}</span></td><td><span class="badge ${scls[po.status]||'badge-gray'}">${po.status}</span></td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewPODetail('${po.id}')"><i class="ti ti-eye"></i></button>${po.status!=='received'?`<button class="btn btn-sm btn-primary" onclick="openReceivePO('${po.id}')"><i class="ti ti-package-import"></i></button>`:''}<button class="btn btn-sm btn-outline" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deletePO('${po.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`).join(''):`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No purchase orders found</td></tr>`;
 }
 function openPOForm(){
   const list=document.getElementById('po-items-list');if(list)list.innerHTML='';
@@ -4275,7 +4528,7 @@ function viewPODetail(poId){
     <div>
       ${companyLogoHtml(48)}
       <div style="font-size:22px;font-weight:800;color:#0f1f2e">${s.nameEn||'FasTrack'}</div>
-      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':''}
+      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':''}
       ${s.address?'<div style="font-size:12px;color:#6b7280;margin-top:6px">'+s.address+'</div>':''}
       ${s.phone?'<div style="font-size:12px;color:#6b7280">'+s.phone+'</div>':''}
       ${s.email?'<div style="font-size:12px;color:#6b7280">'+s.email+'</div>':''}
@@ -4367,14 +4620,14 @@ function printPurchaseOrder(){
     +'</style></head><body>'+html+'</body></html>';
   _printHTML(html2);
 }
-function deletePO(id){if(!confirm('Delete PO?'))return;db.purchaseOrders=db.purchaseOrders.filter(p=>p.id!==id);renderPOList();saveAppState();showToast('PO deleted','amber');}
+function deletePO(id){showConfirm('Delete Purchase Order','This purchase order will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.purchaseOrders=db.purchaseOrders.filter(p=>p.id!==id);renderPOList();saveAppState();showToast('PO deleted','amber');});}
 // ── PURCHASE RETURNS ──────────────────────────────────────────────────────────
 function renderPRPage(){
   if(!db.purchaseReturns)db.purchaseReturns=[];
   const kpis=document.getElementById('pr-kpis');
   if(kpis){const total=db.purchaseReturns.reduce((s,r)=>s+r.total,0);kpis.innerHTML=[{label:'Returns',value:db.purchaseReturns.length.toString(),color:'var(--amber)',icon:'ti-arrow-back-up'},{label:'Total Value',value:fmtShort(total),color:'var(--red)',icon:'ti-coin'}].map(k=>`<div class="kpi-card" style="--kpi-c:${k.color}"><div class="kpi-label"><i class="ti ${k.icon}" style="margin-right:5px"></i>${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');}
   const body=document.getElementById('pr-log-body');if(!body)return;
-  body.innerHTML=db.purchaseReturns.sort((a,b)=>b.date.localeCompare(a.date)).map(pr=>{const sup=db.suppliers.find(s=>s.id===pr.supplier)||{name:pr.supplier};return`<tr><td style="font-size:12px;font-family:var(--mono)">${pr.id}</td><td style="font-size:12px">${fmtDate(pr.date)}</td><td><strong>${sup.name}</strong></td><td style="font-family:var(--mono)">${pr.items?.length||0}</td><td style="font-family:var(--mono);color:var(--red)">SAR ${pr.total.toFixed(2)}</td><td><span class="badge badge-gray">${pr.warehouse||'—'}</span></td><td style="font-size:12px;color:var(--text2)">${pr.reason||'—'}${pr.processedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+pr.processedBy+'</div>':''}</td><td><button class="btn btn-sm btn-danger" onclick="db.purchaseReturns=db.purchaseReturns.filter(r=>r.id!=='${pr.id}');renderPRPage();showToast('Deleted')"><i class="ti ti-trash"></i></button></td></tr>`;}).join('')||`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No returns recorded</td></tr>`;
+  body.innerHTML=db.purchaseReturns.sort((a,b)=>b.date.localeCompare(a.date)).map(pr=>{const sup=db.suppliers.find(s=>s.id===pr.supplier)||{name:pr.supplier};return`<tr><td style="font-size:12px;font-family:var(--mono)">${pr.id}</td><td style="font-size:12px">${fmtDate(pr.date)}</td><td><strong>${sup.name}</strong></td><td style="font-family:var(--mono)">${pr.items?.length||0}</td><td style="font-family:var(--mono);color:var(--red)">SAR ${pr.total.toFixed(2)}</td><td><span class="badge badge-gray">${pr.warehouse||'—'}</span></td><td style="font-size:12px;color:var(--text2)">${pr.reason||'—'}${pr.processedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+pr.processedBy+'</div>':''}</td><td>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="showConfirm('Delete Return','This purchase return record will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.purchaseReturns=db.purchaseReturns.filter(r=>r.id!=='${pr.id}');renderPRPage();showToast('Deleted','amber');})"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;}).join('')||`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No returns recorded</td></tr>`;
 }
 function togglePRForm(){const f=document.getElementById('pr-form-panel');if(f)f.style.display=f.style.display==='none'||!f.style.display?'':'none';}
 function addPRItem(){
@@ -4431,7 +4684,7 @@ function editSupplier(sid){
   document.getElementById('sup-form-title').textContent='Edit: '+s.name;
   const f=document.getElementById('sup-form-panel');if(f)f.style.display='';
 }
-function deleteSupplier(sid){if(!confirm('Delete supplier?'))return;db.suppliers=db.suppliers.filter(s=>s.id!==sid);renderSupplierPage();saveAppState();showToast('Deleted','amber');}
+function deleteSupplier(sid){showConfirm('Delete Supplier','This supplier will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.suppliers=db.suppliers.filter(s=>s.id!==sid);renderSupplierPage();saveAppState();showToast('Deleted','amber');});}
 // ── SUPPLIER PAYMENTS ────────────────────────────────────────────────────────
 function openPaySupplierModal(supplierId){
   const s=db.suppliers.find(x=>x.id===supplierId);if(!s)return;
@@ -4467,7 +4720,7 @@ function saveSupplierPayment(){
 function renderSupplierList(){
   const q=(document.getElementById('sup-search')?.value||'').toLowerCase();const body=document.getElementById('sup-list-body');if(!body)return;
   const rows=db.suppliers.filter(s=>s.name.toLowerCase().includes(q)||(s.area||'').toLowerCase().includes(q));
-  body.innerHTML=rows.length?rows.map(s=>{const pos=db.purchaseOrders.filter(p=>p.supplierId===s.id||p.supplier===s.name);const total=pos.reduce((x,p)=>x+p.total,0);const paid=(db.supplierPayments||[]).filter(sp=>sp.supplierId===s.id).reduce((x,sp)=>x+sp.amount,0);return`<tr><td><strong>${s.name}</strong></td><td style="font-size:12px;color:var(--text2)">${s.contact||'—'}</td><td style="font-size:12px;color:var(--text2)">${s.phone||'—'}</td><td style="font-size:12px;color:var(--text2)">${s.area||'—'}</td><td><span class="badge badge-teal">${s.category||'General'}</span></td><td style="font-size:12px;color:var(--text2)">${s.paymentTerms||'—'}</td><td style="font-family:var(--mono)">${pos.length}</td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}${paid>0?'<div style="font-size:10px;color:var(--text3);margin-top:2px">Paid: SAR '+fmtShort(paid)+'</div>':''}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" style="color:var(--teal);border-color:var(--teal)" onclick="openPaySupplierModal('${s.id}')" title="Pay Supplier"><i class="ti ti-cash"></i></button><button class="btn btn-sm btn-outline" onclick="editSupplier('${s.id}')"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-danger" onclick="deleteSupplier('${s.id}')"><i class="ti ti-trash"></i></button></td></tr>`;}).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No suppliers found</td></tr>`;
+  body.innerHTML=rows.length?rows.map(s=>{const pos=db.purchaseOrders.filter(p=>p.supplierId===s.id||p.supplier===s.name);const total=pos.reduce((x,p)=>x+p.total,0);const paid=(db.supplierPayments||[]).filter(sp=>sp.supplierId===s.id).reduce((x,sp)=>x+sp.amount,0);return`<tr><td><strong>${s.name}</strong></td><td style="font-size:12px;color:var(--text2)">${s.contact||'—'}</td><td style="font-size:12px;color:var(--text2)">${s.phone||'—'}</td><td style="font-size:12px;color:var(--text2)">${s.area||'—'}</td><td><span class="badge badge-teal">${s.category||'General'}</span></td><td style="font-size:12px;color:var(--text2)">${s.paymentTerms||'—'}</td><td style="font-family:var(--mono)">${pos.length}</td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}${paid>0?'<div style="font-size:10px;color:var(--text3);margin-top:2px">Paid: SAR '+fmtShort(paid)+'</div>':''}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" style="color:var(--teal);border-color:var(--teal)" onclick="openPaySupplierModal('${s.id}')" title="Pay Supplier"><i class="ti ti-cash"></i></button><button class="btn btn-sm btn-outline" onclick="editSupplier('${s.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteSupplier('${s.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;}).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No suppliers found</td></tr>`;
 }
 // ── EXPENSES ──────────────────────────────────────────────────────────────────
 function renderExpPage(){
@@ -4485,7 +4738,7 @@ function saveExpense(){
   document.getElementById('exp-amount').value='';if(document.getElementById('exp-notes'))document.getElementById('exp-notes').value='';
   toggleExpForm();renderExpPage();saveAppState();showToast('Expense saved');
 }
-function deleteExpense(id){if(!confirm('Delete expense?'))return;db.expenses=db.expenses.filter(e=>e.id!==id);renderExpPage();saveAppState();showToast('Deleted','amber');}
+function deleteExpense(id){showConfirm('Delete Expense','This expense record will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.expenses=db.expenses.filter(e=>e.id!==id);renderExpPage();saveAppState();showToast('Deleted','amber');});}
 function renderExpMonthlyCards(){
   const grid=document.getElementById('exp-monthly-grid');if(!grid)return;
   const months=getMonths().slice(-6).reverse();
@@ -4499,11 +4752,11 @@ function openExpMonthModal(mkey,mlabel){
   const cats={};exps.forEach(e=>{cats[e.category]=(cats[e.category]||0)+e.amount;});
   document.getElementById('exp-modal-kpis').innerHTML=[{lbl:'Total',val:'SAR '+fmtShort(total),clr:'var(--red)'},{lbl:'Entries',val:exps.length,clr:'var(--amber)'},{lbl:'Categories',val:Object.keys(cats).length,clr:'var(--blue)'}].map(k=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:4px">${k.lbl}</div><div style="font-size:18px;font-weight:700;color:${k.clr}">${k.val}</div></div>`).join('');
   document.getElementById('exp-modal-cats').innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">${c}</span><span style="font-family:var(--mono);font-weight:600;color:var(--red)">SAR ${v.toFixed(2)}</span></div>`).join('');
-  document.getElementById('exp-modal-body').innerHTML=exps.length?exps.map(e=>`<tr><td style="font-size:12px">${fmtDate(e.date)}</td><td>${e.category}</td><td><span class="badge badge-gray">${e.period||'—'}</span></td><td style="font-family:var(--mono);color:var(--red);font-weight:600">SAR ${e.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text2)">${e.van||'General'}</td><td style="font-size:12px;color:var(--text2)">${e.notes||'—'}${e.loggedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+e.loggedBy+'</div>':''}</td><td><button class="btn btn-sm btn-danger" onclick="deleteExpenseFromModal('${e.id}','${mkey}','${mlabel}')"><i class="ti ti-trash"></i></button></td></tr>`).join(''):`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No expenses</td></tr>`;
+  document.getElementById('exp-modal-body').innerHTML=exps.length?exps.map(e=>`<tr><td style="font-size:12px">${fmtDate(e.date)}</td><td>${e.category}</td><td><span class="badge badge-gray">${e.period||'—'}</span></td><td style="font-family:var(--mono);color:var(--red);font-weight:600">SAR ${e.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text2)">${e.van||'General'}</td><td style="font-size:12px;color:var(--text2)">${e.notes||'—'}${e.loggedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+e.loggedBy+'</div>':''}</td><td>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteExpenseFromModal('${e.id}','${mkey}','${mlabel}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`).join(''):`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No expenses</td></tr>`;
   document.getElementById('exp-modal-footer').innerHTML=`<span>${exps.length} entries</span><span style="font-weight:700;color:var(--red)">Total: SAR ${total.toFixed(2)}</span>`;
   openModal('modal-exp-month');
 }
-function deleteExpenseFromModal(id,mkey,mlabel){if(!confirm('Delete?'))return;db.expenses=db.expenses.filter(e=>e.id!==id);renderExpPage();openExpMonthModal(mkey,mlabel);}
+function deleteExpenseFromModal(id,mkey,mlabel){showConfirm('Delete Expense','This expense record will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.expenses=db.expenses.filter(e=>e.id!==id);renderExpPage();openExpMonthModal(mkey,mlabel);});}
 // ── REPORTS ───────────────────────────────────────────────────────────────────
 function renderReports(){
   const days=parseInt(document.getElementById('report-period')?.value||'30');const cutoff=ydStr(days);
@@ -4673,7 +4926,7 @@ function saveVan(){
   renderFleetPage();
 }
 function editVan(vid){const v=db.vans.find(x=>x.id===vid);if(!v)return;document.getElementById('van-id').value=vid;document.getElementById('van-name').value=v.name;document.getElementById('van-rep').value=v.rep;document.getElementById('van-plate').value=v.plate||'';document.getElementById('van-phone').value=v.phone||'';document.getElementById('van-capacity').value=v.capacity||500;document.getElementById('van-notes').value=v.notes||'';document.getElementById('van-form-title').textContent='Edit: '+v.name;openModal('modal-van-form');}
-function deleteVan(vid){if(!confirm('Delete van?'))return;db.vans=db.vans.filter(x=>x.id!==vid);renderFleetPage();showToast('Deleted','amber');}
+function deleteVan(vid){showConfirm('Delete Van','This van will be permanently removed from the fleet.',null,true).then(ok=>{if(!ok)return;db.vans=db.vans.filter(x=>x.id!==vid);renderFleetPage();showToast('Deleted','amber');});}
 function openWhModal(){
   document.getElementById('wh-edit-id').value='';
   ['wh-id-input','wh-name','wh-location','wh-notes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -4693,7 +4946,7 @@ function saveWarehouse(){
   renderFleetPage();
 }
 function editWarehouse(wid){const w=db.warehouses.find(x=>x.id===wid);if(!w)return;document.getElementById('wh-edit-id').value=wid;const wi=document.getElementById('wh-id-input');if(wi){wi.value=w.id;wi.disabled=true;}document.getElementById('wh-name').value=w.name;document.getElementById('wh-location').value=w.location||'';document.getElementById('wh-capacity').value=w.capacity||1000;document.getElementById('wh-notes').value=w.notes||'';document.getElementById('wh-form-title').textContent='Edit: '+w.name;openModal('modal-wh-form');}
-function deleteWarehouse(wid){if(!confirm('Delete warehouse?'))return;db.warehouses=db.warehouses.filter(x=>x.id!==wid);renderFleetPage();showToast('Deleted','amber');}
+function deleteWarehouse(wid){showConfirm('Delete Warehouse','This warehouse will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.warehouses=db.warehouses.filter(x=>x.id!==wid);renderFleetPage();showToast('Deleted','amber');});}
 // ── P&L ───────────────────────────────────────────────────────────────────────
 function renderPL(){
   const months=getMonths().slice(-12);
@@ -4701,8 +4954,10 @@ function renderPL(){
   const totRev=months.reduce((s,m)=>s+db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((x,i)=>x+i.total,0),0);
   const totExp=months.reduce((s,m)=>s+db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((x,e)=>x+e.amount,0),0);
   const totCOGS=months.reduce((s,m)=>s+db.purchaseOrders.filter(p=>p.date.startsWith(m.key)&&p.status==='received').reduce((x,p)=>x+p.total,0),0);
+  const totCapInj=months.reduce((s,m)=>s+(db.capitalInvestments||[]).filter(i=>i.date.startsWith(m.key)).reduce((x,i)=>x+i.amount,0),0);
+  const totDistrib=months.reduce((s,m)=>s+(db.distributions||[]).filter(d=>d.date.startsWith(m.key)).reduce((x,d)=>x+d.amount,0),0);
   const totNet=totRev-totExp-totCOGS;
-  if(kpis)kpis.innerHTML=[{label:'Revenue (12m)',value:fmtShort(totRev),color:'var(--green)',icon:'ti-coin'},{label:'COGS',value:fmtShort(totCOGS),color:'var(--blue)',icon:'ti-package'},{label:'Expenses',value:fmtShort(totExp),color:'var(--red)',icon:'ti-receipt-2'},{label:'Net Profit',value:fmtShort(totNet),color:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-trending-up'}].map(k=>`<div class="kpi-card" style="--kpi-c:${k.color}"><div class="kpi-label"><i class="ti ${k.icon}" style="margin-right:5px"></i>${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
+  if(kpis)kpis.innerHTML=[{label:'Revenue (12m)',value:fmtShort(totRev),color:'var(--green)',icon:'ti-coin'},{label:'COGS',value:fmtShort(totCOGS),color:'var(--blue)',icon:'ti-package'},{label:'Expenses',value:fmtShort(totExp),color:'var(--red)',icon:'ti-receipt-2'},{label:'Net Profit',value:fmtShort(totNet),color:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-trending-up'},{label:'Capital Injected (12m)',value:fmtShort(totCapInj),color:'var(--blue)',icon:'ti-users-group'},{label:'Profit Distributed (12m)',value:fmtShort(totDistrib),color:'var(--amber)',icon:'ti-cash'}].map(k=>`<div class="kpi-card" style="--kpi-c:${k.color}"><div class="kpi-label"><i class="ti ${k.icon}" style="margin-right:5px"></i>${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
   // trend chart
   const rev12=months.map(m=>db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.total,0));
   const exp12=months.map(m=>db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((s,e)=>s+e.amount,0));
@@ -4712,16 +4967,20 @@ function renderPL(){
   const tsum=document.getElementById('pl-trend-summary');
   if(tsum){const avg=v=>months.length?Math.round(v/months.length):0;tsum.innerHTML=[{lbl:'Avg Revenue/Month',val:fmtShort(avg(totRev)),clr:'var(--green)'},{lbl:'Avg Expenses/Month',val:fmtShort(avg(totExp)),clr:'var(--red)'},{lbl:'Avg Net/Month',val:fmtShort(avg(totNet)),clr:totNet>=0?'var(--teal)':'var(--red)'}].map(k=>`<div style="flex:1;text-align:center;padding:14px 10px"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:4px">${k.lbl}</div><div style="font-size:16px;font-weight:700;color:${k.clr}">${k.val}</div></div>`).join('');}
   const cards=document.getElementById('pl-monthly-cards');
-  if(cards)cards.innerHTML=[...months].reverse().map(m=>{const rev=db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.total,0);const exp=db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((s,e)=>s+e.amount,0);const cogs=db.purchaseOrders.filter(p=>p.date.startsWith(m.key)&&p.status==='received').reduce((s,p)=>s+p.total,0);const net=rev-exp-cogs;const margin=rev>0?Math.round(net/rev*100):0;return`<div class="card" style="cursor:pointer;border-top:3px solid ${net>=0?'var(--green)':'var(--red)'}" onclick="plOpenModal('${m.key}','${m.label}')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:600">${m.label}</div><span class="badge ${net>=0?'badge-green':'badge-red'}">${margin}% margin</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:rgba(24,95,165,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Revenue</div><div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)">${fmtShort(rev)}</div></div><div style="background:rgba(232,144,10,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Expenses</div><div style="font-size:14px;font-weight:700;color:var(--amber);font-family:var(--mono)">${fmtShort(exp)}</div></div></div><div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text2)">Net Profit</span><span style="font-size:16px;font-weight:700;font-family:var(--mono);color:${net>=0?'var(--green)':'var(--red)'}">SAR ${fmtShort(net)}</span></div></div>`;}).join('');
+  if(cards)cards.innerHTML=[...months].reverse().map(m=>{const rev=db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.total,0);const exp=db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((s,e)=>s+e.amount,0);const cogs=db.purchaseOrders.filter(p=>p.date.startsWith(m.key)&&p.status==='received').reduce((s,p)=>s+p.total,0);const capInj=(db.capitalInvestments||[]).filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.amount,0);const distrib=(db.distributions||[]).filter(d=>d.date.startsWith(m.key)).reduce((s,d)=>s+d.amount,0);const net=rev-exp-cogs;const margin=rev>0?Math.round(net/rev*100):0;return`<div class="card" style="cursor:pointer;border-top:3px solid ${net>=0?'var(--green)':'var(--red)'}" onclick="plOpenModal('${m.key}','${m.label}')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:600">${m.label}</div><span class="badge ${net>=0?'badge-green':'badge-red'}">${margin}% margin</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:rgba(24,95,165,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Revenue</div><div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)">${fmtShort(rev)}</div></div><div style="background:rgba(232,144,10,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Expenses</div><div style="font-size:14px;font-weight:700;color:var(--amber);font-family:var(--mono)">${fmtShort(exp)}</div></div></div><div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text2)">Net Profit</span><span style="font-size:16px;font-weight:700;font-family:var(--mono);color:${net>=0?'var(--green)':'var(--red)'}">SAR ${fmtShort(net)}</span></div>${capInj>0?`<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;background:rgba(24,95,165,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-users-group" style="margin-right:4px"></i>Capital Injected</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--blue)">SAR ${fmtShort(capInj)}</span></div>`:''}${distrib>0?`<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;background:rgba(232,144,10,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-cash" style="margin-right:4px"></i>Profit Distributed</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--amber)">SAR ${fmtShort(distrib)}</span></div>`:''}</div>`;}).join('');
 }
 function plOpenModal(mkey,mlabel){
   const rev=db.invoices.filter(i=>i.date.startsWith(mkey)).reduce((s,i)=>s+i.total,0);
   const exp=db.expenses.filter(e=>e.date.startsWith(mkey)).reduce((s,e)=>s+e.amount,0);
   const cogs=db.purchaseOrders.filter(p=>p.date.startsWith(mkey)&&p.status==='received').reduce((s,p)=>s+p.total,0);
+  const capInvs=(db.capitalInvestments||[]).filter(i=>i.date.startsWith(mkey));
+  const capInj=capInvs.reduce((s,i)=>s+i.amount,0);
+  const distribs=(db.distributions||[]).filter(d=>d.date.startsWith(mkey));
+  const distribTotal=distribs.reduce((s,d)=>s+d.amount,0);
   const gross=rev-cogs;const net=gross-exp;const margin=rev>0?Math.round(net/rev*100):0;
   document.getElementById('pl-modal-title').textContent=mlabel;document.getElementById('pl-modal-sub').textContent='P&L breakdown';
   document.getElementById('pl-modal-kpis').innerHTML=[{lbl:'Revenue',val:fmtShort(rev),clr:'var(--green)'},{lbl:'COGS',val:fmtShort(cogs),clr:'var(--blue)'},{lbl:'Expenses',val:fmtShort(exp),clr:'var(--red)'},{lbl:'Net Profit',val:fmtShort(net),clr:net>=0?'var(--teal)':'var(--red)'}].map(k=>`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">${k.lbl}</div><div style="font-size:16px;font-weight:700;color:${k.clr}">${k.val}</div></div>`).join('');
-  document.getElementById('pl-modal-waterfall').innerHTML=`<div style="font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px">Waterfall</div>${[['Revenue',rev,'var(--green)'],['-  COGS',-cogs,'var(--red)'],['=  Gross Profit',gross,gross>=0?'var(--teal)':'var(--red)'],['−  Expenses',-exp,'var(--amber)'],['=  Net Profit',net,net>=0?'var(--green)':'var(--red)'],['Margin',margin+'%',net>=0?'var(--green)':'var(--red)']].map(([lbl,val,clr])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">${lbl}</span><span style="font-family:var(--mono);font-weight:700;color:${clr}">${typeof val==='number'?'SAR '+fmtShort(Math.abs(val)):val}</span></div>`).join('')}`;
+  document.getElementById('pl-modal-waterfall').innerHTML=`<div style="font-size:12px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:10px">Waterfall</div>${[['Revenue',rev,'var(--green)'],['-  COGS',-cogs,'var(--red)'],['=  Gross Profit',gross,gross>=0?'var(--teal)':'var(--red)'],['−  Expenses',-exp,'var(--amber)'],['=  Net Profit',net,net>=0?'var(--green)':'var(--red)'],['Margin',margin+'%',net>=0?'var(--green)':'var(--red)']].map(([lbl,val,clr])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px">${lbl}</span><span style="font-family:var(--mono);font-weight:700;color:${clr}">${typeof val==='number'?'SAR '+fmtShort(Math.abs(val)):val}</span></div>`).join('')}${capInj>0?`<div style="margin-top:10px;padding:10px 0;border-top:2px dashed var(--border2)"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px">Capital (Equity — not profit)</div>${capInvs.map(i=>{const p=(db.partners||[]).find(x=>x.id===i.partnerId);return`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--blue)"><i class="ti ti-user" style="margin-right:4px"></i>${p?p.name:i.partnerName||'Partner'}</span><span style="font-family:var(--mono);font-weight:700;color:var(--blue)">SAR ${i.amount.toFixed(2)}</span></div>`;}).join('')}<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700"><span style="font-size:13px;color:var(--blue)">Total Capital Injected</span><span style="font-family:var(--mono);color:var(--blue)">SAR ${fmtShort(capInj)}</span></div></div>`:''}${distribTotal>0?`<div style="margin-top:6px;padding:10px 0;border-top:2px dashed var(--border2)"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px">Profit Distributed to Partners</div>${(()=>{const byPartner={};distribs.forEach(d=>{byPartner[d.partnerId]=(byPartner[d.partnerId]||{name:d.partnerName||d.partnerId,total:0});byPartner[d.partnerId].total+=d.amount;});return Object.values(byPartner).map(x=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)"><span style="font-size:13px;color:var(--amber)"><i class="ti ti-user" style="margin-right:4px"></i>${x.name}</span><span style="font-family:var(--mono);font-weight:700;color:var(--amber)">SAR ${x.total.toFixed(2)}</span></div>`).join('');})()}<div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700"><span style="font-size:13px;color:var(--amber)">Total Distributed</span><span style="font-family:var(--mono);color:var(--amber)">SAR ${fmtShort(distribTotal)}</span></div><div style="display:flex;justify-content:space-between;padding:8px 0;font-weight:700;border-top:1px solid var(--border)"><span style="font-size:13px;color:var(--teal)">Retained in Business</span><span style="font-family:var(--mono);color:var(--teal)">SAR ${fmtShort(net-distribTotal)}</span></div></div>`:''}`;
   const vanBreak={};db.invoices.filter(i=>i.date.startsWith(mkey)).forEach(i=>{vanBreak[i.van]=(vanBreak[i.van]||0)+i.total;});
   document.getElementById('pl-van-breakdown').innerHTML=Object.entries(vanBreak).sort((a,b)=>b[1]-a[1]).map(([van,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span class="badge ${van==='Van 1'?'badge-green':'badge-blue'}">${van||'Direct'}</span><span style="font-family:var(--mono);font-weight:600;color:var(--green)">SAR ${fmtShort(v)}</span></div>`).join('')||'<div style="color:var(--text3);text-align:center;padding:16px">No data</div>';
   const expCats={};db.expenses.filter(e=>e.date.startsWith(mkey)).forEach(e=>{expCats[e.category]=(expCats[e.category]||0)+e.amount;});
@@ -4964,7 +5223,7 @@ function printConsolidatedVat(){
     +'<div>'
     +companyLogoHtml(48)
     +'<div style="font-size:20px;font-weight:800;color:#0f1f2e">'+(s.nameEn||'FasTrack')+'</div>'
-    +(s.nameAr?'<div style="font-size:13px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':'')
+    +(s.nameAr?'<div style="font-size:13px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':'')
     +(s.address?'<div style="font-size:11px;color:#6b7280;margin-top:6px">'+s.address+'</div>':'')
     +(s.vatNumber?'<div style="font-size:11px;color:#6b7280">VAT No: '+s.vatNumber+'</div>':'')
     +'</div>'
@@ -5107,9 +5366,10 @@ function editQuotation(quoId){
 function deleteQuotation(quoId){
   const q=db.quotations.find(x=>x.id===quoId);if(!q)return;
   if(q.convertedInvoice)return showToast('Cannot delete a quotation already converted to an invoice','red');
-  if(!confirm('Delete this quotation?'))return;
+  showConfirm('Delete Quotation','This quotation will be permanently removed.',null,true).then(ok=>{if(!ok)return;
   db.quotations=db.quotations.filter(x=>x.id!==quoId);
   renderQuotationsPage();showToast('Deleted','amber');
+  });
 }
 function setQuoteStatus(quoId,status){
   const q=db.quotations.find(x=>x.id===quoId);if(!q)return;
@@ -5175,7 +5435,7 @@ function renderQuotationsPage(){
     else statusBadge='<span class="badge badge-amber">Draft</span>';
     const itemCount=qt.items.length;
     const convertedBadge=qt.convertedInvoice?` <span class="badge badge-green" style="font-size:9px">→ ${qt.convertedInvoice}</span>`:'';
-    return `<tr><td style="font-family:var(--mono);font-weight:600">${qt.id}${convertedBadge}</td><td style="font-size:12px">${fmtDate(qt.date)}</td><td><strong>${c.name}</strong></td><td style="font-size:12px;color:${isExpired?'var(--red)':'var(--text2)'}">${fmtDate(qt.validUntil)}</td><td style="font-family:var(--mono)">${itemCount}</td><td style="font-family:var(--mono);font-weight:600;color:var(--green)">SAR ${qt.total.toFixed(2)}</td><td>${statusBadge}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewQuotation('${qt.id}')"><i class="ti ti-eye"></i></button>${!qt.convertedInvoice&&qt.status!=='accepted'?`<button class="btn btn-sm btn-outline" onclick="editQuotation('${qt.id}')"><i class="ti ti-pencil"></i></button>`:''}${!qt.convertedInvoice?`<button class="btn btn-sm btn-danger" onclick="deleteQuotation('${qt.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+    return `<tr><td style="font-family:var(--mono);font-weight:600">${qt.id}${convertedBadge}</td><td style="font-size:12px">${fmtDate(qt.date)}</td><td><strong>${c.name}</strong></td><td style="font-size:12px;color:${isExpired?'var(--red)':'var(--text2)'}">${fmtDate(qt.validUntil)}</td><td style="font-family:var(--mono)">${itemCount}</td><td style="font-family:var(--mono);font-weight:600;color:var(--green)">SAR ${qt.total.toFixed(2)}</td><td>${statusBadge}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewQuotation('${qt.id}')"><i class="ti ti-eye"></i></button>${!qt.convertedInvoice&&qt.status!=='accepted'?`<button class="btn btn-sm btn-outline" onclick="editQuotation('${qt.id}')"><i class="ti ti-pencil"></i></button>`:''}<button class="btn btn-sm btn-outline" style="display:none"></button>${isAdmin()&&!qt.convertedInvoice?`<button class="btn btn-sm btn-danger" onclick="deleteQuotation('${qt.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join(''):`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No quotations found</td></tr>`;
 }
 function viewQuotation(quoId){
@@ -5203,7 +5463,7 @@ function viewQuotation(quoId){
     <div>
       ${companyLogoHtml(48)}
       <div style="font-size:22px;font-weight:800;color:#0f1f2e">${s.nameEn||'FasTrack'}</div>
-      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':''}
+      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':''}
       ${s.address?'<div style="font-size:12px;color:#6b7280;margin-top:6px">'+s.address+'</div>':''}
       ${s.phone?'<div style="font-size:12px;color:#6b7280">'+s.phone+'</div>':''}
       ${s.email?'<div style="font-size:12px;color:#6b7280">'+s.email+'</div>':''}
@@ -5413,22 +5673,26 @@ function editDeliveryNote(dnId){
   });
 }
 function deleteDeliveryNote(dnId){
-  if(!confirm('Delete this delivery note?'))return;
+  showConfirm('Delete Delivery Note','This delivery note will be permanently removed.',null,true).then(ok=>{if(!ok)return;
   db.deliveryNotes=db.deliveryNotes.filter(x=>x.id!==dnId);
   renderDeliveryNotesPage();showToast('Deleted','amber');
+  });
 }
 function markDelivered(dnId){
   const dn=db.deliveryNotes.find(x=>x.id===dnId);if(!dn)return;
+  const doMark=(receiverName)=>{
+    if(receiverName)dn.receivedBy=receiverName;
+    dn.status='delivered';dn.deliveredConfirmedBy=_currentUser?.name||'Unknown';
+    renderDeliveryNotesPage();saveAppState();
+    if(document.getElementById('modal-dn-view').classList.contains('open'))viewDeliveryNote(dnId);
+    showToast('Marked as delivered');
+  };
   if(!dn.receivedBy){
-    const name=prompt('Enter the name of the person receiving the goods:');
-    if(!name)return;
-    dn.receivedBy=name;
-  }
-  dn.status='delivered';dn.deliveredConfirmedBy=_currentUser?.name||'Unknown';
-  renderDeliveryNotesPage();
-  saveAppState();
-  if(document.getElementById('modal-dn-view').classList.contains('open'))viewDeliveryNote(dnId);
-  showToast('Marked as delivered');
+    showPrompt('Delivery Confirmation','Who received the goods?','Receiver name').then(name=>{
+      if(name===null)return;// cancelled
+      doMark(name);
+    });
+  }else{doMark('');}
 }
 function renderDeliveryNotesPage(){
   const isVanUser=_currentUser&&_currentUser.role==='van_sales';
@@ -5461,7 +5725,7 @@ function renderDeliveryNotesPage(){
     const c=getCustomer(dn.customer);
     const itemCount=dn.items.reduce((s,it)=>s+it.qty,0);
     const statusBadge=dn.status==='delivered'?'<span class="badge badge-green">Delivered</span>':'<span class="badge badge-amber">Pending</span>';
-    return `<tr><td style="font-family:var(--mono);font-weight:600">${dn.id}</td><td style="font-size:12px">${fmtDate(dn.date)}</td><td><strong>${c.name}</strong></td><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${dn.invoice||'—'}</td><td><span class="badge ${dn.van==='Van 1'?'badge-green':'badge-blue'}">${dn.van||'—'}</span></td><td style="font-family:var(--mono)">${itemCount} units</td><td style="font-size:12px;color:var(--text2)">${dn.receivedBy||'—'}</td><td>${statusBadge}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewDeliveryNote('${dn.id}')"><i class="ti ti-eye"></i></button><button class="btn btn-sm btn-outline" onclick="editDeliveryNote('${dn.id}')"><i class="ti ti-pencil"></i></button>${dn.status!=='delivered'?`<button class="btn btn-sm btn-outline" style="color:var(--teal);border-color:var(--teal)" onclick="markDelivered('${dn.id}')"><i class="ti ti-check"></i></button>`:''}<button class="btn btn-sm btn-danger" onclick="deleteDeliveryNote('${dn.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
+    return `<tr><td style="font-family:var(--mono);font-weight:600">${dn.id}</td><td style="font-size:12px">${fmtDate(dn.date)}</td><td><strong>${c.name}</strong></td><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${dn.invoice||'—'}</td><td><span class="badge ${dn.van==='Van 1'?'badge-green':'badge-blue'}">${dn.van||'—'}</span></td><td style="font-family:var(--mono)">${itemCount} units</td><td style="font-size:12px;color:var(--text2)">${dn.receivedBy||'—'}</td><td>${statusBadge}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="viewDeliveryNote('${dn.id}')"><i class="ti ti-eye"></i></button><button class="btn btn-sm btn-outline" onclick="editDeliveryNote('${dn.id}')"><i class="ti ti-pencil"></i></button>${dn.status!=='delivered'?`<button class="btn btn-sm btn-outline" style="color:var(--teal);border-color:var(--teal)" onclick="markDelivered('${dn.id}')"><i class="ti ti-check"></i></button>`:''}<button class="btn btn-sm btn-outline" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteDeliveryNote('${dn.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No delivery notes found</td></tr>`;
 }
 function viewDeliveryNote(dnId){
@@ -5480,7 +5744,7 @@ function viewDeliveryNote(dnId){
     <div>
       ${companyLogoHtml(48)}
       <div style="font-size:22px;font-weight:800;color:#0f1f2e">${s.nameEn||'FasTrack'}</div>
-      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':''}
+      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':''}
       ${s.address?'<div style="font-size:12px;color:#6b7280;margin-top:6px">'+s.address+'</div>':''}
       ${s.phone?'<div style="font-size:12px;color:#6b7280">'+s.phone+'</div>':''}
     </div>
@@ -5736,7 +6000,7 @@ function viewCreditNote(srId){
     <div>
       ${companyLogoHtml(48)}
       <div style="font-size:22px;font-weight:800;color:#0f1f2e">${s.nameEn||'FasTrack'}</div>
-      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':''}
+      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':''}
       ${s.address?'<div style="font-size:12px;color:#6b7280;margin-top:6px">'+s.address+'</div>':''}
       ${s.vatNumber?'<div style="font-size:12px;color:#6b7280">VAT No: '+s.vatNumber+'</div>':''}
     </div>
@@ -6041,68 +6305,299 @@ function exportSalesReportCSV(){
 // ── PARTNERS CAPITAL ──────────────────────────────────────────────────────────
 let _partnersPieChart=null;
 function renderPartnersPage(){
+  try{
+  if(!db.distributions)db.distributions=[];
+  const investments=db.capitalInvestments||[];
+  const distributions=db.distributions||[];
+  const partners=db.partners||[];
+
   // Populate partner select in modal
   const sel=document.getElementById('cap-partner-sel');
-  if(sel){
-    sel.innerHTML='<option value="">— Select partner —</option>'+(db.partners||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  if(sel){sel.innerHTML='<option value="">— Select partner —</option>'+partners.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');}
+
+  // Populate year filter
+  const yearSel=document.getElementById('dist-filter-year');
+  if(yearSel){
+    const years=[...new Set(distributions.map(d=>d.date.slice(0,4)))].sort((a,b)=>b-a);
+    const curYear=yearSel.value;
+    yearSel.innerHTML='<option value="">All Years</option>'+years.map(y=>`<option value="${y}"${y===curYear?'selected':''}>${y}</option>`).join('');
   }
+
+  // Populate partner filter
+  const partnerSel=document.getElementById('dist-filter-partner');
+  if(partnerSel){
+    const curPid=partnerSel.value;
+    partnerSel.innerHTML='<option value="">All Partners</option>'+partners.map(p=>`<option value="${p.id}"${p.id===curPid?'selected':''}>${p.name}</option>`).join('');
+  }
+
+  // Per-partner totals (all time)
+  const partnerCapital={};
+  const partnerDistrib={};
+  investments.forEach(i=>{partnerCapital[i.partnerId]=(partnerCapital[i.partnerId]||0)+i.amount;});
+  distributions.forEach(d=>{partnerDistrib[d.partnerId]=(partnerDistrib[d.partnerId]||0)+d.amount;});
+
+  const totalCapital=Object.values(partnerCapital).reduce((s,v)=>s+v,0);
+  const totalDistrib=Object.values(partnerDistrib).reduce((s,v)=>s+v,0);
+
   // KPIs
-  const investments=db.capitalInvestments||[];
-  const partners=db.partners||[];
-  const totalCapital=investments.reduce((s,i)=>s+i.amount,0);
-  const partnerTotals={};
-  investments.forEach(i=>{partnerTotals[i.partnerId]=(partnerTotals[i.partnerId]||0)+i.amount;});
   const kpis=document.getElementById('partners-kpi-strip');
   if(kpis)kpis.innerHTML=[
     {label:'Total Partners',value:partners.length,color:'var(--blue)',icon:'ti-users'},
-    {label:'Total Capital Invested',value:'SAR '+totalCapital.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),color:'var(--green)',icon:'ti-cash'},
-    {label:'Total Investments',value:investments.length,color:'var(--teal)',icon:'ti-plus'},
-    {label:'Latest Investment',value:investments.length?'SAR '+[...investments].sort((a,b)=>b.date.localeCompare(a.date))[0].amount.toFixed(2):'—',color:'var(--amber)',icon:'ti-calendar'},
+    {label:'Total Capital In',value:'SAR '+totalCapital.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),color:'var(--green)',icon:'ti-cash'},
+    {label:'Total Profit Distributed',value:'SAR '+totalDistrib.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),color:'var(--amber)',icon:'ti-coin'},
+    {label:'Retained in Business',value:'SAR '+(totalCapital-totalDistrib>0?totalCapital-totalDistrib:0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}),color:'var(--teal)',icon:'ti-building'},
   ].map(k=>`<div class="kpi-card" style="--kpi-c:${k.color}"><div class="kpi-label"><i class="ti ${k.icon}" style="margin-right:5px"></i>${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
-  // Partners list
+
+  // Partners table
   const body=document.getElementById('partners-list-body');
   if(body){
-    if(!partners.length){body.innerHTML='<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">No partners added yet</td></tr>';}
+    if(!partners.length){body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">No partners added yet</td></tr>';}
     else{
       body.innerHTML=partners.map(p=>{
-        const total=(partnerTotals[p.id]||0).toFixed(2);
-        const lastInv=[...investments].filter(i=>i.partnerId===p.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
-        const shareText=p.share?p.share+'%':'—';
-        return`<tr><td style="font-weight:600">${p.name}${p.phone?`<div style="font-size:11px;color:var(--text3)">${p.phone}</div>`:''}</td><td>${shareText}</td><td style="font-family:var(--mono)">SAR ${total}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'—'}</td><td><button class="btn btn-sm btn-outline" onclick="editPartner('${p.id}')"><i class="ti ti-edit"></i></button> <button class="btn btn-sm btn-danger" onclick="deletePartner('${p.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
+        const capIn=(partnerCapital[p.id]||0);
+        const distOut=(partnerDistrib[p.id]||0);
+        const netBal=capIn-distOut;
+        return`<tr>
+          <td style="font-weight:600">${p.name}${p.phone?`<div style="font-size:11px;color:var(--text3)">${p.phone}</div>`:''}</td>
+          <td>${p.share?p.share+'%':'—'}</td>
+          <td style="font-family:var(--mono);color:var(--green)">SAR ${capIn.toFixed(2)}</td>
+          <td style="font-family:var(--mono);color:var(--amber)">SAR ${distOut.toFixed(2)}</td>
+          <td style="font-family:var(--mono);font-weight:700;color:${netBal>=0?'var(--blue)':'var(--red)'}">SAR ${netBal.toFixed(2)}</td>
+          <td><button class="btn btn-sm btn-outline" onclick="editPartner('${p.id}')"><i class="ti ti-edit"></i></button> ${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deletePartner('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</td>
+        </tr>`;
       }).join('');
     }
   }
-  // Capital investment history
-  const invBody=document.getElementById('cap-inv-body');
-  const badge=document.getElementById('cap-inv-count');
-  if(badge)badge.textContent=investments.length+' entr'+(investments.length===1?'y':'ies');
-  if(invBody){
-    const sorted=[...investments].sort((a,b)=>b.date.localeCompare(a.date));
-    if(!sorted.length){invBody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">No investments recorded yet</td></tr>';}
-    else{
-      invBody.innerHTML=sorted.map(i=>{
-        const p=partners.find(x=>x.id===i.partnerId);
-        return`<tr><td style="font-size:12px">${fmtDate(i.date)}</td><td style="font-weight:600">${p?p.name:i.partnerId}</td><td style="font-family:var(--mono);color:var(--green)">SAR ${i.amount.toFixed(2)}</td><td style="font-size:12px;color:var(--text2)">${i.notes||'—'}</td><td style="font-size:12px;color:var(--text2)">${i.recordedBy||'—'}</td><td><button class="btn btn-sm btn-danger" onclick="deleteCapitalInvestment('${i.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
-      }).join('');
-    }
-  }
-  // Pie chart
+
+  // Pie chart — share % (not capital amount)
   const canvas=document.getElementById('partners-pie-chart');
   const legend=document.getElementById('partners-pie-legend');
   if(canvas){
-    if(_partnersPieChart){_partnersPieChart.destroy();_partnersPieChart=null;}
-    if(partners.length&&Object.keys(partnerTotals).length){
-      const colors=['#185fa5','#5dcaa5','#e8900a','#dc3545','#0f6e56','#6366f1','#f59e0b','#10b981'];
-      const labels=partners.map(p=>p.name);
-      const data=partners.map(p=>partnerTotals[p.id]||0);
-      _partnersPieChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.slice(0,partners.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`SAR ${ctx.parsed.toFixed(2)}`}}}}});
-      if(legend)legend.innerHTML=partners.map((p,i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:12px;height:12px;border-radius:50%;background:${colors[i]||'#ccc'};flex-shrink:0"></span>${p.name}: SAR ${(partnerTotals[p.id]||0).toFixed(2)}</div>`).join('');
-    }else{
-      canvas.parentElement.innerHTML='<div style="text-align:center;padding:40px;color:var(--text3)"><i class="ti ti-chart-pie-2" style="font-size:32px;margin-bottom:8px;display:block"></i>No capital data yet</div>';
+    try{
+      if(_partnersPieChart){_partnersPieChart.destroy();_partnersPieChart=null;}
+      const partnersWithShare=partners.filter(p=>parseFloat(p.share)>0);
+      if(partnersWithShare.length){
+        const colors=['#185fa5','#5dcaa5','#e8900a','#dc3545','#0f6e56','#6366f1','#f59e0b','#10b981'];
+        const labels=partnersWithShare.map(p=>p.name+' ('+p.share+'%)');
+        const data=partnersWithShare.map(p=>parseFloat(p.share)||0);
+        _partnersPieChart=new Chart(canvas,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors.slice(0,partnersWithShare.length),borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.toFixed(1)}%`}}}}});
+        if(legend)legend.innerHTML=partnersWithShare.map((p,i)=>`<div style="display:flex;align-items:center;gap:6px;font-size:12px"><span style="width:12px;height:12px;border-radius:50%;background:${colors[i]||'#ccc'};flex-shrink:0"></span><strong>${p.name}</strong> ${p.share}%</div>`).join('');
+      }else{
+        if(legend)legend.innerHTML='<div style="color:var(--text3);font-size:13px">Set share % on each partner to see the chart</div>';
+        canvas.style.display='none';
+      }
+    }catch(e){
+      canvas.style.display='none';
     }
   }
+
+  // Filters
+  const filterYear=document.getElementById('dist-filter-year')?.value||'';
+  const filterMonth=document.getElementById('dist-filter-month')?.value||'';
+  const filterPartner=document.getElementById('dist-filter-partner')?.value||'';
+
+  let filtered=[...distributions].sort((a,b)=>b.date.localeCompare(a.date));
+  if(filterYear)filtered=filtered.filter(d=>d.date.startsWith(filterYear));
+  if(filterMonth)filtered=filtered.filter(d=>d.date.slice(5,7)===filterMonth);
+  if(filterPartner)filtered=filtered.filter(d=>d.partnerId===filterPartner);
+
+  // Distribution history table
+  const distBody=document.getElementById('dist-body');
+  const distBadge=document.getElementById('dist-count');
+  if(distBadge)distBadge.textContent=filtered.length+' entr'+(filtered.length===1?'y':'ies');
+  if(distBody){
+    if(!filtered.length){distBody.innerHTML='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No distributions found</td></tr>';}
+    else{
+      distBody.innerHTML=filtered.map(d=>{
+        const p=partners.find(x=>x.id===d.partnerId);
+        return`<tr>
+          <td style="font-size:12px">${fmtDate(d.date)}</td>
+          <td style="font-weight:600">${p?p.name:d.partnerName||'—'}</td>
+          <td style="font-size:12px;color:var(--text2)">${d.sharePercent?d.sharePercent+'%':'—'}</td>
+          <td style="font-family:var(--mono);font-size:12px;color:var(--text2)">SAR ${(d.totalPool||0).toFixed(2)}</td>
+          <td style="font-family:var(--mono);color:var(--amber);font-weight:600">SAR ${d.amount.toFixed(2)}</td>
+          <td style="font-size:12px;color:var(--text2)">${d.notes||'—'}</td>
+          <td style="display:flex;gap:5px">
+            <button class="btn btn-sm btn-outline" onclick="printDistributionReport('single','${d.id}')" title="Print"><i class="ti ti-printer"></i></button>
+            ${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteDistribution('${d.id}')"><i class="ti ti-trash"></i></button>`:''}
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // Footer totals
+  const filteredTotal=filtered.reduce((s,d)=>s+d.amount,0);
+  const footer=document.getElementById('dist-footer');
+  if(footer){
+    const label=filterYear||filterMonth||filterPartner?'Filtered total':'Total distributed';
+    footer.innerHTML=`<span style="color:var(--text3);font-size:12px">${filtered.length} record${filtered.length!==1?'s':''}</span><span><strong>${label}:</strong> <span style="font-family:var(--mono);color:var(--amber);font-weight:700">SAR ${filteredTotal.toFixed(2)}</span></span>`;
+  }
+
+  // Pie chart show if hidden
+  if(canvas)canvas.style.display='';
+
+  }catch(e){console.error('renderPartnersPage error:',e);showToast('Error loading Partners page: '+e.message,'red');}
 }
 
+// ── DISTRIBUTION PDF PRINT ────────────────────────────────────────────────────
+function printDistributionReport(mode,singleId){
+  const s=db.settings||{};
+  const partners=db.partners||[];
+  const distributions=db.distributions||[];
+
+  // Determine which records to print
+  let records;
+  let titleSuffix='';
+  if(mode==='single'&&singleId){
+    // Find all records from same batch
+    const rec=distributions.find(d=>d.id===singleId);
+    if(!rec)return;
+    records=distributions.filter(d=>d.batchId===rec.batchId).sort((a,b)=>a.partnerName.localeCompare(b.partnerName));
+    titleSuffix=' — '+fmtDate(rec.date)+(rec.notes?' ('+rec.notes+')':'');
+  }else{
+    // All — respect current filters
+    const filterYear=document.getElementById('dist-filter-year')?.value||'';
+    const filterMonth=document.getElementById('dist-filter-month')?.value||'';
+    const filterPartner=document.getElementById('dist-filter-partner')?.value||'';
+    records=[...distributions].sort((a,b)=>b.date.localeCompare(a.date));
+    if(filterYear)records=records.filter(d=>d.date.startsWith(filterYear));
+    if(filterMonth)records=records.filter(d=>d.date.slice(5,7)===filterMonth);
+    if(filterPartner)records=records.filter(d=>d.partnerId===filterPartner);
+    if(filterYear||filterMonth){titleSuffix=' — '+(filterMonth?['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(filterMonth)]+' ':'')+(filterYear||'');}
+  }
+
+  if(!records.length)return showToast('No distribution records to print','amber');
+
+  const totalAmt=records.reduce((s,d)=>s+d.amount,0);
+  const totalPool=records[0]?.totalPool||0;
+
+  const rows=records.map(d=>{
+    const p=partners.find(x=>x.id===d.partnerId);
+    return`<tr>
+      <td style="padding:10px 12px;font-size:13px">${fmtDate(d.date)}</td>
+      <td style="padding:10px 12px;font-weight:600">${p?p.name:d.partnerName||'—'}</td>
+      <td style="padding:10px 12px;text-align:center">${d.sharePercent?d.sharePercent+'%':'—'}</td>
+      <td style="padding:10px 12px;text-align:right;font-family:monospace">SAR ${(d.totalPool||0).toFixed(2)}</td>
+      <td style="padding:10px 12px;text-align:right;font-family:monospace;font-weight:700;color:#d97706">SAR ${d.amount.toFixed(2)}</td>
+      <td style="padding:10px 12px;font-size:12px;color:#6b7280">${d.notes||'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Profit Distribution'+titleSuffix+'</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;padding:28px;color:#111827;max-width:900px;margin:0 auto}'
+    +'table{width:100%;border-collapse:collapse}th{padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;background:#f9fafb}'
+    +'tr:nth-child(even){background:#f9fafb}tr:hover{background:#f3f4f6}'
+    +'@media print{body{padding:0;max-width:none}@page{margin:12mm}}'
+    +'</style></head><body>'
+    // Header
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #e5e7eb">'
+    +'<div>'+companyLogoHtml(44)+'<div style="font-size:20px;font-weight:800;color:#0f1f2e">'+(s.nameEn||'FasTrack')+'</div>'
+    +(s.nameAr?'<div style="font-size:13px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':'')
+    +(s.address?'<div style="font-size:12px;color:#6b7280;margin-top:4px">'+s.address+'</div>':'')+'</div>'
+    +'<div style="text-align:right">'
+    +'<div style="font-size:22px;font-weight:900;color:#d97706">PROFIT DISTRIBUTION</div>'
+    +'<div style="font-size:12px;color:#6b7280;margin-top:2px">توزيع الأرباح</div>'
+    +(titleSuffix?'<div style="font-size:12px;color:#374151;margin-top:6px;font-weight:600">'+titleSuffix.replace(' — ','')+'</div>':'')
+    +'<div style="font-size:11px;color:#9ca3af;margin-top:4px">Generated '+fmtDate(today())+'</div>'
+    +'</div></div>'
+    // Summary cards
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">'
+    +'<div style="background:#fef3c7;border-radius:10px;padding:14px 16px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#92400e;margin-bottom:4px">Total Distributed</div><div style="font-size:18px;font-weight:800;color:#d97706;font-family:monospace">SAR '+totalAmt.toFixed(2)+'</div></div>'
+    +(mode==='single'?'<div style="background:#f0fdf4;border-radius:10px;padding:14px 16px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#166534;margin-bottom:4px">Total Pool</div><div style="font-size:18px;font-weight:800;color:#16a34a;font-family:monospace">SAR '+totalPool.toFixed(2)+'</div></div>':'')
+    +'<div style="background:#eff6ff;border-radius:10px;padding:14px 16px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#1e40af;margin-bottom:4px">Partners</div><div style="font-size:18px;font-weight:800;color:#185fa5">'+(new Set(records.map(d=>d.partnerId))).size+'</div></div>'
+    +'</div>'
+    // Table
+    +'<table><thead><tr><th>Date</th><th>Partner</th><th style="text-align:center">Share %</th><th style="text-align:right">Total Pool</th><th style="text-align:right">Amount Received</th><th>Notes</th></tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot><tr style="background:#fef3c7;font-weight:700"><td colspan="4" style="padding:12px;font-size:13px">Total Distributed ('+records.length+' records)</td><td style="padding:12px;text-align:right;font-family:monospace;color:#d97706">SAR '+totalAmt.toFixed(2)+'</td><td></td></tr></tfoot>'
+    +'</table>'
+    +'<div style="margin-top:24px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:10px">Generated by '+(s.nameEn||'FasTrack')+' · '+fmtDate(today())+'</div>'
+    +'</body></html>';
+  _printHTML(html);
+}
+function openDistributeModal(){
+  if(!(db.partners||[]).length)return showToast('Add partners first','amber');
+  const el=document.getElementById('dist-date');if(el)el.value=today();
+  const ta=document.getElementById('dist-total');if(ta){ta.value='';ta.style.borderColor='';}
+  const na=document.getElementById('dist-notes');if(na)na.value='';
+  document.getElementById('dist-shares-preview').style.display='none';
+  openModal('modal-distribute');
+}
+
+function calcDistributionShares(){
+  const total=parseFloat(document.getElementById('dist-total')?.value)||0;
+  const preview=document.getElementById('dist-shares-preview');
+  const list=document.getElementById('dist-shares-list');
+  const totalEl=document.getElementById('dist-shares-total');
+  const warnEl=document.getElementById('dist-no-share-warn');
+  if(!preview||!list)return;
+  if(total<=0){preview.style.display='none';return;}
+  const partners=db.partners||[];
+  if(!partners.length){preview.style.display='none';return;}
+  // Calculate total share % of all partners
+  const totalShare=partners.reduce((s,p)=>s+(parseFloat(p.share)||0),0);
+  const hasNoShare=partners.some(p=>!p.share||parseFloat(p.share)===0);
+  if(warnEl)warnEl.style.display=hasNoShare?'block':'none';
+  let calcTotal=0;
+  list.innerHTML=partners.map(p=>{
+    const share=parseFloat(p.share)||0;
+    const amt=totalShare>0?(share/totalShare)*total:0;
+    calcTotal+=amt;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div><span style="font-weight:600">${p.name}</span><span style="font-size:11px;color:var(--text3);margin-left:8px">${share}% share</span></div>
+      <span style="font-family:var(--mono);font-weight:700;color:var(--amber)">SAR ${amt.toFixed(2)}</span>
+    </div>`;
+  }).join('');
+  if(totalEl)totalEl.textContent='SAR '+calcTotal.toFixed(2);
+  preview.style.display='block';
+}
+
+function saveDistribution(){
+  const date=document.getElementById('dist-date')?.value||today();
+  const total=parseFloat(document.getElementById('dist-total')?.value)||0;
+  const notes=(document.getElementById('dist-notes')?.value||'').trim();
+  if(total<=0)return showToast('Enter a valid amount to distribute','amber');
+  const partners=db.partners||[];
+  if(!partners.length)return showToast('No partners found','amber');
+  const totalShare=partners.reduce((s,p)=>s+(parseFloat(p.share)||0),0);
+  if(!db.distributions)db.distributions=[];
+  // Create one distribution record per partner
+  const batchId='dist'+Date.now();
+  partners.forEach(p=>{
+    const share=parseFloat(p.share)||0;
+    const amt=totalShare>0?(share/totalShare)*total:0;
+    if(amt<=0)return;// skip partners with 0 share
+    db.distributions.push({
+      id:batchId+'_'+p.id,
+      batchId,
+      date,
+      partnerId:p.id,
+      partnerName:p.name,
+      sharePercent:share,
+      totalPool:total,
+      amount:+amt.toFixed(2),
+      notes,
+      recordedBy:_currentUser?.name||'Unknown'
+    });
+  });
+  closeModal('modal-distribute');
+  renderPartnersPage();
+  saveAppState();
+  showToast('Profit distribution recorded');
+}
+
+function deleteDistribution(id){
+  // Find batchId and delete all records from same batch
+  const rec=(db.distributions||[]).find(d=>d.id===id);
+  if(!rec)return;
+  const batchId=rec.batchId;
+  showConfirm('Delete Distribution','This will remove the entire distribution event for all partners on '+fmtDate(rec.date)+'.',`Total pool: SAR ${(rec.totalPool||0).toFixed(2)}`,true).then(ok=>{
+    if(!ok)return;
+    db.distributions=db.distributions.filter(d=>d.batchId!==batchId);
+    renderPartnersPage();saveAppState();showToast('Distribution deleted','amber');
+  });
+}
 function savePartner(){
   const name=(document.getElementById('partner-name')?.value||'').trim();
   if(!name){showToast('Partner name is required','amber');return;}
@@ -6135,11 +6630,7 @@ function editPartner(id){
   openModal('modal-add-partner');
 }
 
-function deletePartner(id){
-  if(!confirm('Delete this partner? Their investment records will remain.'))return;
-  db.partners=(db.partners||[]).filter(p=>p.id!==id);
-  renderPartnersPage();saveAppState();showToast('Partner deleted','amber');
-}
+function deletePartner(id){showConfirm('Delete Partner','This partner will be removed. Their investment records will remain.',null,true).then(ok=>{if(!ok)return;db.partners=(db.partners||[]).filter(p=>p.id!==id);renderPartnersPage();saveAppState();showToast('Partner deleted','amber');});}
 
 function saveCapitalInvestment(){
   const partnerId=document.getElementById('cap-partner-sel')?.value||'';
@@ -6163,11 +6654,7 @@ function saveCapitalInvestment(){
   renderPartnersPage();saveAppState();showToast('Capital investment recorded');
 }
 
-function deleteCapitalInvestment(id){
-  if(!confirm('Delete this investment record?'))return;
-  db.capitalInvestments=(db.capitalInvestments||[]).filter(i=>i.id!==id);
-  renderPartnersPage();saveAppState();showToast('Investment deleted','amber');
-}
+function deleteCapitalInvestment(id){showConfirm('Delete Investment','This capital investment record will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.capitalInvestments=(db.capitalInvestments||[]).filter(i=>i.id!==id);renderPartnersPage();saveAppState();showToast('Investment deleted','amber');});}
 
 // ── CASH BOOK ────────────────────────────────────────────────────────────────
 let _cbLastReport=null;
@@ -6204,6 +6691,8 @@ function renderCashBookPage(){
   const cashSupplierPayments=(db.supplierPayments||[]).filter(sp=>sp.method==='Cash'&&sp.date>=fromDate&&sp.date<=toDate);
   // Cash inflows: capital investments by partners
   const capitalInjections=(db.capitalInvestments||[]).filter(i=>i.date>=fromDate&&i.date<=toDate);
+  // Cash outflows: profit distributions to partners
+  const profitDistributions=(db.distributions||[]).filter(d=>d.date>=fromDate&&d.date<=toDate);
 
   // Build a unified chronological list of entries
   const entries=[];
@@ -6219,6 +6708,9 @@ function renderCashBookPage(){
   });
   capitalInjections.forEach(i=>{
     entries.push({date:i.date,type:'Capital In',typeCls:'badge-blue',ref:i.id,desc:'Capital injection — '+(i.partnerName||i.partnerId)+(i.notes?' ('+i.notes+')':''),in:i.amount,out:0,sortKey:i.date+'-'+(i.id||'')});
+  });
+  profitDistributions.forEach(d=>{
+    entries.push({date:d.date,type:'Profit Out',typeCls:'badge-amber',ref:d.id,desc:'Profit distribution — '+(d.partnerName||d.partnerId)+(d.notes?' ('+d.notes+')':''),in:0,out:d.amount,sortKey:d.date+'-'+(d.id||'')});
   });
   entries.sort((a,b)=>a.sortKey.localeCompare(b.sortKey));
 
@@ -6274,8 +6766,8 @@ function printCashBookReport(){
   rowsHtml+='<tr style="background:#f3f4f6"><td colspan="6" style="padding:9px 10px;font-size:12px;font-style:italic;color:#374151">Opening Balance (as of '+fmtDate(fromDate)+')</td><td style="padding:9px 10px;text-align:right;font-family:monospace;font-weight:700">SAR '+openingBalance.toFixed(2)+'</td></tr>';
   if(entries.length){
     entries.forEach(en=>{
-      const typeColor=en.type==='Cash In'?'#065f46':en.type==='Capital In'?'#1e4d8c':en.type==='Supplier Payment'?'#92400e':'#991b1b';
-      const typeBg=en.type==='Cash In'?'#d1fae5':en.type==='Capital In'?'#dbeafe':en.type==='Supplier Payment'?'#fef3c7':'#fee2e2';
+      const typeColor=en.type==='Cash In'?'#065f46':en.type==='Capital In'?'#1e4d8c':en.type==='Supplier Payment'?'#92400e':en.type==='Profit Out'?'#92400e':'#991b1b';
+      const typeBg=en.type==='Cash In'?'#d1fae5':en.type==='Capital In'?'#dbeafe':en.type==='Supplier Payment'?'#fef3c7':en.type==='Profit Out'?'#fef3c7':'#fee2e2';
       rowsHtml+='<tr style="border-bottom:1px solid #f3f4f6">'
         +'<td style="padding:8px 10px;font-size:12px">'+fmtDate(en.date)+'</td>'
         +'<td style="padding:8px 10px"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:'+typeBg+';color:'+typeColor+'">'+en.type+'</span></td>'
@@ -6362,14 +6854,15 @@ function renderSupplierPaymentsPage(){
 
   const methodCls={'Cash':'badge-green','Bank Transfer':'badge-blue','Cheque':'badge-amber','Online':'badge-teal'};
   const body=document.getElementById('suppay-body');
-  if(body)body.innerHTML=rows.length?rows.map(p=>`<tr><td style="font-size:12px">${fmtDate(p.date)}</td><td><strong>${p.supplierName}</strong></td><td style="font-family:var(--mono);font-weight:600;color:var(--red)">SAR ${p.amount.toFixed(2)}</td><td><span class="badge ${methodCls[p.method]||'badge-gray'}">${p.method}</span></td><td style="font-size:12px;color:var(--text2)">${p.notes||'—'}</td><td style="font-size:12px;color:var(--text2)">${p.recordedBy?'<i class="ti ti-user" style="margin-right:3px;color:var(--text3)"></i>'+p.recordedBy:'—'}</td><td><button class="btn btn-sm btn-danger" onclick="deleteSupplierPayment('${p.id}')"><i class="ti ti-trash"></i></button></td></tr>`).join(''):`<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3)">No supplier payments found</td></tr>`;
+  if(body)body.innerHTML=rows.length?rows.map(p=>`<tr><td style="font-size:12px">${fmtDate(p.date)}</td><td><strong>${p.supplierName}</strong></td><td style="font-family:var(--mono);font-weight:600;color:var(--red)">SAR ${p.amount.toFixed(2)}</td><td><span class="badge ${methodCls[p.method]||'badge-gray'}">${p.method}</span></td><td style="font-size:12px;color:var(--text2)">${p.notes||'—'}</td><td style="font-size:12px;color:var(--text2)">${p.recordedBy?'<i class="ti ti-user" style="margin-right:3px;color:var(--text3)"></i>'+p.recordedBy:'—'}</td><td>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteSupplierPayment('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`).join(''):`<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text3)">No supplier payments found</td></tr>`;
 }
 function deleteSupplierPayment(id){
-  if(!confirm('Delete this supplier payment record? This cannot be undone.'))return;
+  showConfirm('Delete Payment Record','This supplier payment record will be permanently removed.',null,true).then(ok=>{if(!ok)return;
   db.supplierPayments=db.supplierPayments.filter(p=>p.id!==id);
   renderSupplierPaymentsPage();
   saveAppState();
   showToast('Supplier payment deleted','amber');
+  });
 }
 // ── SUPPLIER STATEMENT ───────────────────────────────────────────────────────
 let _ssSupplier='';let _ssSelectedMonths=[];let _ssDropdownOpen=false;let _ssLastData=null;
@@ -6677,7 +7170,7 @@ function renderAssetRegister(){
     const depPct=a.purchaseCost>0?Math.round(d.accumDep/a.purchaseCost*100):0;
     const icon=ASSET_CAT_ICONS[a.category]||'ti-package';
     const color=ASSET_CAT_COLORS[a.category]||'var(--text3)';
-    return`<tr><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${a.code}</td><td><div style="display:flex;align-items:center;gap:8px"><i class="ti ${icon}" style="color:${color};font-size:16px"></i><strong>${a.name}</strong></div>${a.assignedTo?'<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+a.assignedTo+'</div>':''}</td><td><span class="badge" style="background:${color}22;color:${color}">${a.category}</span></td><td style="font-size:12px">${fmtDate(a.purchaseDate)}</td><td style="font-family:var(--mono)">SAR ${Number(a.purchaseCost).toFixed(2)}</td><td style="font-family:var(--mono);font-weight:700;color:${d.isFullyDep?'var(--text3)':'var(--teal)'}">SAR ${d.bookValue.toFixed(2)}</td><td style="font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px"><div style="width:${depPct}%;height:6px;border-radius:3px;background:${depPct>=100?'var(--red)':'var(--amber)'}"></div></div><span style="font-size:11px;color:var(--text3);flex-shrink:0">${depPct}%</span></div></td><td style="font-size:12px;color:var(--text2)">${a.location||'—'}</td><td><span class="badge ${CONDITION_CLS[a.condition]||'badge-gray'}">${a.condition||'—'}</span></td><td><span class="badge ${a.status==='Active'?'badge-green':a.status==='Disposed'?'badge-blue':'badge-red'}">${a.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="viewAssetDetail('${a.id}')" title="View Details"><i class="ti ti-eye"></i></button><button class="btn btn-sm btn-outline" onclick="openMaintenanceModal('${a.id}')" title="Log Maintenance"><i class="ti ti-tool"></i></button><button class="btn btn-sm btn-outline" onclick="editAsset('${a.id}')" title="Edit"><i class="ti ti-pencil"></i></button><button class="btn btn-sm btn-danger" onclick="deleteAsset('${a.id}')" title="Delete"><i class="ti ti-trash"></i></button></td></tr>`;
+    return`<tr><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${a.code}</td><td><div style="display:flex;align-items:center;gap:8px"><i class="ti ${icon}" style="color:${color};font-size:16px"></i><strong>${a.name}</strong></div>${a.assignedTo?'<div style="font-size:11px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+a.assignedTo+'</div>':''}</td><td><span class="badge" style="background:${color}22;color:${color}">${a.category}</span></td><td style="font-size:12px">${fmtDate(a.purchaseDate)}</td><td style="font-family:var(--mono)">SAR ${Number(a.purchaseCost).toFixed(2)}</td><td style="font-family:var(--mono);font-weight:700;color:${d.isFullyDep?'var(--text3)':'var(--teal)'}">SAR ${d.bookValue.toFixed(2)}</td><td style="font-size:12px"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;background:var(--border);border-radius:3px;height:6px"><div style="width:${depPct}%;height:6px;border-radius:3px;background:${depPct>=100?'var(--red)':'var(--amber)'}"></div></div><span style="font-size:11px;color:var(--text3);flex-shrink:0">${depPct}%</span></div></td><td style="font-size:12px;color:var(--text2)">${a.location||'—'}</td><td><span class="badge ${CONDITION_CLS[a.condition]||'badge-gray'}">${a.condition||'—'}</span></td><td><span class="badge ${a.status==='Active'?'badge-green':a.status==='Disposed'?'badge-blue':'badge-red'}">${a.status}</span></td><td style="display:flex;gap:4px;flex-wrap:wrap"><button class="btn btn-sm btn-outline" onclick="viewAssetDetail('${a.id}')" title="View Details"><i class="ti ti-eye"></i></button><button class="btn btn-sm btn-outline" onclick="openMaintenanceModal('${a.id}')" title="Log Maintenance"><i class="ti ti-tool"></i></button><button class="btn btn-sm btn-outline" onclick="editAsset('${a.id}')" title="Edit"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteAsset('${a.id}')" title="Delete"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join(''):`<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--text3)">No assets found</td></tr>`;
 }
 
@@ -6717,7 +7210,7 @@ function renderMaintenanceLog(){
     const a=db.assets.find(x=>x.id===m.assetId);
     let nextDue='—',nextCls='';
     if(m.nextServiceDate){const days=Math.round((new Date(m.nextServiceDate)-new Date())/86400000);nextCls=days<0?'color:var(--red)':days<=30?'color:var(--amber)':'color:var(--text2)';nextDue=fmtDate(m.nextServiceDate)+(days<0?' ('+Math.abs(days)+'d overdue)':days<=30?' (in '+days+'d)':'');}
-    return`<tr><td style="font-size:12px">${fmtDate(m.date)}</td><td><strong>${a?a.name:'Unknown'}</strong><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${a?a.code:''}</div></td><td><span class="badge ${typeCls[m.type.split(' ')[0]]||'badge-gray'}">${m.type}</span></td><td style="font-size:12px;color:var(--text2)">${m.description||'—'}</td><td style="font-family:var(--mono);color:var(--red)">${m.cost>0?'SAR '+Number(m.cost).toFixed(2):'—'}</td><td style="font-size:12px;color:var(--text2)">${m.performedBy||'—'}</td><td style="font-size:12px;${nextCls}">${nextDue}</td><td style="font-size:12px;color:var(--text2)">${m.loggedBy?'<i class="ti ti-user" style="margin-right:3px;color:var(--text3)"></i>'+m.loggedBy:'—'}</td><td style="display:flex;gap:4px"><button class="btn btn-sm btn-danger" onclick="deleteMaintenance('${m.id}')"><i class="ti ti-trash"></i></button></td></tr>`;
+    return`<tr><td style="font-size:12px">${fmtDate(m.date)}</td><td><strong>${a?a.name:'Unknown'}</strong><div style="font-size:11px;color:var(--text3);font-family:var(--mono)">${a?a.code:''}</div></td><td><span class="badge ${typeCls[m.type.split(' ')[0]]||'badge-gray'}">${m.type}</span></td><td style="font-size:12px;color:var(--text2)">${m.description||'—'}</td><td style="font-family:var(--mono);color:var(--red)">${m.cost>0?'SAR '+Number(m.cost).toFixed(2):'—'}</td><td style="font-size:12px;color:var(--text2)">${m.performedBy||'—'}</td><td style="font-size:12px;${nextCls}">${nextDue}</td><td style="font-size:12px;color:var(--text2)">${m.loggedBy?'<i class="ti ti-user" style="margin-right:3px;color:var(--text3)"></i>'+m.loggedBy:'—'}</td><td style="display:flex;gap:4px">${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteMaintenance('${m.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join(''):`<tr><td colspan="9" style="text-align:center;padding:28px;color:var(--text3)">No maintenance records found</td></tr>`;
 }
 
@@ -6788,10 +7281,11 @@ function saveAsset(){
   closeModal('modal-add-asset');saveAppState();renderAssetsPage();
 }
 function deleteAsset(id){
-  if(!confirm('Delete this asset? All maintenance records will also be removed.'))return;
+  showConfirm('Delete Asset','This asset and all its maintenance records will be permanently removed.',null,true).then(ok=>{if(!ok)return;
   db.assets=db.assets.filter(a=>a.id!==id);
   db.assetMaintenance=db.assetMaintenance.filter(m=>m.assetId!==id);
   renderAssetsPage();saveAppState();showToast('Asset deleted','amber');
+  });
 }
 function viewAssetDetail(id){
   const a=db.assets.find(x=>x.id===id);if(!a)return;
@@ -6823,10 +7317,13 @@ function viewAssetDetail(id){
 }
 function disposeAsset(id){
   const a=db.assets.find(x=>x.id===id);if(!a)return;
-  const amt=parseFloat(prompt('Disposal amount received (SAR) — enter 0 for write-off:')||'0');
-  const method=amt>0?'Disposed':'Written Off';
-  a.status=method;a.disposalDate=today();a.disposalAmount=amt;
-  closeModal('modal-asset-detail');renderAssetsPage();saveAppState();showToast('Asset marked as '+method,'amber');
+  showPrompt('Dispose Asset','Enter disposal amount received (SAR). Enter 0 for write-off.','0','number').then(val=>{
+    if(val===null)return;// cancelled
+    const amt=parseFloat(val)||0;
+    const method=amt>0?'Disposed':'Written Off';
+    a.status=method;a.disposalDate=today();a.disposalAmount=amt;
+    closeModal('modal-asset-detail');renderAssetsPage();saveAppState();showToast('Asset marked as '+method,'amber');
+  });
 }
 
 // ── MAINTENANCE CRUD ─────────────────────────────────────────────────────────
@@ -6865,10 +7362,11 @@ function saveMaintenance(){
   closeModal('modal-add-maintenance');renderAssetsPage();saveAppState();showToast('Maintenance logged');
 }
 function deleteMaintenance(id){
-  if(!confirm('Delete this maintenance record?'))return;
+  showConfirm('Delete Maintenance Record','This maintenance log entry will be permanently removed.',null,true).then(ok=>{if(!ok)return;
   db.assetMaintenance=db.assetMaintenance.filter(m=>m.id!==id);
   renderAssetsPage();saveAppState();if(document.getElementById('ast-panel-maintenance').style.display!=='none')renderMaintenanceLog();
   showToast('Record deleted','amber');
+  });
 }
 
 // ── DEPRECIATION REPORT PRINT ─────────────────────────────────────────────────
@@ -6999,8 +7497,9 @@ function saveSettings(){
   showToast('Settings saved');
 }
 function clearSavedData(){
-  if(!confirm('Delete ALL data from Firebase? Cannot be undone.'))return;
+  showConfirm('⚠ Delete ALL Data','This will permanently erase ALL data from Firebase including invoices, customers, products, and settings. This cannot be undone.','This action is irreversible',true).then(ok=>{if(!ok)return;
   _fsdb.collection('fastrack').get().then(snap=>{const b=_fsdb.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();}).then(()=>{localStorage.removeItem('fastrack_session');showToast('Data cleared — reloading...','amber');setTimeout(()=>location.reload(),1500);}).catch(e=>showToast('Error: '+e.message,'red'));
+  });
 }
 // ── PRINT INVOICE ─────────────────────────────────────────────────────────────
 function printZatcaInvoice(invId){
@@ -7303,7 +7802,7 @@ function viewInvoice(invId){
     <div>
       ${companyLogoHtml(48)}
       <div style="font-size:22px;font-weight:800;color:#0f1f2e">${s.nameEn||'FasTrack'}</div>
-      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;direction:rtl;margin-top:2px">'+s.nameAr+'</div>':''}
+      ${s.nameAr?'<div style="font-size:14px;color:#6b7280;text-align:left;margin-top:2px">'+s.nameAr+'</div>':''}
       ${s.address?'<div style="font-size:12px;color:#6b7280;margin-top:6px">'+s.address+'</div>':''}
       ${s.phone?'<div style="font-size:12px;color:#6b7280">'+s.phone+'</div>':''}
       ${s.email?'<div style="font-size:12px;color:#6b7280">'+s.email+'</div>':''}
@@ -7463,6 +7962,8 @@ function printThermalInvoice(inv){
         +'<div style="display:flex;justify-content:space-between"><span>'+it.qty+' x SAR '+it.price.toFixed(2)+'</span><span>SAR '+lineTotal+'</span></div>';
     }).join('<div style="border-top:1px dashed #ccc;margin:3px 0"></div>');
 
+    const isEst=inv.isEstimate===true;
+
     const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+inv.id+'</title>'
       +'<style>'
       +'*{margin:0;padding:0;box-sizing:border-box}'
@@ -7485,70 +7986,98 @@ function printThermalInvoice(inv){
       +'}'
       +'</style></head><body>'
 
-      // Company header
-      +(s.logo?'<div class="center" style="margin-bottom:4px"><img src="'+s.logo+'" style="max-width:60mm;max-height:20mm;object-fit:contain"></div>':'')
-      +'<div class="center big">'+(s.nameEn||'FasTrack')+'</div>'
-      +(s.nameAr?'<div class="center" style="direction:rtl;font-size:13px">'+s.nameAr+'</div>':'')
-      +(s.address?'<div class="center" style="font-size:11px">'+s.address+'</div>':'')
-      +(s.phone?'<div class="center" style="font-size:11px">'+s.phone+'</div>':'')
-      +(s.vatNumber?'<div class="center" style="font-size:11px">VAT: '+s.vatNumber+'</div>':'')
-      +(s.crNumber?'<div class="center" style="font-size:11px">CR: '+s.crNumber+'</div>':'')
+      // ── ESTIMATE layout (no company header/footer)
+      +(isEst
+        ? '<div class="line"></div>'
+          +'<div class="center big">ESTIMATE</div>'
+          +'<div class="line"></div>'
 
-      // Invoice title
-      +'<div class="line"></div>'
-      +'<div class="center med">TAX INVOICE / فاتورة ضريبية</div>'
-      +'<div class="line"></div>'
+          // Details
+          +'<div class="row"><span>Estimate #:</span><span class="r bold">'+inv.id+'</span></div>'
+          +'<div class="row"><span>Date:</span><span class="r">'+fmtDate(inv.date)+'</span></div>'
 
-      // Invoice details
-      +'<div class="row"><span>Invoice #:</span><span class="r bold">'+inv.id+'</span></div>'
-      +'<div class="row"><span>Date:</span><span class="r">'+fmtDate(inv.date)+'</span></div>'
-      +'<div class="row"><span>Due:</span><span class="r">'+fmtDate(inv.due)+'</span></div>'
+          // Customer
+          +'<div class="dashed"></div>'
+          +'<div class="row"><span>Customer:</span><span class="r bold">'+c.name+'</span></div>'
+          +(c.phone?'<div class="row"><span>Phone:</span><span class="r">'+c.phone+'</span></div>':'')
+          +(c.area?'<div class="row"><span>Area:</span><span class="r">'+c.area+'</span></div>':'')
 
-      // Customer
-      +'<div class="dashed"></div>'
-      +'<div class="row"><span>Customer:</span><span class="r bold">'+c.name+'</span></div>'
-      +(c.phone?'<div class="row"><span>Phone:</span><span class="r">'+c.phone+'</span></div>':'')
-      +(c.area?'<div class="row"><span>Area:</span><span class="r">'+c.area+'</span></div>':'')
-      +(inv.van?'<div class="row"><span>Van:</span><span class="r">'+inv.van+'</span></div>':'')
+          // Items
+          +'<div class="line"></div>'
+          +'<div class="center bold">ITEMS</div>'
+          +'<div class="dashed"></div>'
+          +itemsHtml
 
-      // Items
-      +'<div class="line"></div>'
-      +'<div class="center bold">ITEMS</div>'
-      +'<div class="dashed"></div>'
-      +itemsHtml
+          // Total only (no VAT)
+          +'<div class="line"></div>'
+          +'<div class="total-row"><span>TOTAL:</span><span>SAR '+inv.total.toFixed(2)+'</span></div>'
+          +'<div class="line"></div>'
+          +'<br><br>'
 
-      // Totals
-      +'<div class="line"></div>'
-      +'<div class="row"><span>Subtotal:</span><span class="r">SAR '+sub.toFixed(2)+'</span></div>'
-      +'<div class="row"><span>VAT ('+vatPct+'%):</span><span class="r">SAR '+vat.toFixed(2)+'</span></div>'
-      +'<div class="line"></div>'
-      +'<div class="total-row"><span>TOTAL:</span><span>SAR '+inv.total.toFixed(2)+'</span></div>'
-      +(inv.paid>0?'<div class="row"><span>Paid:</span><span class="r" style="color:#166534">SAR '+inv.paid.toFixed(2)+'</span></div>':'')
-      +(bal>0?'<div class="row bold" style="font-size:13px"><span>Balance Due:</span><span class="r">SAR '+bal.toFixed(2)+'</span></div>':'')
-      +'<div class="line"></div>'
+        // ── TAX INVOICE layout (full header/footer)
+        : // Company header
+          (s.logo?'<div class="center" style="margin-bottom:4px"><img src="'+s.logo+'" style="max-width:60mm;max-height:20mm;object-fit:contain"></div>':'')
+          +'<div class="center" style="font-size:11px;font-weight:bold;white-space:nowrap;overflow:hidden;letter-spacing:-0.3px">'+(s.nameEn||'FasTrack')+'</div>'
+          +(s.nameAr?'<div class="center" style="font-size:11px">'+s.nameAr+'</div>':'')
+          // Line 1: address + phone
+          +((s.address||s.phone)?'<div class="center" style="font-size:10px">'+[s.address,s.phone].filter(Boolean).join(' · ')+'</div>':'')
+          // Line 2: VAT + CR
+          +((s.vatNumber||s.crNumber)?'<div class="center" style="font-size:10px">'+[s.vatNumber?'VAT: '+s.vatNumber:'',s.crNumber?'CR: '+s.crNumber:''].filter(Boolean).join(' · ')+'</div>':'')
 
-      // Status stamp
-      +'<div class="status">'+(isPaid?'✓  PAID  مدفوع':'⚠  OUTSTANDING  مستحق')+'</div>'
+          // Invoice title
+          +'<div class="line"></div>'
+          +'<div class="center med">TAX INVOICE / فاتورة ضريبية</div>'
+          +'<div class="line"></div>'
 
-      // ZATCA QR
-      +'<div class="qr-wrap">'
-      +(qrDataUrl?'<img src="'+qrDataUrl+'" style="width:100px;height:100px">':'<div style="font-size:10px;color:#666">QR loading...</div>')
-      +'<div style="font-size:9px;text-align:center;margin-top:3px">Scan to verify (ZATCA)</div>'
-      +'</div>'
+          // Invoice details
+          +'<div class="row"><span>Invoice #:</span><span class="r bold">'+inv.id+'</span></div>'
+          +'<div class="row"><span>Date:</span><span class="r">'+fmtDate(inv.date)+'</span></div>'
+          +'<div class="row"><span>Due:</span><span class="r">'+fmtDate(inv.due)+'</span></div>'
 
-      // Footer
-      +'<div class="dashed"></div>'
-      +'<div class="center" style="font-size:10px">Thank you for your business</div>'
-      +'<div class="center" style="font-size:10px">شكراً لتعاملكم معنا</div>'
-      +'<div class="center" style="font-size:9px;color:#666;margin-top:4px">'+fmtDate(today())+'</div>'
-      +'<br><br>'
+          // Customer
+          +'<div class="dashed"></div>'
+          +'<div class="row"><span>Customer:</span><span class="r bold">'+c.name+'</span></div>'
+          +((c.vatNumber||c.crNumber)?'<div style="font-size:10px;white-space:nowrap;overflow:hidden">'+[c.vatNumber?'VAT: '+c.vatNumber:'',c.crNumber?'CR: '+c.crNumber:''].filter(Boolean).join(' · ')+'</div>':'')
+          +(inv.van?'<div class="row"><span>Van:</span><span class="r">'+inv.van+'</span></div>':'')
+
+          // Items
+          +'<div class="line"></div>'
+          +'<div class="center bold">ITEMS</div>'
+          +'<div class="dashed"></div>'
+          +itemsHtml
+
+          // Totals
+          +'<div class="line"></div>'
+          +'<div class="row"><span>Subtotal:</span><span class="r">SAR '+sub.toFixed(2)+'</span></div>'
+          +'<div class="row"><span>VAT ('+vatPct+'%):</span><span class="r">SAR '+vat.toFixed(2)+'</span></div>'
+          +'<div class="line"></div>'
+          +'<div class="total-row"><span>TOTAL:</span><span>SAR '+inv.total.toFixed(2)+'</span></div>'
+          +(inv.paid>0?'<div class="row"><span>Paid:</span><span class="r" style="color:#166534">SAR '+inv.paid.toFixed(2)+'</span></div>':'')
+          +(bal>0?'<div class="row bold" style="font-size:13px"><span>Balance Due:</span><span class="r">SAR '+bal.toFixed(2)+'</span></div>':'')
+          +'<div class="line"></div>'
+
+          // Status stamp
+          +'<div class="status">'+(isPaid?'✓  PAID  مدفوع':'⚠  OUTSTANDING  مستحق')+'</div>'
+
+          // ZATCA QR (no label text)
+          +'<div class="qr-wrap">'
+          +(qrDataUrl?'<img src="'+qrDataUrl+'" style="width:100px;height:100px">':'')
+          +'</div>'
+
+          // Footer
+          +'<div class="dashed"></div>'
+          +'<div class="center" style="font-size:10px">Thank you for your business</div>'
+          +'<div class="center" style="font-size:10px">شكراً لتعاملكم معنا</div>'
+          +'<div class="center" style="font-size:9px;color:#666;margin-top:4px">'+fmtDate(today())+'</div>'
+          +'<br><br>'
+      )
       +'</body></html>';
 
     _printHTML(html,600);
   }
 
-  // Generate QR using canvas then print
-  var qrDataUrl=getZatcaQRDataURL(inv,200);
+  // Generate QR using canvas then print (skip for estimates)
+  var qrDataUrl=inv.isEstimate?null:getZatcaQRDataURL(inv,200);
   doThermalPrint(qrDataUrl);
 }
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -7567,7 +8096,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     db.purchaseReturns=[];db.supplierPayments=[];db.salesReturns=[];
     db.quotations=[];db.deliveryNotes=[];db.priceHistory=[];
     db.suppliers=[];db.assets=[];db.assetMaintenance=[];db.dailyOps=[];
-    db.partners=[];db.capitalInvestments=[];
+    db.partners=[];db.capitalInvestments=[];db.distributions=[];
     db.stock={};db.nextInvId=1001;db.nextPoId=1001;db.nextQuoId=1001;
     db.nextDnId=1001;db.nextSrId=1001;
   }
