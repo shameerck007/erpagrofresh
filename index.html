@@ -2396,11 +2396,30 @@ function showPrompt(title,body,placeholder,inputType){
 }
 
 // Shared print helper — injects a mobile back button and auto-closes after print
-function _printHTML(html,delay){
+function _printHTML(html,delay,isThermal){
   delay=delay||500;
   const w=window.open('','_blank');
   if(!w){showToast('Allow popups to print','amber');return;}
-  // Inject mobile back bar into the HTML before </body>
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if(isThermal){
+    // Thermal print: auto-print immediately on all devices, then auto-close
+    // No back bar needed — ESC/POS service handles everything
+    const thermalHtml=html.replace('</body>',
+      '<script>window.onload=function(){'
+      +'setTimeout(function(){'
+      +'window.print();'
+      // Auto-close after print dialog dismissed
+      +'setTimeout(function(){try{window.close();}catch(e){}},1000);'
+      +'},400);'
+      +'}<\/script></body>');
+    w.document.write(thermalHtml);
+    w.document.close();
+    w.focus();
+    return;
+  }
+
+  // Non-thermal: inject Back + Print bar
   const backBar=`<div id="mobile-print-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-family:sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,.2)">
     <button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:18px">&#8592;</span> Back to App</button>
     <button onclick="window.print()" style="background:#fff;border:none;color:#185fa5;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:16px">&#128438;</span> Print</button>
@@ -2411,8 +2430,6 @@ function _printHTML(html,delay){
   w.document.write(injected);
   w.document.close();
   w.focus();
-  // On desktop auto-trigger print; on mobile let the user use the Print button above
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if(!isMobile)setTimeout(function(){try{w.print();}catch(e){}},delay);
 }
 const today=()=>new Date().toISOString().split('T')[0];
@@ -4322,7 +4339,7 @@ function _printReceiptThermal(pmtId){
     +'<br><br>'
     +'</body></html>';
 
-  _printHTML(html);
+  _printHTML(html,500,true);
 }
 
 // ── RECEIPT VIEWER ────────────────────────────────────────────────────────────
@@ -8302,30 +8319,33 @@ function printThermalInvoice(inv){
 
     const isEst=inv.isEstimate===true;
 
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+inv.id+'</title>'
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8">'
+      +'<meta name="viewport" content="width=device-width,initial-scale=1">'
+      +'<title>'+inv.id+'</title>'
       +'<style>'
-      +'*{margin:0;padding:0;box-sizing:border-box}'
-      // Body sized exactly for 80mm thermal paper
-      +'body{font-family:"Courier New",Courier,monospace;font-size:13px;color:#000;width:80mm;margin:0;padding:3mm 2mm;background:#fff}'
+      +'*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}'
+      // Exact 80mm thermal paper width, high quality rendering
+      +'body{font-family:"Courier New",Courier,monospace;font-size:13px;color:#000;width:80mm;margin:0;padding:3mm 2mm 0;background:#fff;line-height:1.5}'
       +'.center{text-align:center}'
       +'.bold{font-weight:bold}'
-      +'.big{font-size:15px;font-weight:bold;letter-spacing:1px}'
-      +'.med{font-size:13px;font-weight:bold}'
+      +'.big{font-size:16px;font-weight:bold;letter-spacing:0.5px}'
+      +'.med{font-size:13px;font-weight:bold;letter-spacing:0.5px}'
       +'.line{border-top:1.5px solid #000;margin:4px 0}'
-      +'.dashed{border-top:1px dashed #555;margin:3px 0}'
-      +'.row{display:flex;justify-content:space-between;align-items:baseline;line-height:1.6}'
-      +'.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:bold;margin:5px 0;line-height:1.6}'
-      +'.status{font-size:13px;font-weight:900;text-align:center;padding:5px 4px;margin:6px 0;border:2px solid #000;letter-spacing:2px}'
+      +'.dashed{border-top:1px dashed #444;margin:3px 0}'
+      +'.row{display:flex;justify-content:space-between;align-items:baseline;padding:1px 0}'
+      +'.total-row{display:flex;justify-content:space-between;font-size:16px;font-weight:bold;margin:5px 0;padding:2px 0}'
+      +'.status{font-size:13px;font-weight:900;text-align:center;padding:5px;margin:6px 0;border:2px solid #000;letter-spacing:3px}'
+      // QR code - larger for better scanning
       +'.qr-wrap{text-align:center;margin:8px 0}'
-      // Critical for ESC/POS Print Service - exact 80mm page, no margins
+      +'.qr-wrap img{width:130px;height:130px;image-rendering:pixelated}'
+      // Critical print settings for ESC/POS Bluetooth Print Service
       +'@media print{'
-      +'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
-      +'body{width:80mm;padding:2mm 1mm;margin:0}'
-      +'@page{margin:0;size:80mm auto;padding:0}'
+      +'html,body{width:80mm;margin:0;padding:2mm 1mm 0}'
+      +'@page{margin:0;padding:0;size:80mm auto}'
+      +'*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}'
+      +'.qr-wrap img{width:130px!important;height:130px!important}'
       +'}'
       +'</style>'
-      // Auto-print immediately when page loads (works with ESC/POS service)
-      +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>'
       +'</head><body>'
 
       // ── ESTIMATE layout (no company header/footer)
@@ -8403,7 +8423,7 @@ function printThermalInvoice(inv){
 
           // ZATCA QR (no label text)
           +'<div class="qr-wrap">'
-          +(qrDataUrl?'<img src="'+qrDataUrl+'" style="width:100px;height:100px">':'')
+          +(qrDataUrl?'<img src="'+qrDataUrl+'" style="width:130px;height:130px;image-rendering:pixelated">':'')
           +'</div>'
 
           // Footer
@@ -8415,11 +8435,11 @@ function printThermalInvoice(inv){
       )
       +'</body></html>';
 
-    _printHTML(html,600);
+    _printHTML(html,600,true);
   }
 
   // Generate QR using canvas then print (skip for estimates)
-  var qrDataUrl=inv.isEstimate?null:getZatcaQRDataURL(inv,200);
+  var qrDataUrl=inv.isEstimate?null:getZatcaQRDataURL(inv,300);
   doThermalPrint(qrDataUrl);
 }
 // ── INIT ──────────────────────────────────────────────────────────────────────
