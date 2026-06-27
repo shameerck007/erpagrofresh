@@ -8291,75 +8291,219 @@ function printThermalInvoice(inv){
   const sub=inv.subtotal||(inv.total/(1+getVatRate()));
   const vat=inv.vatAmount||(inv.total-sub);
   const isEst=inv.isEstimate===true;
+
+  // Build receipt lines array
   const W=48;
   const D='-'.repeat(W);
   const E='='.repeat(W);
   function ct(t){t=(t||'').slice(0,W);var p=Math.floor((W-t.length)/2);return' '.repeat(Math.max(0,p))+t;}
   function rw(l,r){l=String(l||'');r=String(r||'');var sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r;}
+
+  var lines=[];// {text, bold, center, size, isLine, isLogoPlaceholder, isQR}
+  function addL(text,bold,center,size){lines.push({text:text||'',bold:!!bold,center:!!center,size:size||1});}
+  function addE(){addL(E);}function addD(){addL(D);}
+
+  if(isEst){
+    addE();addL(ct('ESTIMATE'),true,false,1.3);addE();
+    addL(rw('Ref:',inv.id));addL(rw('Date:',fmtDate(inv.date)));
+    addD();addL('Customer: '+(c.name||'').slice(0,38),true);addD();
+    addL(ct('ITEMS'),true);addD();
+    inv.items.forEach(function(it){var p=getProduct(it.product);addL(p.name.slice(0,W));addL(rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2)));});
+    addE();addL(rw('TOTAL:','SAR '+inv.total.toFixed(2)),true,false,1.2);addE();
+  }else{
+    if(s.logo)lines.push({isLogo:true,src:s.logo});
+    addL(ct(s.nameEn||'FasTrack'),true,false,1.1);
+    if(s.nameAr)addL(ct(s.nameAr),false,false,1.0);
+    if(s.address)addL(ct(s.address));
+    if(s.phone)addL(ct(s.phone));
+    if(s.vatNumber)addL(ct('VAT:'+s.vatNumber));
+    if(s.crNumber)addL(ct('CR:'+s.crNumber));
+    addE();addL(ct('TAX INVOICE'),true,false,1.1);addE();
+    addL(rw('Invoice:',inv.id));addL(rw('Date:',fmtDate(inv.date)));addL(rw('Due:',fmtDate(inv.due)));
+    addD();addL('Customer: '+(c.name||'').slice(0,38),true);
+    if(c.vatNumber)addL('VAT: '+c.vatNumber);
+    if(c.crNumber)addL('CR:  '+c.crNumber);
+    if(inv.van)addL(rw('Van:',inv.van));
+    addD();addL(ct('ITEMS'),true);addD();
+    inv.items.forEach(function(it){var p=getProduct(it.product);addL(p.name.slice(0,W));addL(rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2)));});
+    addE();addL(rw('Subtotal:','SAR '+sub.toFixed(2)));
+    addL(rw('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2)));
+    addE();addL(rw('TOTAL:','SAR '+inv.total.toFixed(2)),true,false,1.3);
+    if(inv.paid>0)addL(rw('Paid:','SAR '+inv.paid.toFixed(2)));
+    if(bal>0)addL(rw('Bal Due:','SAR '+bal.toFixed(2)),true);
+    addE();addL(ct(isPaid?'**** PAID ****':'** OUTSTANDING **'),true);
+    addD();addL(ct('Thank you for your business'));addL(ct(fmtDate(today())));
+    lines.push({isQR:true});
+  }
+  lines.push({text:''});lines.push({text:''});lines.push({text:''});
+
+  // Render receipt to canvas image
+  function renderAndShare(logoImg,qrCanvas){
+    const PX=3;// high DPI — 3x for sharp thermal output
+    const CW=384*PX;// 80mm at 96dpi × 3
+    const FH=18*PX;// base font height
+    const PAD=8*PX;
+    const FONT=FH+'px "Courier New",monospace';
+    const BFONT='bold '+FH+'px "Courier New",monospace';
+
+    // First pass: calculate total height
+    var totalH=PAD;
+    lines.forEach(function(l){
+      if(l.isLogo&&logoImg)totalH+=Math.round(80*PX)+PAD;
+      else if(l.isQR&&qrCanvas)totalH+=Math.round(130*PX)+PAD*2;
+      else totalH+=Math.round(FH*(l.size||1)*1.5);
+    });
+    totalH+=PAD*2;
+
+    var cv=document.createElement('canvas');
+    cv.width=CW;cv.height=totalH;
+    var ctx=cv.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,CW,totalH);
+    ctx.fillStyle='#000';
+
+    var y=PAD;
+    lines.forEach(function(l){
+      if(l.isLogo&&logoImg){
+        // Draw logo centered
+        var lh=Math.round(80*PX);
+        var lw=Math.round(lh*(logoImg.naturalWidth/logoImg.naturalHeight));
+        lw=Math.min(lw,CW-PAD*2);
+        ctx.drawImage(logoImg,Math.floor((CW-lw)/2),y,lw,lh);
+        y+=lh+PAD;
+      }else if(l.isQR&&qrCanvas){
+        // Draw QR code centered
+        var qsz=Math.round(130*PX);
+        ctx.drawImage(qrCanvas,Math.floor((CW-qsz)/2),y+PAD,qsz,qsz);
+        y+=qsz+PAD*3;
+      }else{
+        var fh=Math.round(FH*(l.size||1));
+        ctx.font=(l.bold?'bold ':'')+fh+'px "Courier New",monospace';
+        ctx.fillStyle='#000';
+        ctx.textBaseline='top';
+        ctx.fillText(l.text,PAD,y);
+        y+=Math.round(fh*1.5);
+      }
+    });
+
+    // Convert canvas to PNG blob and send to RawBT
+    cv.toBlob(function(blob){
+      if(!blob){_thermalFallbackPrint(inv.id,_buildPlainText(inv));return;}
+
+      // Convert blob to base64
+      var reader=new FileReader();
+      reader.onload=function(){
+        var b64=reader.result.split(',')[1];
+
+        // Method 1: RawBT URL scheme — opens RawBT directly, no share sheet needed
+        // rawbt://base64/<data> sends image directly to RawBT default printer
+        var rawbtUrl='rawbt://base64/'+b64;
+        var triggered=false;
+
+        // Use hidden iframe to trigger RawBT without leaving the app
+        var iframe=document.createElement('iframe');
+        iframe.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;border:none';
+        document.body.appendChild(iframe);
+        try{
+          iframe.src=rawbtUrl;
+          triggered=true;
+          showToast('Sending to RawBT printer...','amber');
+          setTimeout(function(){
+            try{document.body.removeChild(iframe);}catch(e){}
+          },3000);
+        }catch(e){
+          try{document.body.removeChild(iframe);}catch(ex){}
+        }
+
+        // If iframe didn't work, try anchor click (more reliable on some Android versions)
+        if(!triggered){
+          var a=document.createElement('a');
+          a.href=rawbtUrl;
+          a.style.display='none';
+          document.body.appendChild(a);
+          a.click();
+          showToast('Sending to RawBT printer...','amber');
+          setTimeout(function(){try{document.body.removeChild(a);}catch(e){}},2000);
+        }
+
+        // After 2 seconds, if RawBT didn't open, fallback to share sheet
+        setTimeout(function(){
+          // Only fallback if user is still on the page (RawBT didn't take focus)
+          if(document.visibilityState==='visible'){
+            // Try Web Share API as fallback
+            var file=new File([blob],'receipt-'+inv.id+'.png',{type:'image/png'});
+            if(navigator.canShare&&navigator.canShare({files:[file]})){
+              navigator.share({files:[file],title:'Receipt '+inv.id})
+                .catch(function(e){if(e.name!=='AbortError')_thermalFallbackPrint(inv.id,_buildPlainText(inv));});
+            }
+          }
+        },2500);
+      };
+      reader.readAsDataURL(blob);
+    },'image/png',1.0);
+  }
+
+  // Load logo and QR then render
+  var logoImg=null,qrCanvas=null;
+  var pending=0;
+  function done(){if(--pending<=0)renderAndShare(logoImg,qrCanvas);}
+
+  // Load QR
+  if(!isEst){
+    pending++;
+    try{
+      qrCanvas=document.createElement('canvas');
+      qrCanvas.width=300;qrCanvas.height=300;
+      _drawQR(qrCanvas,buildZatcaTLV(inv),300);
+      done();
+    }catch(e){qrCanvas=null;done();}
+  }
+
+  // Load logo
+  if(s.logo&&!isEst){
+    pending++;
+    var img=new Image();
+    img.crossOrigin='anonymous';
+    img.onload=function(){logoImg=img;done();};
+    img.onerror=function(){logoImg=null;done();};
+    img.src=s.logo;
+  }
+
+  // No async needed — render immediately
+  if(pending===0)renderAndShare(logoImg,qrCanvas);
+}
+
+function _buildPlainText(inv){
+  const c=getCustomer(inv.customer);const s=db.settings||{};
+  const bal=inv.total-inv.paid,isPaid=bal<=0,isEst=inv.isEstimate===true;
+  const vatPct=Math.round(getVatRate()*100),sub=inv.subtotal||(inv.total/(1+getVatRate())),vat=inv.vatAmount||(inv.total-sub);
+  const W=48,D='-'.repeat(W),E='='.repeat(W);
+  function ct(t){t=(t||'').slice(0,W);var p=Math.floor((W-t.length)/2);return' '.repeat(Math.max(0,p))+t;}
+  function rw(l,r){l=String(l||'');r=String(r||'');var sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r;}
   var t='';
   if(isEst){
-    t+=E+'\n'+ct('ESTIMATE')+'\n'+E+'\n';
-    t+=rw('Ref:',inv.id)+'\n';
-    t+=rw('Date:',fmtDate(inv.date))+'\n';
-    t+=D+'\n'+'Customer: '+(c.name||'').slice(0,38)+'\n'+D+'\n';
-    t+=ct('ITEMS')+'\n'+D+'\n';
+    t+=E+'\n'+ct('ESTIMATE')+'\n'+E+'\n'+rw('Ref:',inv.id)+'\n'+rw('Date:',fmtDate(inv.date))+'\n';
+    t+=D+'\nCustomer: '+(c.name||'').slice(0,38)+'\n'+D+'\n'+ct('ITEMS')+'\n'+D+'\n';
     inv.items.forEach(function(it){var p=getProduct(it.product);t+=p.name.slice(0,W)+'\n';t+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2))+'\n';});
     t+=E+'\n'+rw('TOTAL:','SAR '+inv.total.toFixed(2))+'\n'+E+'\n';
   }else{
-    t+=ct(s.nameEn||'FasTrack')+'\n';
-    if(s.nameAr)t+=ct(s.nameAr)+'\n';
-    if(s.address)t+=ct(s.address)+'\n';
-    if(s.phone)t+=ct(s.phone)+'\n';
+    t+=ct(s.nameEn||'FasTrack')+'\n';if(s.nameAr)t+=ct(s.nameAr)+'\n';
+    if(s.address)t+=ct(s.address)+'\n';if(s.phone)t+=ct(s.phone)+'\n';
     if(s.vatNumber)t+=ct('VAT:'+s.vatNumber)+'\n';
-    if(s.crNumber)t+=ct('CR:'+s.crNumber)+'\n';
     t+=E+'\n'+ct('TAX INVOICE')+'\n'+E+'\n';
-    t+=rw('Invoice:',inv.id)+'\n';
-    t+=rw('Date:',fmtDate(inv.date))+'\n';
-    t+=rw('Due:',fmtDate(inv.due))+'\n';
-    t+=D+'\n';
-    t+='Customer: '+(c.name||'').slice(0,38)+'\n';
+    t+=rw('Invoice:',inv.id)+'\n'+rw('Date:',fmtDate(inv.date))+'\n'+rw('Due:',fmtDate(inv.due))+'\n';
+    t+=D+'\nCustomer: '+(c.name||'').slice(0,38)+'\n';
     if(c.vatNumber)t+='VAT: '+c.vatNumber+'\n';
-    if(c.crNumber)t+='CR:  '+c.crNumber+'\n';
     if(inv.van)t+=rw('Van:',inv.van)+'\n';
     t+=D+'\n'+ct('ITEMS')+'\n'+D+'\n';
     inv.items.forEach(function(it){var p=getProduct(it.product);t+=p.name.slice(0,W)+'\n';t+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2))+'\n';});
-    t+=E+'\n';
-    t+=rw('Subtotal:','SAR '+sub.toFixed(2))+'\n';
-    t+=rw('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2))+'\n';
-    t+=E+'\n';
-    t+=rw('TOTAL:','SAR '+inv.total.toFixed(2))+'\n';
+    t+=E+'\n'+rw('Subtotal:','SAR '+sub.toFixed(2))+'\n'+rw('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2))+'\n';
+    t+=E+'\n'+rw('TOTAL:','SAR '+inv.total.toFixed(2))+'\n';
     if(inv.paid>0)t+=rw('Paid:','SAR '+inv.paid.toFixed(2))+'\n';
     if(bal>0)t+=rw('Bal Due:','SAR '+bal.toFixed(2))+'\n';
-    t+=E+'\n';
-    t+=ct(isPaid?'**** PAID ****':'** OUTSTANDING **')+'\n';
+    t+=E+'\n'+ct(isPaid?'**** PAID ****':'** OUTSTANDING **')+'\n';
     t+=D+'\n'+ct('Thank you for your business')+'\n'+ct(fmtDate(today()))+'\n';
   }
-  t+='\n\n\n\n';
-
-  // Try Web Share API first — sends plain text directly to RawBT (or any share target)
-  // This is the most reliable method — no HTML rendering, no print dialog issues
-  if(navigator.share){
-    navigator.share({title:'Receipt '+inv.id,text:t})
-      .then(function(){showToast('Receipt shared — select RawBT','green');})
-      .catch(function(e){
-        // User cancelled or share failed — fall back to HTML print page
-        if(e.name!=='AbortError')_thermalFallbackPrint(inv.id,t);
-      });
-    return;
-  }
-
-  // Fallback for desktop / browsers without Web Share API
-  _thermalFallbackPrint(inv.id,t);
-}
-
-function _thermalFallbackPrint(invId,t){
-  // Show plain text in a print window — works on desktop Chrome
-  var page='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+invId+'</title>'
-    +'<style>*{margin:0;padding:0}body{font-family:"Courier New",monospace;font-size:10pt;width:80mm;background:#fff}'
-    +'pre{white-space:pre;font-size:10pt;line-height:1.35;padding:2mm}'
-    +'@media print{body{width:80mm;margin:0}@page{margin:0;size:80mm auto}}'
-    +'</style></head><body><pre>'+t+'</pre></body></html>';
-  _printHTML(page,600,true);
+  return t+'\n\n\n\n';
 }
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',async ()=>{
