@@ -2400,32 +2400,30 @@ function _printHTML(html,delay,isThermal){
   delay=delay||500;
   const w=window.open('','_blank');
   if(!w){showToast('Allow popups to print','amber');return;}
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
   if(isThermal){
-    // Thermal print: auto-print immediately on all devices, then auto-close
-    // No back bar needed — ESC/POS service handles everything
-    const thermalHtml=html.replace('</body>',
-      '<script>window.onload=function(){'
-      +'setTimeout(function(){'
-      +'window.print();'
-      // Auto-close after print dialog dismissed
-      +'setTimeout(function(){try{window.close();}catch(e){}},1000);'
-      +'},400);'
-      +'}<\/script></body>');
-    w.document.write(thermalHtml);
+    // Thermal: write HTML then trigger print after content loads
+    w.document.write(html);
     w.document.close();
     w.focus();
+    setTimeout(function(){
+      try{
+        w.print();
+        // Auto-close after print dismissed (works on Android Chrome)
+        setTimeout(function(){try{w.close();}catch(e){}},2000);
+      }catch(e){}
+    },600);
     return;
   }
 
   // Non-thermal: inject Back + Print bar
-  const backBar=`<div id="mobile-print-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-family:sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,.2)">
-    <button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:18px">&#8592;</span> Back to App</button>
-    <button onclick="window.print()" style="background:#fff;border:none;color:#185fa5;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:16px">&#128438;</span> Print</button>
-  </div>
-  <div style="height:64px"></div>
-  <style>@media print{#mobile-print-bar,div[style*="height:64px"]{display:none!important}}</style>`;
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const backBar='<div id="mobile-print-bar" style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;font-family:sans-serif;box-shadow:0 -2px 12px rgba(0,0,0,.2)">'
+    +'<button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:18px">&#8592;</span> Back to App</button>'
+    +'<button onclick="window.print()" style="background:#fff;border:none;color:#185fa5;padding:10px 22px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px"><span style="font-size:16px">&#128438;</span> Print</button>'
+    +'</div>'
+    +'<div style="height:64px"></div>'
+    +'<style>@media print{#mobile-print-bar,div[style*="height:64px"]{display:none!important}}</style>';
   const injected=html.includes('</body>')?html.replace(/<\/body>/i,backBar+'</body>'):html+backBar;
   w.document.write(injected);
   w.document.close();
@@ -4304,7 +4302,6 @@ function _printReceiptThermal(pmtId){
     +'.sig{border-top:1px solid #000;margin-top:28px;padding-top:4px;font-size:10px;text-align:center}'
     +'@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{width:80mm;padding:2mm 1mm;margin:0}@page{margin:0;size:80mm auto;padding:0}}'
     +'</style>'
-    +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>'
     +'</head><body>'
     +(s.logo?'<div class="c" style="margin-bottom:4px"><img src="'+s.logo+'" style="max-width:60mm;max-height:18mm;object-fit:contain"></div>':'')
     +'<div class="c big">'+(s.nameEn||'FasTrack')+'</div>'
