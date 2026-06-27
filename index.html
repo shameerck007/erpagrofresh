@@ -7893,66 +7893,55 @@ function buildEscPosReceipt(inv){
 }
 
 // ── RAWBT (Android) ──────────────────────────────────────────────────────────
-function printViaRawBT(escposText){
+function printViaRawBT(plainTextData){
+  // plainTextData: plain text receipt (no ESC/POS binary for URL mode)
   const cfg=getPrinterCfg();
   const mode=cfg.rawbtMode||'url';
 
-  // Binary-safe base64 encoder for ESC/POS data
+  // Binary-safe base64 encoder
   function toBase64(str){
+    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
     const bytes=[];
     for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i)&0xff);
-    let b64='';
-    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    for(let i=0;i<bytes.length;i+=3){
-      const b1=bytes[i],b2=bytes[i+1]||0,b3=bytes[i+2]||0;
-      b64+=chars[b1>>2]+chars[((b1&3)<<4)|(b2>>4)]+
-           (i+1<bytes.length?chars[((b2&15)<<2)|(b3>>6)]:'=')+
-           (i+2<bytes.length?chars[b3&63]:'=');
+    let b64='',i=0;
+    while(i<bytes.length){
+      const b1=bytes[i++],b2=i<bytes.length?bytes[i++]:0,b3=i<bytes.length?bytes[i++]:0;
+      const n=(b1<<16)|(b2<<8)|b3;
+      b64+=chars[(n>>18)&63]+chars[(n>>12)&63]+chars[(n>>6)&63]+chars[n&63];
     }
-    return b64;
+    const pad=bytes.length%3;
+    return pad?b64.slice(0,pad-3)+'==='.slice(0,3-pad):b64;
   }
 
   if(mode==='http'){
+    // HTTP mode: send ESC/POS binary as base64
     const host=cfg.rawbtHost||'localhost';
     const port=cfg.rawbtPort||8080;
-    const b64=toBase64(escposText);
     fetch('http://'+host+':'+port+'/rawbt',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({data:b64,type:'base64'})
+      body:JSON.stringify({data:toBase64(plainTextData),type:'base64'})
     })
-    .then(r=>{if(r.ok)showToast('✓ Sent to RawBT printer');else showToast('RawBT error: '+r.status,'red');})
-    .catch(()=>showToast('Cannot reach RawBT — enable HTTP server in RawBT app','red'));
+    .then(r=>{if(r.ok)showToast('✓ Sent to RawBT printer','green');else showToast('RawBT error: '+r.status,'red');})
+    .catch(()=>showToast('Cannot reach RawBT — enable HTTP server in RawBT app settings','red'));
     return;
   }
 
-  // URL scheme method — RawBT registers rawbt: protocol
-  // Use a hidden iframe to avoid navigating away from the app
-  const b64=toBase64(escposText);
-  const url='rawbt:base64,'+b64;
+  // URL scheme: rawbt://base64/<data>
+  // RawBT opens and prints automatically when default printer is set
+  const b64=toBase64(plainTextData);
 
-  // Try iframe first (keeps app open)
-  let sent=false;
-  const iframe=document.createElement('iframe');
-  iframe.style.display='none';
-  document.body.appendChild(iframe);
-  try{
-    iframe.src=url;
-    sent=true;
-    setTimeout(()=>{
-      try{document.body.removeChild(iframe);}catch(e){}
-    },3000);
-    showToast('✓ Sent to RawBT — printing...','green');
-  }catch(e){
-    try{document.body.removeChild(iframe);}catch(ex){}
-  }
-
-  // Fallback: window.open with blank target (won't navigate away)
-  if(!sent){
-    const w=window.open(url,'_blank');
-    if(w)setTimeout(()=>{try{w.close();}catch(e){}},1000);
-    showToast('✓ Sent to RawBT — check your printer','green');
-  }
+  // Use anchor click — most reliable way to trigger custom URL scheme on Android Chrome
+  // without navigating away from the page
+  const anchor=document.createElement('a');
+  anchor.href='rawbt://base64/'+b64;
+  anchor.style.display='none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  setTimeout(()=>{
+    try{document.body.removeChild(anchor);}catch(e){}
+  },1000);
+  showToast('Sent to RawBT — printing...','amber');
 }
 
 // ── QZ TRAY (Laptop/Desktop) ─────────────────────────────────────────────────
@@ -8005,6 +7994,54 @@ function printViaQZTray(escposText){
 }
 
 // ── SMART PRINT DISPATCHER ────────────────────────────────────────────────────
+function buildPlainTextReceipt(inv){
+  // Plain text receipt for RawBT URL scheme (no binary ESC/POS)
+  const s=db.settings||{};
+  const c=getCustomer(inv.customer);
+  const bal=inv.total-inv.paid;
+  const isPaid=bal<=0;
+  const isEst=inv.isEstimate===true;
+  const vatPct=Math.round(getVatRate()*100);
+  const sub=inv.subtotal||(inv.total/(1+getVatRate()));
+  const vat=inv.vatAmount||(inv.total-sub);
+  const W=32;
+  function safe(t){return (t||'').replace(/[^\x20-\x7e]/g,'').slice(0,W);}
+  function line(ch){return (ch||'=').repeat(W)+'\n';}
+  function row(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
+  function center(t){t=safe(t).slice(0,W);const p=Math.max(0,Math.floor((W-t.length)/2));return ' '.repeat(p)+t+'\n';}
+  let d='';
+  if(isEst){
+    d+=line('=');d+=center('ESTIMATE');d+=line('=');
+    d+=row('Ref:',inv.id);d+=row('Date:',fmtDate(inv.date));
+    d+=line('-');d+='Customer: '+safe(c.name)+'\n';d+=line('-');
+    d+=center('ITEMS');d+=line('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=row(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=line('=');d+=row('TOTAL:','SAR '+inv.total.toFixed(2));d+=line('=');
+  }else{
+    d+=center(safe(s.nameEn||'FasTrack'));
+    if(s.nameAr)d+=center(safe(s.nameAr));
+    if(s.address||s.phone)d+=center(safe([s.address,s.phone].filter(Boolean).join(' ')));
+    if(s.vatNumber)d+=center(safe('VAT:'+s.vatNumber+(s.crNumber?' CR:'+s.crNumber:'')));
+    d+=line('=');d+=center('TAX INVOICE');d+=line('=');
+    d+=row('Invoice:',inv.id);d+=row('Date:',fmtDate(inv.date));d+=row('Due:',fmtDate(inv.due));
+    d+=line('-');d+='Customer: '+safe(c.name)+'\n';
+    if(c.vatNumber)d+='VAT: '+c.vatNumber+'\n';
+    if(inv.van)d+=row('Van:',safe(inv.van));
+    d+=line('-');d+=center('ITEMS');d+=line('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=row(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=line('=');
+    d+=row('Subtotal:','SAR '+sub.toFixed(2));
+    d+=row('VAT '+vatPct+'%:','SAR '+vat.toFixed(2));
+    d+=line('=');d+=row('TOTAL:','SAR '+inv.total.toFixed(2));
+    if(inv.paid>0)d+=row('Paid:','SAR '+inv.paid.toFixed(2));
+    if(bal>0)d+=row('Balance Due:','SAR '+bal.toFixed(2));
+    d+=line('=');d+=center(isPaid?'*** PAID ***':'*** OUTSTANDING ***');
+    d+=line('-');d+=center('Thank you for your business');d+=center(fmtDate(today()));
+  }
+  d+='\n\n\n\n';
+  return d;
+}
+
 function smartThermalPrint(inv){
   const cfg=getPrinterCfg();
   const method=cfg.method||'browser'; // 'rawbt' | 'qztray' | 'browser'
@@ -8021,8 +8058,11 @@ function smartThermalPrint(inv){
   }
 
   if(useMethod==='rawbt'){
-    const escpos=buildEscPosReceipt(inv);
-    printViaRawBT(escpos);
+    const cfg=getPrinterCfg();
+    // URL mode: plain text (RawBT handles formatting)
+    // HTTP mode: ESC/POS binary (full control)
+    const data=(cfg.rawbtMode||'url')==='http'?buildEscPosReceipt(inv):buildPlainTextReceipt(inv);
+    printViaRawBT(data);
   }else if(useMethod==='qztray'){
     const escpos=buildEscPosReceipt(inv);
     printViaQZTray(escpos);
@@ -8172,17 +8212,17 @@ function savePrinterField(key,val){
 }
 
 function testRawBTPrint(){
-  // First send a plain text test to verify RawBT connection
-  const simpleText='================================\n'
-    +'         FASTRACK TEST PRINT\n'
+  const testText='================================\n'
+    +'         FASTRACK TEST PRINT    \n'
     +'================================\n'
-    +'Printer: OK\n'
+    +'Printer connection: OK\n'
     +'RawBT: Connected\n'
     +'Date: '+fmtDate(today())+'\n'
     +'================================\n'
+    +'   If you see this it works!    \n'
+    +'================================\n'
     +'\n\n\n\n';
-  printViaRawBT(simpleText);
-  showToast('Test sent to RawBT — check printer','amber');
+  printViaRawBT(testText);
 }
 
 function testQZTrayPrint(){
