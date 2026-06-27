@@ -215,6 +215,35 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   #mobile-print-bar{padding:14px 12px!important}
   #mobile-print-bar button{padding:12px 16px!important;font-size:14px!important}
 }
+/* ── OWNER DASHBOARD ── */
+.od-hero{background:linear-gradient(135deg,#042c53 0%,#185fa5 60%,#0f6e56 100%);border-radius:20px;padding:28px 24px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.od-hero::before{content:'';position:absolute;top:-40px;right:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.05)}
+.od-metric{background:var(--card);border-radius:16px;padding:20px;box-shadow:var(--sha);position:relative;overflow:hidden;border:1px solid var(--border)}
+.od-metric-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
+.od-metric-val{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1}
+.od-metric-lbl{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-top:5px}
+.od-metric-trend{font-size:12px;font-weight:600;margin-top:8px;display:flex;align-items:center;gap:4px}
+.od-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.od-grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:20px}
+.od-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.od-section-title{font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.od-bar-track{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.od-bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.od-alert{border-radius:12px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:13px}
+.od-refresh{position:fixed;bottom:80px;right:16px;width:50px;height:50px;border-radius:50%;background:var(--blue);color:#fff;border:none;box-shadow:0 4px 20px rgba(24,95,165,.4);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;z-index:50;transition:transform .15s}
+.od-refresh:active{transform:scale(.88) rotate(180deg)}
+@media(max-width:900px){
+  .od-grid-4{grid-template-columns:repeat(2,1fr)}
+  .od-grid-3{grid-template-columns:repeat(2,1fr)}
+  .od-hero{padding:22px 18px}
+  .od-metric-val{font-size:22px}
+}
+@media(max-width:480px){
+  .od-grid-4,.od-grid-2,.od-grid-3{grid-template-columns:1fr 1fr}
+  .od-metric{padding:14px}
+  .od-metric-val{font-size:18px}
+  .od-metric-icon{width:38px;height:38px;font-size:18px;margin-bottom:10px}
+}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c5d0db;border-radius:3px}
 </style>
 </head>
@@ -362,6 +391,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <nav id="sidebar">
   <div class="slogo"><div class="slogo-icon"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 38 L26 38 L30 28 L36 44 L40 34 L50 34" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="34" r="4.5" fill="#5dcaa5"/></svg></div><div><div class="slogo-text">FasTrack</div><div class="slogo-sub">Distribution ERP</div></div></div>
   <div class="nsec"><div class="nsec-lbl">Overview</div>
+    <div class="ni" data-access="owner-dashboard" onclick="navigate('owner-dashboard')" style="background:linear-gradient(90deg,rgba(93,202,165,.12),transparent);border-left:3px solid #5dcaa5"><i class="ti ti-star" style="color:#5dcaa5"></i>Owner Dashboard</div>
     <div class="ni active" onclick="navigate('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="navigate('daily')"><i class="ti ti-calendar-event"></i>Daily Operations</div>
   </div>
@@ -417,7 +447,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <main id="main">
 <!-- MOBILE BOTTOM TAB BAR -->
 <nav id="mobile-tabbar">
-  <button class="mtab active" data-page="dashboard" onclick="navigate('dashboard')"><i class="ti ti-layout-dashboard"></i><span>Home</span></button>
+  <button class="mtab active" data-page="owner-dashboard" onclick="navigate('owner-dashboard')" id="mtab-owner" style="display:none"><i class="ti ti-star"></i><span>Overview</span></button>
+  <button class="mtab active" data-page="dashboard" onclick="navigate('dashboard')" id="mtab-dash"><i class="ti ti-layout-dashboard"></i><span>Home</span></button>
   <button class="mtab" data-page="daily" onclick="navigate('daily')"><i class="ti ti-calendar-event"></i><span>Daily</span></button>
   <button class="mtab" data-page="sales" onclick="navigate('sales')"><i class="ti ti-shopping-cart"></i><span>Sales</span></button>
   <button class="mtab" data-page="customers" onclick="navigate('customers')"><i class="ti ti-users"></i><span>Customers</span></button>
@@ -1031,6 +1062,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   #app-dialog-box{width:100%!important;border-radius:20px 20px 0 0!important;padding-bottom:env(safe-area-inset-bottom)}
 }
 </style>
+<!-- OWNER DASHBOARD -->
+<div class="page" id="page-owner-dashboard">
+  <div id="od-root"></div>
+</div>
+
 <!-- CASH BOOK -->
 <div class="page" id="page-cash-book">
   <div class="pghdr" style="flex-wrap:wrap;gap:12px">
@@ -1353,6 +1389,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="tabs" id="settings-tabs">
     <button class="tab-btn active" id="stab-company" onclick="switchSettingsTab('company',this)"><i class="ti ti-building"></i>Company</button>
     <button class="tab-btn" id="stab-users" onclick="switchSettingsTab('users',this)"><i class="ti ti-users"></i>Users &amp; Access</button>
+    <button class="tab-btn" id="stab-printer" onclick="switchSettingsTab('printer',this)"><i class="ti ti-printer"></i>Printer</button>
   </div>
   <!-- COMPANY TAB -->
   <div id="settings-panel-company">
@@ -1442,6 +1479,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <div class="fg"><label>Password *</label><input type="password" id="uf-password" placeholder="Min 6 characters"></div>
         <div class="fg"><label>Role *</label><select id="uf-role" onchange="ufRoleChange()">
           <option value="admin">Admin (All Access)</option>
+          <option value="owner">Business Owner</option>
           <option value="warehouse">Warehouse Manager</option>
           <option value="van_sales">Van Sales Crew</option>
           <option value="accountant">Accountant</option>
@@ -1501,6 +1539,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="role-perms-saved-msg" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(15,110,86,.1);border:1px solid rgba(15,110,86,.25);border-radius:8px;font-size:13px;color:var(--teal)"><i class="ti ti-circle-check" style="margin-right:6px"></i>Permissions saved successfully. Changes take effect immediately.</div>
     </div>
   </div>
+  <!-- PRINTER TAB -->
+  <div id="settings-panel-printer" style="display:none">
+    <div id="printer-settings-root"></div>
+  </div>
 </div>
 </main>
 <!-- INVOICE VIEWER MODAL -->
@@ -1514,7 +1556,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="printInvoiceFromModal('a4')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#185fa5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-printer" style="font-size:15px"></i> A4 Print</button>
-        <button onclick="printInvoiceFromModal('thermal')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-receipt" style="font-size:15px"></i> Thermal</button>
+        <button onclick="printInvoiceFromModal('thermal')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-receipt" style="font-size:15px"></i> Thermal <span id="inv-thermal-method-badge" style="font-size:10px;background:rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;margin-left:2px"></span></button>
         <button onclick="closeModal('modal-invoice-view')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-x" style="font-size:15px"></i> Close</button>
       </div>
     </div>
@@ -1706,14 +1748,15 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 // ── ROLE / AUTH ──────────────────────────────────────────────────────────────
 const ROLE_PERMISSIONS={
   admin:['dashboard','daily','stock','warehouses','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','expenses','sales','sales-returns','sales-report','quotations','delivery-notes','customers','customer-statement','fleet','assets','reports','pl','vat','cash-book','partners','settings'],
+  owner:['owner-dashboard'],
   warehouse:['dashboard','daily','stock','warehouses','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','quotations','delivery-notes','sales-report','assets'],
   van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement'],
   accountant:['dashboard','sales','sales-returns','sales-report','customers','customer-statement','expenses','reports','pl','vat','cash-book','partners','supplier-payments','supplier-statement','assets']
 };
-const ROLE_LABELS={admin:'Administrator',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
-const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
-const ROLE_ICONS={admin:'ti-crown',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
-const PERM_LABELS={dashboard:'Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
+const ROLE_LABELS={admin:'Administrator',owner:'Business Owner',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
+const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},owner:{bg:'rgba(93,202,165,.15)',color:'var(--teal)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
+const ROLE_ICONS={admin:'ti-crown',owner:'ti-star',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
+const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
 let _currentUser=null;
 
 function doLogin(){
@@ -1730,7 +1773,8 @@ function doLogin(){
   // persist session
   try{localStorage.setItem('fastrack_session',JSON.stringify({id:user.id,username:user.username}));}catch(e){}
   saveAppState();
-  navigate('dashboard');
+  // Owner goes to their dedicated dashboard
+  navigate(_currentUser.role==='owner'?'owner-dashboard':'dashboard');
 }
 function showLoginError(msg){const el=document.getElementById('login-error');if(el){el.textContent=msg;el.style.display='';}document.getElementById('login-pass').value='';}
 function toggleLoginPassVis(){const inp=document.getElementById('login-pass');const ico=document.getElementById('login-eye-icon');if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}else{inp.type='password';ico.className='ti ti-eye';}}
@@ -1939,9 +1983,23 @@ function restoreSession(){
 function applyRBAC(){
   if(!_currentUser)return;
   const allowed=ROLE_PERMISSIONS[_currentUser.role]||[];
+  const isOwner=_currentUser.role==='owner';
+  // Show/hide sidebar nav items
   document.querySelectorAll('.ni[data-access]').forEach(ni=>{const page=ni.getAttribute('data-access');ni.style.display=allowed.includes(page)?'':'none';});
   const settingsNi=document.querySelector('.ni[onclick*="settings"]');
   if(settingsNi)settingsNi.style.display=_currentUser.role==='admin'?'':'none';
+  // Regular dashboard nav — hide for owner
+  const dashNi=document.querySelector('.ni[onclick*="\'dashboard\'"]');
+  if(dashNi)dashNi.style.display=isOwner?'none':'';
+  const dailyNi=document.querySelector('.ni[onclick*="\'daily\'"]');
+  if(dailyNi&&isOwner)dailyNi.style.display='none';
+  // Mobile tabbar — owner gets only their dashboard tab + More
+  const mtabOwner=document.getElementById('mtab-owner');
+  const mtabDash=document.getElementById('mtab-dash');
+  if(mtabOwner)mtabOwner.style.display=isOwner?'flex':'none';
+  if(mtabDash)mtabDash.style.display=isOwner?'none':'flex';
+  // Hide Daily and Sales and Customers tabs for owner
+  document.querySelectorAll('.mtab[data-page="daily"],.mtab[data-page="sales"],.mtab[data-page="customers"]').forEach(t=>{t.style.display=isOwner?'none':'';});
 }
 function hasAccess(page){if(!_currentUser)return false;return(ROLE_PERMISSIONS[_currentUser.role]||[]).includes(page)||page==='dashboard';}
 function isAdmin(){return _currentUser&&_currentUser.role==='admin';}
@@ -1985,6 +2043,9 @@ function switchSettingsTab(tab,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('settings-panel-company').style.display=tab==='company'?'':'none';
   document.getElementById('settings-panel-users').style.display=tab==='users'?'':'none';
+  const printerPanel=document.getElementById('settings-panel-printer');
+  if(printerPanel)printerPanel.style.display=tab==='printer'?'':'none';
+  if(tab==='printer')renderPrinterSettingsPanel();
   if(tab==='users')renderUsersTab();
 }
 function renderUsersTab(){renderRoleSummaryCards();renderUsersTable();renderRolePermsGrid();}
@@ -2076,7 +2137,7 @@ function saveRolePermissions(){
 function loadSavedPermissions(){
   try{
     // Version key — bump this whenever new pages/permissions are added to force cache refresh
-    const PERM_VERSION='v3';
+    const PERM_VERSION='v4';
     const storedVersion=localStorage.getItem('fastrack_perms_version');
     if(storedVersion!==PERM_VERSION){
       // Stale cache — clear it and save the current hardcoded defaults
@@ -2226,7 +2287,8 @@ function saveUser(){
   if(db.systemUsers.find(u=>u.username.toLowerCase()===uname&&u.id!==id))return showToast('Username taken','red');
   // get assigned locations
   const assignedLocations=role==='admin'?[]:_getSelectedLocs();
-  if(role!=='admin'&&assignedLocations.length===0)return showToast('Assign at least one location','red');
+  const rolesNeedingLocation=['warehouse','van_sales'];
+  if(rolesNeedingLocation.includes(role)&&assignedLocations.length===0)return showToast('Assign at least one location for this role','red');
   const data={name,username:uname,role,assignedLocations,status:document.getElementById('uf-status').value,notes:document.getElementById('uf-notes').value};
   if(id){const u=db.systemUsers.find(x=>x.id===id);if(u){Object.assign(u,data);if(pass)u.password=pass;}saveAppState();showToast('User updated');}
   else{if(!pass)return showToast('Password required','red');db.systemUsers.push({id:uid(),...data,password:pass,lastLogin:null});}
@@ -2499,7 +2561,7 @@ function navigate(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>{if((n.getAttribute('onclick')||'').includes("'"+page+"'"))n.classList.add('active');});
-  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,settings:renderSettingsPage};
+  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
   if(renders[page])renders[page]();
   // mobile: update header title, sync bottom tab bar, close the drawer
   const mht=document.getElementById('mobile-header-title');if(mht)mht.textContent=PERM_LABELS[page]||'FasTrack';
@@ -2654,6 +2716,222 @@ function populateSelects(){
   if(retFilter)retFilter.innerHTML='<option value="">All Locations</option>'+[...db.warehouses.map(w=>`<option value="${w.id}">${w.name}</option>`),...db.vans.map(v=>`<option value="${v.name}">${v.name}</option>`)].join('');
 }
 // ── DASHBOARD ────────────────────────────────────────────────────────────────
+// ── OWNER DASHBOARD ──────────────────────────────────────────────────────────
+function renderOwnerDashboard(){
+  const root=document.getElementById('od-root');if(!root)return;
+  const s=db.settings||{};
+  const now=new Date();
+  const todayKey=today();
+  const thisMonth=todayKey.slice(0,7);
+  const lastMonth=(()=>{const d=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');})();
+  const greeting=now.getHours()<12?'Good morning ☀️':now.getHours()<18?'Good afternoon 👋':'Good evening 🌙';
+
+  // ── DATA CALCULATIONS ──
+  const invAll=db.invoices||[];
+  const todayInv=invAll.filter(i=>i.date===todayKey);
+  const monthInv=invAll.filter(i=>i.date.startsWith(thisMonth));
+  const lastMonthInv=invAll.filter(i=>i.date.startsWith(lastMonth));
+
+  const todayRev=todayInv.reduce((s,i)=>s+i.total,0);
+  const monthRev=monthInv.reduce((s,i)=>s+i.total,0);
+  const lastMonthRev=lastMonthInv.reduce((s,i)=>s+i.total,0);
+  const revGrowth=lastMonthRev>0?Math.round((monthRev-lastMonthRev)/lastMonthRev*100):null;
+
+  const monthExp=(db.expenses||[]).filter(e=>e.date.startsWith(thisMonth)).reduce((s,e)=>s+e.amount,0);
+  const lastMonthExp=(db.expenses||[]).filter(e=>e.date.startsWith(lastMonth)).reduce((s,e)=>s+e.amount,0);
+  const monthCOGS=(db.purchaseOrders||[]).filter(p=>p.date.startsWith(thisMonth)&&p.status==='received').reduce((s,p)=>s+p.total,0);
+  const monthProfit=monthRev-monthExp-monthCOGS;
+  const lastMonthProfit=lastMonthRev-lastMonthExp;
+  const profitGrowth=lastMonthProfit>0?Math.round((monthProfit-lastMonthProfit)/lastMonthProfit*100):null;
+
+  const totalOutstanding=invAll.filter(i=>i.total-i.paid>0).reduce((s,i)=>s+(i.total-i.paid),0);
+  const overdueInv=invAll.filter(i=>i.total-i.paid>0&&daysDiff(i.due)<0);
+
+  // Van performance today
+  const vanPerf={};db.vans.forEach(v=>{vanPerf[v.name]={rev:0,count:0,name:v.name};});
+  todayInv.forEach(i=>{if(vanPerf[i.van]){vanPerf[i.van].rev+=i.total;vanPerf[i.van].count++;}});
+  const vanArr=Object.values(vanPerf).sort((a,b)=>b.rev-a.rev);
+  const maxVanRev=Math.max(...vanArr.map(v=>v.rev),1);
+
+  // Top 5 customers this month
+  const custRev={};monthInv.forEach(i=>{custRev[i.customer]=(custRev[i.customer]||0)+i.total;});
+  const topCust=Object.entries(custRev).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([cid,rev])=>({c:getCustomer(cid),rev}));
+
+  // Last 7 days revenue
+  const last7=[];for(let i=6;i>=0;i--){const d=new Date(now);d.setDate(d.getDate()-i);const k=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');const rev=invAll.filter(x=>x.date===k).reduce((s,x)=>s+x.total,0);last7.push({k,label:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()],rev});}
+  const maxDay=Math.max(...last7.map(d=>d.rev),1);
+
+  // Stock alerts
+  const lowStock=db.products.filter(p=>db.warehouses.reduce((s,w)=>s+stockAt(p.id,w.id),0)<(p.min||10));
+
+  // Partners capital summary
+  const partners=db.partners||[];
+  const totalCapital=(db.capitalInvestments||[]).reduce((s,i)=>s+i.amount,0);
+  const totalDistrib=(db.distributions||[]).reduce((s,d)=>s+d.amount,0);
+
+  // Monthly trend (last 6 months)
+  const trend6=[];for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');const rev=invAll.filter(x=>x.date.startsWith(mk)).reduce((s,x)=>s+x.total,0);const exp=(db.expenses||[]).filter(e=>e.date.startsWith(mk)).reduce((s,e)=>s+e.amount,0);trend6.push({mk,label:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()],rev,exp,profit:rev-exp});}
+  const maxTrend=Math.max(...trend6.map(t=>t.rev),1);
+
+  const trendColor=(v)=>v>=0?'#5dcaa5':'#dc3545';
+  const trendArrow=(v)=>v===null?'':v>=0?'↑ '+v+'%':'↓ '+Math.abs(v)+'%';
+
+  root.innerHTML=`
+  <!-- Floating refresh -->
+  <button class="od-refresh" onclick="renderOwnerDashboard()" title="Refresh"><i class="ti ti-refresh"></i></button>
+
+  <!-- Hero -->
+  <div class="od-hero">
+    <div style="position:relative;z-index:1">
+      <div style="font-size:13px;opacity:.7;margin-bottom:4px">${greeting}, ${_currentUser?.name?.split(' ')[0]||'Owner'}</div>
+      <div style="font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:2px">${s.nameEn||'AgroFresh'}</div>
+      <div style="font-size:13px;opacity:.75">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</div>
+      <div style="display:flex;gap:20px;margin-top:20px;flex-wrap:wrap">
+        <div><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.8px">Today's Revenue</div><div style="font-size:28px;font-weight:900;letter-spacing:-1px">SAR ${fmtShort(todayRev)}</div><div style="font-size:12px;opacity:.75">${todayInv.length} invoice${todayInv.length!==1?'s':''} today</div></div>
+        <div style="width:1px;background:rgba(255,255,255,.15);align-self:stretch"></div>
+        <div><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:.8px">This Month</div><div style="font-size:28px;font-weight:900;letter-spacing:-1px">SAR ${fmtShort(monthRev)}</div><div style="font-size:12px;opacity:.75;color:${revGrowth===null?'rgba(255,255,255,.75)':revGrowth>=0?'#5dcaa5':'#fc8181'}">${revGrowth===null?'First month':trendArrow(revGrowth)+' vs last month'}</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics Grid -->
+  <div class="od-grid-4" style="margin-bottom:20px">
+    <div class="od-metric">
+      <div class="od-metric-icon" style="background:rgba(93,202,165,.12);color:#0f6e56"><i class="ti ti-trending-up"></i></div>
+      <div class="od-metric-val" style="color:#0f6e56">SAR ${fmtShort(monthProfit)}</div>
+      <div class="od-metric-lbl">Net Profit</div>
+      <div class="od-metric-trend" style="color:${trendColor(profitGrowth||0)}">${trendArrow(profitGrowth)}</div>
+    </div>
+    <div class="od-metric">
+      <div class="od-metric-icon" style="background:rgba(220,53,69,.1);color:#dc3545"><i class="ti ti-clock-exclamation"></i></div>
+      <div class="od-metric-val" style="color:#dc3545">SAR ${fmtShort(totalOutstanding)}</div>
+      <div class="od-metric-lbl">Outstanding</div>
+      <div class="od-metric-trend" style="color:var(--text3)">${overdueInv.length} overdue invoice${overdueInv.length!==1?'s':''}</div>
+    </div>
+    <div class="od-metric">
+      <div class="od-metric-icon" style="background:rgba(232,144,10,.1);color:#e8900a"><i class="ti ti-receipt-2"></i></div>
+      <div class="od-metric-val" style="color:#e8900a">SAR ${fmtShort(monthExp)}</div>
+      <div class="od-metric-lbl">Expenses</div>
+      <div class="od-metric-trend" style="color:var(--text3)">${monthInv.length} invoices issued</div>
+    </div>
+    <div class="od-metric">
+      <div class="od-metric-icon" style="background:rgba(24,95,165,.1);color:#185fa5"><i class="ti ti-users-group"></i></div>
+      <div class="od-metric-val" style="color:#185fa5">SAR ${fmtShort(totalCapital)}</div>
+      <div class="od-metric-lbl">Total Capital</div>
+      <div class="od-metric-trend" style="color:var(--text3)">SAR ${fmtShort(totalDistrib)} distributed</div>
+    </div>
+  </div>
+
+  <!-- Revenue Trend + Van Performance -->
+  <div class="od-grid-2" style="margin-bottom:20px">
+    <!-- 7-Day Bar Chart -->
+    <div class="od-metric" style="padding:20px">
+      <div class="od-section-title"><i class="ti ti-chart-bar"></i>Revenue — Last 7 Days</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:100px">
+        ${last7.map(d=>{
+          const h=Math.max(4,Math.round((d.rev/maxDay)*90));
+          const isToday=d.k===todayKey;
+          return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="font-size:9px;color:var(--text3)">${d.rev>0?'SAR '+fmtShort(d.rev):''}</div>
+            <div style="width:100%;height:${h}px;background:${isToday?'#185fa5':'rgba(24,95,165,.25)'};border-radius:5px 5px 0 0;transition:height .5s ease"></div>
+            <div style="font-size:10px;color:${isToday?'var(--blue)':'var(--text3)'};font-weight:${isToday?700:400}">${d.label}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- 6-Month Trend -->
+    <div class="od-metric" style="padding:20px">
+      <div class="od-section-title"><i class="ti ti-chart-line"></i>6-Month Revenue Trend</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;height:100px">
+        ${trend6.map((t,i)=>{
+          const h=Math.max(4,Math.round((t.rev/maxTrend)*90));
+          const isCur=t.mk===thisMonth;
+          return`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="width:100%;height:${h}px;background:${isCur?'#5dcaa5':t.profit>=0?'rgba(93,202,165,.3)':'rgba(220,53,69,.25)'};border-radius:5px 5px 0 0"></div>
+            <div style="font-size:10px;color:${isCur?'var(--teal)':'var(--text3)'};font-weight:${isCur?700:400}">${t.label}</div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:12px;margin-top:10px">
+        <span style="font-size:11px;color:var(--text3)"><span style="display:inline-block;width:10px;height:10px;background:#5dcaa5;border-radius:2px;margin-right:4px"></span>Profitable</span>
+        <span style="font-size:11px;color:var(--text3)"><span style="display:inline-block;width:10px;height:10px;background:rgba(220,53,69,.4);border-radius:2px;margin-right:4px"></span>Loss</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Van Performance -->
+  <div class="od-metric" style="margin-bottom:20px;padding:20px">
+    <div class="od-section-title"><i class="ti ti-truck"></i>Van Performance Today</div>
+    ${vanArr.length?vanArr.map(v=>`
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:600">${v.name}</span>
+          <div style="text-align:right">
+            <span style="font-family:var(--mono);font-weight:700;color:${v.rev>0?'var(--green)':'var(--text3)'}">${v.rev>0?'SAR '+fmtShort(v.rev):'No sales'}</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:8px">${v.count} invoice${v.count!==1?'s':''}</span>
+          </div>
+        </div>
+        <div class="od-bar-track"><div class="od-bar-fill" style="width:${v.rev>0?Math.round(v.rev/maxVanRev*100):0}%;background:linear-gradient(90deg,#185fa5,#5dcaa5)"></div></div>
+      </div>
+    `).join(''):
+    '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px"><i class="ti ti-truck" style="font-size:28px;display:block;margin-bottom:8px;opacity:.3"></i>No van activity today</div>'}
+  </div>
+
+  <!-- Top Customers + Alerts -->
+  <div class="od-grid-2" style="margin-bottom:20px">
+    <!-- Top Customers -->
+    <div class="od-metric" style="padding:20px">
+      <div class="od-section-title"><i class="ti ti-star"></i>Top Customers This Month</div>
+      ${topCust.length?topCust.map((x,i)=>{
+        const maxRev=topCust[0].rev;
+        const colors=['#185fa5','#5dcaa5','#e8900a','#6366f1','#dc3545'];
+        return`<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:600">${x.c.name}</span>
+            <span style="font-family:var(--mono);font-size:13px;color:var(--green)">SAR ${fmtShort(x.rev)}</span>
+          </div>
+          <div class="od-bar-track"><div class="od-bar-fill" style="width:${Math.round(x.rev/maxRev*100)}%;background:${colors[i]||'#185fa5'}"></div></div>
+        </div>`;
+      }).join(''):'<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">No sales this month yet</div>'}
+    </div>
+
+    <!-- Alerts -->
+    <div class="od-metric" style="padding:20px">
+      <div class="od-section-title"><i class="ti ti-bell"></i>Business Alerts</div>
+      ${overdueInv.length?`<div class="od-alert" style="background:rgba(220,53,69,.08);color:#dc3545;border:1px solid rgba(220,53,69,.2)"><i class="ti ti-alert-circle" style="font-size:18px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600">${overdueInv.length} Overdue Invoice${overdueInv.length!==1?'s':''}</div><div style="font-size:12px;margin-top:2px;opacity:.8">SAR ${fmtShort(overdueInv.reduce((s,i)=>s+(i.total-i.paid),0))} unpaid</div></div></div>`:''}
+      ${lowStock.length?`<div class="od-alert" style="background:rgba(232,144,10,.08);color:#e8900a;border:1px solid rgba(232,144,10,.2)"><i class="ti ti-package-off" style="font-size:18px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600">${lowStock.length} Low Stock Item${lowStock.length!==1?'s':''}</div><div style="font-size:12px;margin-top:2px;opacity:.8">${lowStock.slice(0,3).map(p=>p.name).join(', ')}${lowStock.length>3?' +more':''}</div></div></div>`:''}
+      ${monthProfit<0?`<div class="od-alert" style="background:rgba(220,53,69,.08);color:#dc3545;border:1px solid rgba(220,53,69,.2)"><i class="ti ti-trending-down" style="font-size:18px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600">Loss This Month</div><div style="font-size:12px;margin-top:2px;opacity:.8">SAR ${fmtShort(Math.abs(monthProfit))} loss so far</div></div></div>`:''}
+      ${totalOutstanding>0?`<div class="od-alert" style="background:rgba(24,95,165,.08);color:#185fa5;border:1px solid rgba(24,95,165,.2)"><i class="ti ti-clock" style="font-size:18px;flex-shrink:0;margin-top:1px"></i><div><div style="font-weight:600">SAR ${fmtShort(totalOutstanding)} Receivable</div><div style="font-size:12px;margin-top:2px;opacity:.8">Total outstanding from customers</div></div></div>`:''}
+      ${!overdueInv.length&&!lowStock.length&&monthProfit>=0?`<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px"><i class="ti ti-circle-check" style="font-size:28px;display:block;margin-bottom:8px;color:#5dcaa5;opacity:.8"></i>All good — no urgent alerts</div>`:''}
+    </div>
+  </div>
+
+  <!-- P&L Summary -->
+  <div class="od-metric" style="margin-bottom:20px;padding:20px">
+    <div class="od-section-title"><i class="ti ti-report-money"></i>This Month — Financial Summary</div>
+    <div class="od-grid-3" style="margin-bottom:0">
+      ${[
+        {label:'Revenue',val:monthRev,color:'#0f6e56',bg:'rgba(93,202,165,.08)',icon:'ti-arrow-up-right'},
+        {label:'Expenses + COGS',val:monthExp+monthCOGS,color:'#dc3545',bg:'rgba(220,53,69,.08)',icon:'ti-arrow-down-right'},
+        {label:'Net Profit',val:monthProfit,color:monthProfit>=0?'#185fa5':'#dc3545',bg:monthProfit>=0?'rgba(24,95,165,.08)':'rgba(220,53,69,.08)',icon:monthProfit>=0?'ti-trending-up':'ti-trending-down'},
+      ].map(k=>`<div style="background:${k.bg};border-radius:12px;padding:14px 16px">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:6px"><i class="ti ${k.icon}" style="margin-right:4px"></i>${k.label}</div>
+        <div style="font-size:20px;font-weight:800;color:${k.color};font-family:var(--mono)">${k.val<0?'-':''}SAR ${fmtShort(Math.abs(k.val))}</div>
+      </div>`).join('')}
+    </div>
+    ${monthRev>0?`<div style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:6px"><span>Profit Margin</span><span style="font-weight:700;color:${monthProfit>=0?'var(--green)':'var(--red)'}">${Math.round(monthProfit/monthRev*100)}%</span></div>
+      <div class="od-bar-track" style="height:10px"><div class="od-bar-fill" style="width:${Math.max(0,Math.min(100,Math.round(monthProfit/monthRev*100)))}%;background:${monthProfit>=0?'linear-gradient(90deg,#185fa5,#5dcaa5)':'#dc3545'}"></div></div>
+    </div>`:''}
+  </div>
+
+  <!-- Last updated -->
+  <div style="text-align:center;color:var(--text3);font-size:11px;padding:8px 0 4px">
+    <i class="ti ti-refresh" style="margin-right:4px"></i>Last refreshed: ${new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})} · Tap <i class="ti ti-refresh"></i> to refresh
+  </div>`;
+}
+
 function renderDashboard(){
   const userLocs=getUserLocations();
   const isVanUser=_currentUser&&_currentUser.role==='van_sales';
@@ -7501,7 +7779,386 @@ function clearSavedData(){
   _fsdb.collection('fastrack').get().then(snap=>{const b=_fsdb.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();}).then(()=>{localStorage.removeItem('fastrack_session');showToast('Data cleared — reloading...','amber');setTimeout(()=>location.reload(),1500);}).catch(e=>showToast('Error: '+e.message,'red'));
   });
 }
-// ── PRINT INVOICE ─────────────────────────────────────────────────────────────
+// ── BLUETOOTH / DIRECT THERMAL PRINTING ENGINE ───────────────────────────────
+
+// Printer config stored in db.settings.printer
+function getPrinterCfg(){return (db.settings&&db.settings.printer)||{};}
+
+// ── ESC/POS Command Builder ──────────────────────────────────────────────────
+const ESC='\x1b',GS='\x1d';
+const ESCPOS={
+  init:()=>ESC+'@',
+  align:(a)=>ESC+'a'+(a==='center'?'\x01':a==='right'?'\x02':'\x00'),
+  bold:(on)=>ESC+'E'+(on?'\x01':'\x00'),
+  size:(w,h)=>GS+'!'+(String.fromCharCode(((w-1)<<4)|(h-1))),
+  cut:()=>GS+'V\x01',
+  feed:(n)=>ESC+'d'+String.fromCharCode(n||3),
+  text:(t)=>t+'\n',
+};
+
+function buildEscPosReceipt(inv){
+  const s=db.settings||{};
+  const c=getCustomer(inv.customer);
+  const bal=inv.total-inv.paid;
+  const isPaid=bal<=0;
+  const isEst=inv.isEstimate===true;
+  const vatPct=Math.round(getVatRate()*100);
+  const sub=inv.subtotal||(inv.total/(1+getVatRate()));
+  const vat=inv.vatAmount||(inv.total-sub);
+  const W=32;// chars wide for 80mm paper
+  function line(ch){return (ch||'-').repeat(W)+'\n';}
+  function row(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
+  function center(t){const pad=Math.max(0,Math.floor((W-t.length)/2));return ' '.repeat(pad)+t+'\n';}
+
+  let d='';
+  d+=ESCPOS.init();
+
+  if(isEst){
+    d+=ESCPOS.align('center');
+    d+=line('=');
+    d+=ESCPOS.bold(true)+ESCPOS.size(2,2)+center('ESTIMATE')+ESCPOS.size(1,1)+ESCPOS.bold(false);
+    d+=line('=');
+    d+=ESCPOS.align('left');
+    d+=row('Estimate #:',inv.id);
+    d+=row('Date:',fmtDate(inv.date));
+    d+=line('-');
+    d+=ESCPOS.bold(true)+row('Customer:',c.name)+ESCPOS.bold(false);
+    d+=line('-');
+    d+=center('ITEMS');
+    d+=line('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=p.name.slice(0,W)+'\n';d+=row('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=line('=');
+    d+=ESCPOS.bold(true)+row('TOTAL:','SAR '+inv.total.toFixed(2))+ESCPOS.bold(false);
+    d+=line('=');
+  }else{
+    // Company header
+    d+=ESCPOS.align('center');
+    d+=ESCPOS.bold(true)+(s.nameEn||'FasTrack').slice(0,W)+'\n'+ESCPOS.bold(false);
+    if(s.nameAr)d+=s.nameAr.slice(0,W)+'\n';
+    if(s.address||s.phone)d+=[s.address,s.phone].filter(Boolean).join(' ').slice(0,W)+'\n';
+    if(s.vatNumber)d+=('VAT: '+s.vatNumber+(s.crNumber?' CR: '+s.crNumber:'')).slice(0,W)+'\n';
+    d+=line('=');
+    d+=ESCPOS.bold(true)+center('TAX INVOICE')+ESCPOS.bold(false);
+    d+=center('فاتورة ضريبية');
+    d+=line('=');
+    d+=ESCPOS.align('left');
+    d+=row('Invoice #:',inv.id);
+    d+=row('Date:',fmtDate(inv.date));
+    d+=row('Due:',fmtDate(inv.due));
+    d+=line('-');
+    d+=ESCPOS.bold(true)+row('Customer:',c.name.slice(0,18))+ESCPOS.bold(false);
+    if(c.vatNumber||c.crNumber)d+=([c.vatNumber?'VAT:'+c.vatNumber:'',c.crNumber?'CR:'+c.crNumber:''].filter(Boolean).join(' ')).slice(0,W)+'\n';
+    if(inv.van)d+=row('Van:',inv.van);
+    d+=line('-');
+    d+=center('ITEMS');
+    d+=line('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=p.name.slice(0,W)+'\n';d+=row('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=line('=');
+    d+=row('Subtotal:','SAR '+sub.toFixed(2));
+    d+=row('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2));
+    d+=line('=');
+    d+=ESCPOS.bold(true)+ESCPOS.size(1,2)+row('TOTAL:','SAR '+inv.total.toFixed(2))+ESCPOS.size(1,1)+ESCPOS.bold(false);
+    if(inv.paid>0)d+=row('Paid:','SAR '+inv.paid.toFixed(2));
+    if(bal>0)d+=ESCPOS.bold(true)+row('Balance Due:','SAR '+bal.toFixed(2))+ESCPOS.bold(false);
+    d+=line('=');
+    d+=ESCPOS.align('center');
+    d+=ESCPOS.bold(true)+(isPaid?'*** PAID ***':'*** OUTSTANDING ***')+'\n'+ESCPOS.bold(false);
+    d+=line('-');
+    d+='Thank you for your business\n';
+    d+='شكراً لتعاملكم معنا\n';
+    d+=fmtDate(today())+'\n';
+  }
+  d+=ESCPOS.feed(4);
+  d+=ESCPOS.cut();
+  return d;
+}
+
+// ── RAWBT (Android) ──────────────────────────────────────────────────────────
+function printViaRawBT(escposText){
+  // RawBT accepts data as base64 via URL scheme or HTTP
+  const cfg=getPrinterCfg();
+  const mode=cfg.rawbtMode||'url'; // 'url' or 'http'
+
+  if(mode==='http'){
+    // RawBT HTTP API (when RawBT HTTP server is enabled in app)
+    const host=cfg.rawbtHost||'localhost';
+    const port=cfg.rawbtPort||8080;
+    const b64=btoa(unescape(encodeURIComponent(escposText)));
+    fetch('http://'+host+':'+port+'/rawbt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({data:b64,type:'base64'})})
+      .then(r=>{if(r.ok)showToast('Sent to RawBT printer ✓','green');else showToast('RawBT error: '+r.status,'red');})
+      .catch(()=>showToast('Cannot reach RawBT — is the app open and HTTP server enabled?','red'));
+  }else{
+    // RawBT URL scheme — opens RawBT app directly
+    const b64=btoa(unescape(encodeURIComponent(escposText)));
+    const url='rawbt:base64,'+b64;
+    window.location.href=url;
+    setTimeout(()=>showToast('Sent to RawBT — check your printer','green'),800);
+  }
+}
+
+// ── QZ TRAY (Laptop/Desktop) ─────────────────────────────────────────────────
+let _qzConnected=false;
+let _qzConnecting=false;
+
+function qzConnect(){
+  return new Promise((resolve,reject)=>{
+    if(_qzConnected&&qz.websocket.isActive()){resolve();return;}
+    if(_qzConnecting){reject(new Error('Already connecting'));return;}
+    if(typeof qz==='undefined'){reject(new Error('QZ Tray not loaded'));return;}
+    _qzConnecting=true;
+    qz.security.setCertificatePromise(()=>Promise.resolve(''));
+    qz.security.setSignatureAlgorithm('SHA512');
+    qz.security.setSignaturePromise(()=>Promise.resolve(''));
+    qz.websocket.connect()
+      .then(()=>{_qzConnected=true;_qzConnecting=false;resolve();})
+      .catch(e=>{_qzConnecting=false;reject(e);});
+  });
+}
+
+function printViaQZTray(escposText){
+  const cfg=getPrinterCfg();
+  const printerName=cfg.qzPrinterName||'';
+  if(!printerName)return showToast('Set printer name in Admin Settings → Printer tab','amber');
+
+  if(typeof qz==='undefined'){
+    // Load QZ Tray JS dynamically
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js';
+    script.onload=()=>printViaQZTray(escposText);
+    script.onerror=()=>showToast('Failed to load QZ Tray library. Is QZ Tray installed?','red');
+    document.head.appendChild(script);
+    return;
+  }
+
+  showToast('Connecting to QZ Tray...','amber');
+  qzConnect()
+    .then(()=>qz.printers.find(printerName))
+    .then(printer=>{
+      const config=qz.configs.create(printer);
+      const data=[{type:'raw',format:'plain',data:escposText}];
+      return qz.print(config,data);
+    })
+    .then(()=>showToast('Printed via '+printerName+' ✓','green'))
+    .catch(e=>{
+      _qzConnected=false;
+      showToast('QZ Tray error: '+e.message,'red');
+    });
+}
+
+// ── SMART PRINT DISPATCHER ────────────────────────────────────────────────────
+function smartThermalPrint(inv){
+  const cfg=getPrinterCfg();
+  const method=cfg.method||'browser'; // 'rawbt' | 'qztray' | 'browser'
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isDesktop=!isAndroid&&!isIOS;
+
+  // Auto-detect if no preference set
+  let useMethod=method;
+  if(method==='auto'){
+    if(isAndroid)useMethod='rawbt';
+    else if(isDesktop)useMethod='qztray';
+    else useMethod='browser';
+  }
+
+  if(useMethod==='rawbt'){
+    const escpos=buildEscPosReceipt(inv);
+    printViaRawBT(escpos);
+  }else if(useMethod==='qztray'){
+    const escpos=buildEscPosReceipt(inv);
+    printViaQZTray(escpos);
+  }else{
+    // Fallback: browser HTML print (original method)
+    printThermalInvoice(inv);
+  }
+}
+
+// ── PRINTER SETTINGS PANEL ────────────────────────────────────────────────────
+function renderPrinterSettingsPanel(){
+  const root=document.getElementById('printer-settings-root');if(!root)return;
+  const cfg=getPrinterCfg();
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const isDesktop=!isAndroid&&!isIOS;
+  const method=cfg.method||'browser';
+
+  root.innerHTML=`
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><span class="card-title"><i class="ti ti-printer" style="color:var(--blue);margin-right:6px"></i>Thermal Printer Setup</span></div>
+    <div style="padding:4px 0 16px">
+      <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <i class="ti ti-device-mobile" style="margin-right:6px;color:var(--blue)"></i>
+        <strong>Detected device:</strong> ${isAndroid?'Android':isIOS?'iOS (iPhone/iPad)':'Desktop / Laptop'}
+        ${isIOS?'<div style="margin-top:6px;color:var(--amber)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>iOS Safari blocks direct Bluetooth printing. Use browser HTML print or WiFi printer.</div>':''}
+      </div>
+
+      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Print Method</label>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
+        ${[
+          {val:'browser',icon:'ti-world',title:'Browser Print (Default)',desc:'Opens a print dialog — works everywhere. No setup needed. Good for A4 and desktop.'},
+          {val:'rawbt',icon:'ti-brand-android',title:'RawBT App (Android)',desc:'Direct Bluetooth printing on Android. Requires RawBT app installed on your phone. Instant — no dialogs.'},
+          {val:'qztray',icon:'ti-device-laptop',title:'QZ Tray (Laptop / Desktop)',desc:'Direct printing to Bluetooth/USB printer on Windows or Mac. Requires QZ Tray app installed.'},
+          {val:'auto',icon:'ti-wand',title:'Auto-Detect',desc:'Automatically uses RawBT on Android, QZ Tray on desktop, browser on iOS.'},
+        ].map(opt=>`
+          <label style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:2px solid ${method===opt.val?'var(--blue)':'var(--border)'};border-radius:12px;cursor:pointer;background:${method===opt.val?'rgba(24,95,165,.05)':'var(--card)'}">
+            <input type="radio" name="printer-method" value="${opt.val}" ${method===opt.val?'checked':''} onchange="savePrinterMethod(this.value)" style="margin-top:2px;accent-color:var(--blue)">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+                <i class="ti ${opt.icon}" style="color:${method===opt.val?'var(--blue)':'var(--text3)'}"></i>
+                <span style="font-size:13px;font-weight:600;color:${method===opt.val?'var(--blue)':'var(--text)'}">${opt.title}</span>
+              </div>
+              <div style="font-size:12px;color:var(--text2)">${opt.desc}</div>
+            </div>
+          </label>
+        `).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- RawBT Config -->
+  <div class="card" id="rawbt-config-card" style="margin-bottom:16px;${method==='rawbt'||method==='auto'?'':'display:none'}">
+    <div class="card-hdr"><span class="card-title"><i class="ti ti-brand-android" style="color:#3ddc84;margin-right:6px"></i>RawBT Setup (Android)</span></div>
+    <div style="padding:4px 0 16px">
+      <div style="background:rgba(61,220,132,.06);border:1px solid rgba(61,220,132,.2);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Setup Steps:</div>
+        <ol style="font-size:13px;color:var(--text2);padding-left:18px;line-height:2">
+          <li>Install <strong>RawBT</strong> from Google Play Store</li>
+          <li>Open RawBT → tap the Bluetooth icon → pair your Goojprt printer</li>
+          <li>In RawBT Settings → enable <strong>"Default Printer"</strong></li>
+          <li>Come back here and tap <strong>Test Print</strong></li>
+        </ol>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">RawBT Mode</label>
+        <select id="rawbt-mode-sel" onchange="savePrinterField('rawbtMode',this.value)" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:14px">
+          <option value="url" ${(cfg.rawbtMode||'url')==='url'?'selected':''}>URL Scheme (tap opens RawBT — recommended)</option>
+          <option value="http" ${cfg.rawbtMode==='http'?'selected':''}>HTTP API (background — enable HTTP server in RawBT app)</option>
+        </select>
+      </div>
+      <div id="rawbt-http-fields" style="${cfg.rawbtMode==='http'?'':'display:none'}">
+        <div class="fgrid" style="margin-bottom:14px">
+          <div class="fg"><label>RawBT Host</label><input type="text" id="rawbt-host" value="${cfg.rawbtHost||'localhost'}" placeholder="localhost" oninput="savePrinterField('rawbtHost',this.value)"></div>
+          <div class="fg"><label>Port</label><input type="number" id="rawbt-port" value="${cfg.rawbtPort||8080}" placeholder="8080" oninput="savePrinterField('rawbtPort',parseInt(this.value)||8080)"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="testRawBTPrint()"><i class="ti ti-printer"></i> Test Print via RawBT</button>
+    </div>
+  </div>
+
+  <!-- QZ Tray Config -->
+  <div class="card" id="qztray-config-card" style="margin-bottom:16px;${method==='qztray'||method==='auto'?'':'display:none'}">
+    <div class="card-hdr"><span class="card-title"><i class="ti ti-device-laptop" style="color:var(--blue);margin-right:6px"></i>QZ Tray Setup (Laptop / Desktop)</span></div>
+    <div style="padding:4px 0 16px">
+      <div style="background:rgba(24,95,165,.06);border:1px solid rgba(24,95,165,.2);border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Setup Steps:</div>
+        <ol style="font-size:13px;color:var(--text2);padding-left:18px;line-height:2">
+          <li>Download and install <strong>QZ Tray</strong> from <a href="https://qz.io/download/" target="_blank" style="color:var(--blue)">qz.io/download</a></li>
+          <li>Launch QZ Tray — it runs in the system tray (bottom right)</li>
+          <li>Pair your Goojprt printer to your laptop via Windows/Mac Bluetooth settings</li>
+          <li>Type the exact printer name below (must match Windows Devices list)</li>
+          <li>Tap <strong>Test Print</strong></li>
+        </ol>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Printer Name <span style="font-size:11px;font-weight:400;color:var(--text3)">(exactly as shown in Windows Devices / Mac System Prefs)</span></label>
+        <input type="text" id="qz-printer-name" value="${cfg.qzPrinterName||''}" placeholder="e.g. GOOJPRT PT-260" style="width:100%;margin-bottom:10px" oninput="savePrinterField('qzPrinterName',this.value)">
+        <button class="btn btn-outline btn-sm" onclick="listQZPrinters()" style="margin-right:8px"><i class="ti ti-list"></i> List Available Printers</button>
+        <div id="qz-printer-list" style="margin-top:10px"></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Paper Width</label>
+        <select id="qz-paper-width" onchange="savePrinterField('paperWidth',this.value)" style="padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:14px">
+          <option value="80" ${(cfg.paperWidth||'80')==='80'?'selected':''}>80mm (standard)</option>
+          <option value="58" ${cfg.paperWidth==='58'?'selected':''}>58mm (small)</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="testQZTrayPrint()"><i class="ti ti-printer"></i> Test Print via QZ Tray</button>
+        <div id="qz-status" style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
+      </div>
+    </div>
+  </div>`;
+
+  // Show/hide config cards based on method
+  document.querySelectorAll('input[name="printer-method"]').forEach(r=>{
+    r.addEventListener('change',()=>{
+      const v=document.querySelector('input[name="printer-method"]:checked')?.value||'browser';
+      const rawbt=document.getElementById('rawbt-config-card');
+      const qzt=document.getElementById('qztray-config-card');
+      if(rawbt)rawbt.style.display=v==='rawbt'||v==='auto'?'':'none';
+      if(qzt)qzt.style.display=v==='qztray'||v==='auto'?'':'none';
+    });
+  });
+
+  // Show/hide HTTP fields
+  const modesel=document.getElementById('rawbt-mode-sel');
+  if(modesel){modesel.addEventListener('change',()=>{
+    const hf=document.getElementById('rawbt-http-fields');
+    if(hf)hf.style.display=modesel.value==='http'?'':'none';
+  });}
+}
+
+function savePrinterMethod(val){
+  if(!db.settings)db.settings={};
+  if(!db.settings.printer)db.settings.printer={};
+  db.settings.printer.method=val;
+  saveAppState();
+  showToast('Print method saved');
+}
+function savePrinterField(key,val){
+  if(!db.settings)db.settings={};
+  if(!db.settings.printer)db.settings.printer={};
+  db.settings.printer[key]=val;
+  saveAppState();
+}
+
+function testRawBTPrint(){
+  const testInv={id:'TEST-001',date:today(),due:today(),customer:'test',isEstimate:false,
+    taxMode:'exclusive',subtotal:100,vatAmount:15,total:115,paid:115,van:'Van 1',
+    items:[{product:db.products[0]?.id||'p1',qty:2,price:50,total:100}]};
+  if(!db.customers.find(c=>c.id==='test'))db.customers.push({id:'test',name:'Test Customer',phone:'',area:''});
+  const escpos=buildEscPosReceipt(testInv);
+  printViaRawBT(escpos);
+}
+
+function testQZTrayPrint(){
+  const testInv={id:'TEST-001',date:today(),due:today(),customer:'test',isEstimate:false,
+    taxMode:'exclusive',subtotal:100,vatAmount:15,total:115,paid:115,van:'Van 1',
+    items:[{product:db.products[0]?.id||'p1',qty:2,price:50,total:100}]};
+  if(!db.customers.find(c=>c.id==='test'))db.customers.push({id:'test',name:'Test Customer',phone:'',area:''});
+  const escpos=buildEscPosReceipt(testInv);
+  printViaQZTray(escpos);
+}
+
+function listQZPrinters(){
+  const statusEl=document.getElementById('qz-status');
+  const listEl=document.getElementById('qz-printer-list');
+  if(statusEl)statusEl.innerHTML='<i class="ti ti-loader ti-spin"></i> Connecting to QZ Tray...';
+
+  if(typeof qz==='undefined'){
+    const script=document.createElement('script');
+    script.src='https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js';
+    script.onload=listQZPrinters;
+    script.onerror=()=>{if(statusEl)statusEl.innerHTML='<span style="color:var(--red)"><i class="ti ti-x"></i> QZ Tray library failed to load</span>';};
+    document.head.appendChild(script);return;
+  }
+
+  qzConnect()
+    .then(()=>qz.printers.find())
+    .then(printers=>{
+      if(statusEl)statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> QZ Tray connected</span>';
+      if(listEl){
+        if(!printers.length){listEl.innerHTML='<div style="font-size:12px;color:var(--text3)">No printers found</div>';return;}
+        listEl.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Click a printer to select it:</div>'
+          +printers.map(p=>`<button class="btn btn-outline btn-sm" style="margin:3px;font-size:12px" onclick="document.getElementById('qz-printer-name').value='${p}';savePrinterField('qzPrinterName','${p}');showToast('Selected: ${p}')">${p}</button>`).join('');
+      }
+    })
+    .catch(e=>{
+      _qzConnected=false;
+      if(statusEl)statusEl.innerHTML='<span style="color:var(--red)"><i class="ti ti-x"></i> '+e.message+'</span>';
+      if(listEl)listEl.innerHTML='<div style="font-size:12px;color:var(--red);margin-top:6px">Make sure QZ Tray is installed and running on this computer.<br><a href="https://qz.io/download/" target="_blank" style="color:var(--blue)">Download QZ Tray →</a></div>';
+    });
+}
 function printZatcaInvoice(invId){
   viewInvoice(invId);
 }
@@ -7746,6 +8403,14 @@ function viewInvoice(invId){
   // store current inv id for print
   document.getElementById('modal-invoice-view').dataset.invId=invId;
 
+  // Update thermal button badge to show current print method
+  const badge=document.getElementById('inv-thermal-method-badge');
+  if(badge){
+    const m=getPrinterCfg().method||'browser';
+    const labels={browser:'HTML',rawbt:'RawBT',qztray:'QZ Tray',auto:'Auto'};
+    badge.textContent=labels[m]||'HTML';
+  }
+
   // build invoice HTML
   const isEst=inv.isEstimate===true;
   const html=isEst?`
@@ -7914,7 +8579,7 @@ function printInvoiceFromModal(mode){
   const inv=db.invoices.find(i=>i.id===invId);
   if(!inv){showToast('Invoice not found','red');return;}
   if(mode==='thermal'){
-    printThermalInvoice(inv);
+    smartThermalPrint(inv);
   }else{
     const body=document.getElementById('inv-view-body');
     if(!body)return;
@@ -8106,7 +8771,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='none';
     applyRBAC();
     updateSidebarUser();
-    navigate('dashboard');
+    navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':'dashboard');
   }else{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='flex';
   }
