@@ -7790,7 +7790,7 @@ function _buildPlainReceipt(inv){
   const s=db.settings||{},c=getCustomer(inv.customer);
   const bal=inv.total-inv.paid,isPaid=bal<=0,isEst=inv.isEstimate===true;
   const vatPct=Math.round(getVatRate()*100),sub=inv.subtotal||(inv.total/(1+getVatRate())),vat=inv.vatAmount||(inv.total-sub);
-  const W=32;
+  const W=48; // MTP-3 supports 48 chars/line at small font
   function safe(t){return(t||'').replace(/[^\x20-\x7e]/g,'').slice(0,W);}
   function ln(c){return(c||'=').repeat(W)+'\n';}
   function rw(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
@@ -8291,205 +8291,75 @@ function printThermalInvoice(inv){
   const sub=inv.subtotal||(inv.total/(1+getVatRate()));
   const vat=inv.vatAmount||(inv.total-sub);
   const isEst=inv.isEstimate===true;
-  const qrDataUrl=isEst?null:getZatcaQRDataURL(inv,300);
+  const W=48;
+  const D='-'.repeat(W);
+  const E='='.repeat(W);
+  function ct(t){t=(t||'').slice(0,W);var p=Math.floor((W-t.length)/2);return' '.repeat(Math.max(0,p))+t;}
+  function rw(l,r){l=String(l||'');r=String(r||'');var sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r;}
+  var t='';
+  if(isEst){
+    t+=E+'\n'+ct('ESTIMATE')+'\n'+E+'\n';
+    t+=rw('Ref:',inv.id)+'\n';
+    t+=rw('Date:',fmtDate(inv.date))+'\n';
+    t+=D+'\n'+'Customer: '+(c.name||'').slice(0,38)+'\n'+D+'\n';
+    t+=ct('ITEMS')+'\n'+D+'\n';
+    inv.items.forEach(function(it){var p=getProduct(it.product);t+=p.name.slice(0,W)+'\n';t+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2))+'\n';});
+    t+=E+'\n'+rw('TOTAL:','SAR '+inv.total.toFixed(2))+'\n'+E+'\n';
+  }else{
+    t+=ct(s.nameEn||'FasTrack')+'\n';
+    if(s.nameAr)t+=ct(s.nameAr)+'\n';
+    if(s.address)t+=ct(s.address)+'\n';
+    if(s.phone)t+=ct(s.phone)+'\n';
+    if(s.vatNumber)t+=ct('VAT:'+s.vatNumber)+'\n';
+    if(s.crNumber)t+=ct('CR:'+s.crNumber)+'\n';
+    t+=E+'\n'+ct('TAX INVOICE')+'\n'+E+'\n';
+    t+=rw('Invoice:',inv.id)+'\n';
+    t+=rw('Date:',fmtDate(inv.date))+'\n';
+    t+=rw('Due:',fmtDate(inv.due))+'\n';
+    t+=D+'\n';
+    t+='Customer: '+(c.name||'').slice(0,38)+'\n';
+    if(c.vatNumber)t+='VAT: '+c.vatNumber+'\n';
+    if(c.crNumber)t+='CR:  '+c.crNumber+'\n';
+    if(inv.van)t+=rw('Van:',inv.van)+'\n';
+    t+=D+'\n'+ct('ITEMS')+'\n'+D+'\n';
+    inv.items.forEach(function(it){var p=getProduct(it.product);t+=p.name.slice(0,W)+'\n';t+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2))+'\n';});
+    t+=E+'\n';
+    t+=rw('Subtotal:','SAR '+sub.toFixed(2))+'\n';
+    t+=rw('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2))+'\n';
+    t+=E+'\n';
+    t+=rw('TOTAL:','SAR '+inv.total.toFixed(2))+'\n';
+    if(inv.paid>0)t+=rw('Paid:','SAR '+inv.paid.toFixed(2))+'\n';
+    if(bal>0)t+=rw('Bal Due:','SAR '+bal.toFixed(2))+'\n';
+    t+=E+'\n';
+    t+=ct(isPaid?'**** PAID ****':'** OUTSTANDING **')+'\n';
+    t+=D+'\n'+ct('Thank you for your business')+'\n'+ct(fmtDate(today()))+'\n';
+  }
+  t+='\n\n\n\n';
 
-  // Canvas-based receipt renderer — pixel perfect, supports logo + Arabic + QR
-  function renderReceiptToImage(onDone){
-    const PX=2; // scale factor for sharpness (2x = retina quality)
-    const PW=576; // 80mm at 72dpi × 2 = 576px wide canvas
-    const FONT=22*PX; // base font size
-    const MONO='"Courier New",monospace';
-    const SANS='Arial,sans-serif';
-    const PAD=16*PX;
-    const LH=28*PX; // line height
-
-    // First pass: measure total height needed
-    const lines=[];
-    function add(text,opts){lines.push({text:text||'',opts:opts||{}});}
-    function addLine(ch){add((ch||'=').repeat(32),{mono:true,size:FONT*0.85});}
-    function addRow(l,r,bold){add(null,{row:true,left:l,right:r,bold:bold,size:FONT});}
-    function addCenter(t,opts){add(t,{center:true,...(opts||{})});}
-    function addBlank(){add('');}
-
-    if(isEst){
-      addLine('=');addCenter('ESTIMATE',{size:FONT*1.4,bold:true});addLine('=');
-      addRow('Ref:',inv.id);addRow('Date:',fmtDate(inv.date));
-      addLine('-');add('Customer: '+c.name,{size:FONT});addLine('-');
-      addCenter('ITEMS',{bold:true});addLine('-');
-      inv.items.forEach(it=>{const p=getProduct(it.product);add(p.name,{size:FONT});addRow(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
-      addLine('=');addRow('TOTAL:','SAR '+inv.total.toFixed(2),true);addLine('=');
-    }else{
-      // Logo
-      if(s.logo)lines.push({logo:s.logo});
-      // Company name
-      addCenter(s.nameEn||'FasTrack',{size:FONT*1.2,bold:true,sans:true});
-      if(s.nameAr)addCenter(s.nameAr,{size:FONT,rtl:true,sans:true});
-      if(s.address||s.phone)addCenter([s.address,s.phone].filter(Boolean).join('  '),{size:FONT*0.8,sans:true});
-      if(s.vatNumber||s.crNumber)addCenter([s.vatNumber?'VAT:'+s.vatNumber:'',s.crNumber?'CR:'+s.crNumber:''].filter(Boolean).join('  '),{size:FONT*0.8,sans:true});
-      addLine('=');addCenter('TAX INVOICE',{size:FONT*1.1,bold:true});addLine('=');
-      addRow('Invoice:',inv.id,true);addRow('Date:',fmtDate(inv.date));addRow('Due:',fmtDate(inv.due));
-      addLine('-');
-      add('Customer: '+c.name,{size:FONT,bold:true});
-      if(c.vatNumber||c.crNumber)add([c.vatNumber?'VAT:'+c.vatNumber:'',c.crNumber?'CR:'+c.crNumber:''].filter(Boolean).join('  '),{size:FONT*0.8});
-      if(inv.van)addRow('Van:',inv.van);
-      addLine('-');addCenter('ITEMS',{bold:true});addLine('-');
-      inv.items.forEach(it=>{const p=getProduct(it.product);add(p.name,{size:FONT});addRow(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
-      addLine('=');
-      addRow('Subtotal:','SAR '+sub.toFixed(2));
-      addRow('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2));
-      addLine('=');
-      addRow('TOTAL:','SAR '+inv.total.toFixed(2),true);
-      if(inv.paid>0)addRow('Paid:','SAR '+inv.paid.toFixed(2));
-      if(bal>0)addRow('Balance Due:','SAR '+bal.toFixed(2),true);
-      addLine('=');
-      addCenter(isPaid?'*** PAID ***':'*** OUTSTANDING ***',{bold:true,size:FONT*1.1});
-      addLine('-');
-      addCenter('Thank you for your business',{sans:true});
-      addCenter(fmtDate(today()),{size:FONT*0.8,sans:true});
-      addBlank();
-    }
-
-    // Calculate total height
-    let totalH=PAD*2;
-    lines.forEach(l=>{
-      if(l.logo)totalH+=120*PX;
-      else totalH+=(l.opts&&l.opts.size?l.opts.size*1.6:LH);
-    });
-    if(qrDataUrl)totalH+=160*PX+20*PX;
-
-    // Create canvas
-    const canvas=document.createElement('canvas');
-    canvas.width=PW;
-    canvas.height=totalH+PAD*2;
-    const ctx=canvas.getContext('2d');
-    ctx.fillStyle='#ffffff';
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.fillStyle='#000000';
-
-    let y=PAD;
-
-    function drawLines(){
-      lines.forEach(l=>{
-        if(l.logo){
-          // Draw logo image
-          const img=new Image();
-          img.onload=function(){};
-          img.src=l.logo;
-          // Draw synchronously if already loaded
-          try{ctx.drawImage(img,PW/2-80*PX,y,160*PX,80*PX);}catch(e){}
-          y+=100*PX;
-          return;
-        }
-        const opts=l.opts||{};
-        const sz=opts.size||FONT;
-        const lh=sz*1.6;
-        ctx.font=(opts.bold?'bold ':'')+sz+'px '+(opts.sans?SANS:MONO);
-        ctx.textBaseline='top';
-
-        if(opts.row){
-          // Left-right row
-          ctx.font=(opts.bold?'bold ':'')+sz+'px '+MONO;
-          ctx.fillText(opts.left||'',PAD,y);
-          const rw=ctx.measureText(opts.right||'').width;
-          ctx.fillText(opts.right||'',PW-PAD-rw,y);
-        }else if(opts.center){
-          const tw=ctx.measureText(l.text).width;
-          const x=Math.max(PAD,(PW-tw)/2);
-          if(opts.rtl){
-            ctx.direction='rtl';
-            ctx.fillText(l.text,PW-PAD,y);
-            ctx.direction='ltr';
-          }else{
-            ctx.fillText(l.text,x,y);
-          }
-        }else{
-          ctx.fillText((l.text||'').slice(0,42),PAD,y);
-        }
-        y+=lh;
+  // Try Web Share API first — sends plain text directly to RawBT (or any share target)
+  // This is the most reliable method — no HTML rendering, no print dialog issues
+  if(navigator.share){
+    navigator.share({title:'Receipt '+inv.id,text:t})
+      .then(function(){showToast('Receipt shared — select RawBT','green');})
+      .catch(function(e){
+        // User cancelled or share failed — fall back to HTML print page
+        if(e.name!=='AbortError')_thermalFallbackPrint(inv.id,t);
       });
-
-      // Draw QR code
-      if(qrDataUrl){
-        const qrImg=new Image();
-        qrImg.onload=function(){
-          ctx.drawImage(qrImg,PW/2-75*PX,y+8*PX,150*PX,150*PX);
-          finalize();
-        };
-        qrImg.onerror=finalize;
-        qrImg.src=qrDataUrl;
-      }else{
-        finalize();
-      }
-    }
-
-    function finalize(){
-      const imgData=canvas.toDataURL('image/png',1.0);
-      onDone(imgData,canvas.width/PX,canvas.height/PX);
-    }
-
-    // Handle logo loading
-    if(s.logo&&!isEst){
-      const logoImg=new Image();
-      logoImg.crossOrigin='anonymous';
-      logoImg.onload=function(){
-        // Redraw with logo
-        ctx.fillStyle='#ffffff';
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle='#000000';
-        y=PAD;
-        // Draw logo first
-        const lw=Math.min(160*PX,logoImg.width);
-        const lh=80*PX;
-        ctx.drawImage(logoImg,(PW-lw)/2,y,lw,lh);
-        y+=100*PX;
-        // Skip logo line in lines array and draw rest
-        lines.forEach((l,i)=>{if(!l.logo){
-          const opts=l.opts||{};
-          const sz=opts.size||FONT;
-          const lhx=sz*1.6;
-          ctx.font=(opts.bold?'bold ':'')+sz+'px '+(opts.sans?SANS:MONO);
-          ctx.textBaseline='top';
-          if(opts.row){
-            ctx.font=(opts.bold?'bold ':'')+sz+'px '+MONO;
-            ctx.fillText(opts.left||'',PAD,y);
-            const rw=ctx.measureText(opts.right||'').width;
-            ctx.fillText(opts.right||'',PW-PAD-rw,y);
-          }else if(opts.center){
-            const tw=ctx.measureText(l.text).width;
-            const x=Math.max(PAD,(PW-tw)/2);
-            if(opts.rtl){ctx.direction='rtl';ctx.fillText(l.text,PW-PAD,y);ctx.direction='ltr';}
-            else ctx.fillText(l.text,x,y);
-          }else{
-            ctx.fillText((l.text||'').slice(0,42),PAD,y);
-          }
-          y+=lhx;
-        }});
-        if(qrDataUrl){
-          const qrImg=new Image();
-          qrImg.onload=function(){ctx.drawImage(qrImg,PW/2-75*PX,y+8*PX,150*PX,150*PX);finalize();};
-          qrImg.onerror=finalize;qrImg.src=qrDataUrl;
-        }else finalize();
-      };
-      logoImg.onerror=function(){y=PAD;drawLines();};
-      logoImg.src=s.logo;
-    }else{
-      drawLines();
-    }
+    return;
   }
 
-  // Render to canvas image then print
-  renderReceiptToImage(function(imgDataUrl,w,h){
-    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+inv.id+'</title>'
-      +'<style>'
-      +'*{margin:0;padding:0}'
-      +'body{background:#fff;width:80mm;margin:0}'
-      +'img.receipt{width:80mm;height:auto;display:block}'
-      +'@media print{body{width:80mm;margin:0}@page{margin:0;size:80mm auto}img.receipt{width:80mm}}'
-      +'</style></head><body>'
-      +'<img class="receipt" src="'+imgDataUrl+'">'
-      +'</body></html>';
-    _printHTML(html,800,true);
-  });
+  // Fallback for desktop / browsers without Web Share API
+  _thermalFallbackPrint(inv.id,t);
+}
+
+function _thermalFallbackPrint(invId,t){
+  // Show plain text in a print window — works on desktop Chrome
+  var page='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+invId+'</title>'
+    +'<style>*{margin:0;padding:0}body{font-family:"Courier New",monospace;font-size:10pt;width:80mm;background:#fff}'
+    +'pre{white-space:pre;font-size:10pt;line-height:1.35;padding:2mm}'
+    +'@media print{body{width:80mm;margin:0}@page{margin:0;size:80mm auto}}'
+    +'</style></head><body><pre>'+t+'</pre></body></html>';
+  _printHTML(page,600,true);
 }
 // ── INIT ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded',async ()=>{
