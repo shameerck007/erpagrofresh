@@ -1389,7 +1389,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="tabs" id="settings-tabs">
     <button class="tab-btn active" id="stab-company" onclick="switchSettingsTab('company',this)"><i class="ti ti-building"></i>Company</button>
     <button class="tab-btn" id="stab-users" onclick="switchSettingsTab('users',this)"><i class="ti ti-users"></i>Users &amp; Access</button>
-    <button class="tab-btn" id="stab-printer" onclick="switchSettingsTab('printer',this)"><i class="ti ti-printer"></i>Printer</button>
   </div>
   <!-- COMPANY TAB -->
   <div id="settings-panel-company">
@@ -1539,10 +1538,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       <div id="role-perms-saved-msg" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(15,110,86,.1);border:1px solid rgba(15,110,86,.25);border-radius:8px;font-size:13px;color:var(--teal)"><i class="ti ti-circle-check" style="margin-right:6px"></i>Permissions saved successfully. Changes take effect immediately.</div>
     </div>
   </div>
-  <!-- PRINTER TAB -->
-  <div id="settings-panel-printer" style="display:none">
-    <div id="printer-settings-root"></div>
-  </div>
 </div>
 </main>
 <!-- INVOICE VIEWER MODAL -->
@@ -1556,7 +1551,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       </div>
       <div style="display:flex;gap:8px">
         <button onclick="printInvoiceFromModal('a4')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#185fa5;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-printer" style="font-size:15px"></i> A4 Print</button>
-        <button onclick="printInvoiceFromModal('thermal')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-receipt" style="font-size:15px"></i> Thermal <span id="inv-thermal-method-badge" style="font-size:10px;background:rgba(255,255,255,.15);border-radius:4px;padding:1px 5px;margin-left:2px"></span></button>
+        <button onclick="printInvoiceFromModal('thermal')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#374151;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-receipt" style="font-size:15px"></i> Thermal</button>
         <button onclick="closeModal('modal-invoice-view')" style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#fff;color:#374151;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font)"><i class="ti ti-x" style="font-size:15px"></i> Close</button>
       </div>
     </div>
@@ -2043,9 +2038,6 @@ function switchSettingsTab(tab,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('settings-panel-company').style.display=tab==='company'?'':'none';
   document.getElementById('settings-panel-users').style.display=tab==='users'?'':'none';
-  const printerPanel=document.getElementById('settings-panel-printer');
-  if(printerPanel)printerPanel.style.display=tab==='printer'?'':'none';
-  if(tab==='printer')renderPrinterSettingsPanel();
   if(tab==='users')renderUsersTab();
 }
 function renderUsersTab(){renderRoleSummaryCards();renderUsersTable();renderRolePermsGrid();}
@@ -4285,16 +4277,18 @@ function _printReceiptThermal(pmtId){
 
   var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}'
-    +'body{font-family:"Courier New",Courier,monospace;font-size:12px;color:#000;width:72mm;margin:0 auto;padding:4mm 2mm}'
-    +'.c{text-align:center}.r{text-align:right}.b{font-weight:bold}.big{font-size:16px;font-weight:bold}'
+    +'body{font-family:"Courier New",Courier,monospace;font-size:13px;color:#000;width:80mm;margin:0;padding:3mm 2mm;background:#fff}'
+    +'.c{text-align:center}.r{text-align:right}.b{font-weight:bold}.big{font-size:15px;font-weight:bold}'
     +'.xl{font-size:20px;font-weight:900;font-family:monospace}'
-    +'.line{border-top:1px solid #000;margin:5px 0}'
-    +'.dash{border-top:1px dashed #aaa;margin:4px 0}'
-    +'.row{display:flex;justify-content:space-between}'
-    +'.stamp{font-size:14px;font-weight:900;text-align:center;border:2px solid #000;padding:5px;margin:8px 0}'
+    +'.line{border-top:1.5px solid #000;margin:5px 0}'
+    +'.dash{border-top:1px dashed #555;margin:4px 0}'
+    +'.row{display:flex;justify-content:space-between;line-height:1.6}'
+    +'.stamp{font-size:13px;font-weight:900;text-align:center;border:2px solid #000;padding:5px;margin:8px 0;letter-spacing:2px}'
     +'.sig{border-top:1px solid #000;margin-top:28px;padding-top:4px;font-size:10px;text-align:center}'
-    +'@media print{body{width:72mm;padding:2mm}@page{margin:0;size:80mm auto}}'
-    +'</style></head><body>'
+    +'@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}body{width:80mm;padding:2mm 1mm;margin:0}@page{margin:0;size:80mm auto;padding:0}}'
+    +'</style>'
+    +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>'
+    +'</head><body>'
     +(s.logo?'<div class="c" style="margin-bottom:4px"><img src="'+s.logo+'" style="max-width:60mm;max-height:18mm;object-fit:contain"></div>':'')
     +'<div class="c big">'+(s.nameEn||'FasTrack')+'</div>'
     +(s.nameAr?'<div class="c" style="font-size:11px">'+s.nameAr+'</div>':'')
@@ -7779,489 +7773,69 @@ function clearSavedData(){
   _fsdb.collection('fastrack').get().then(snap=>{const b=_fsdb.batch();snap.forEach(d=>b.delete(d.ref));return b.commit();}).then(()=>{localStorage.removeItem('fastrack_session');showToast('Data cleared — reloading...','amber');setTimeout(()=>location.reload(),1500);}).catch(e=>showToast('Error: '+e.message,'red'));
   });
 }
-// ── BLUETOOTH / DIRECT THERMAL PRINTING ENGINE ───────────────────────────────
-
-// Printer config stored in db.settings.printer
-function getPrinterCfg(){return (db.settings&&db.settings.printer)||{};}
-
-// ── ESC/POS Command Builder ──────────────────────────────────────────────────
-const ESC='\x1b',GS='\x1d';
-const ESCPOS={
-  init:()=>ESC+'@',
-  align:(a)=>ESC+'a'+(a==='center'?'\x01':a==='right'?'\x02':'\x00'),
-  bold:(on)=>ESC+'E'+(on?'\x01':'\x00'),
-  size:(w,h)=>GS+'!'+(String.fromCharCode(((w-1)<<4)|(h-1))),
-  cut:()=>GS+'V\x01',
-  feed:(n)=>ESC+'d'+String.fromCharCode(n||3),
-  text:(t)=>t+'\n',
-};
-
-function buildEscPosReceipt(inv){
-  const s=db.settings||{};
-  const c=getCustomer(inv.customer);
-  const bal=inv.total-inv.paid;
-  const isPaid=bal<=0;
-  const isEst=inv.isEstimate===true;
-  const vatPct=Math.round(getVatRate()*100);
-  const sub=inv.subtotal||(inv.total/(1+getVatRate()));
-  const vat=inv.vatAmount||(inv.total-sub);
-  const W=32;// chars for 80mm paper
-
-  // Helper: strip non-printable but keep basic ASCII + some symbols
-  function safe(t){return (t||'').replace(/[^\x20-\x7e]/g,'').slice(0,W);}
-  function line(ch){return (ch||'-').repeat(W)+'\n';}
-  function row(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
-  function center(t){t=t.slice(0,W);const pad=Math.max(0,Math.floor((W-t.length)/2));return ' '.repeat(pad)+t+'\n';}
-
-  let d='';
-  d+=ESC+'@'; // init printer
-  d+=ESC+'a\x00'; // align left
-
-  if(isEst){
-    d+=ESC+'a\x01'; // center
-    d+=line('=');
-    d+=ESC+'E\x01'+ESC+'!\x30'; // bold + double height+width
-    d+=center('ESTIMATE');
-    d+=ESC+'!\x00'+ESC+'E\x00'; // normal
-    d+=line('=');
-    d+=ESC+'a\x00'; // left
-    d+=row('Estimate #:',inv.id);
-    d+=row('Date:',fmtDate(inv.date));
-    d+=line('-');
-    d+=ESC+'E\x01'+row('Customer:',safe(c.name).slice(0,16))+ESC+'E\x00';
-    d+=line('-');
-    d+=ESC+'a\x01'+center('ITEMS')+ESC+'a\x00';
-    d+=line('-');
-    inv.items.forEach(it=>{
-      const p=getProduct(it.product);
-      d+=safe(p.name)+'\n';
-      d+=row('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));
-    });
-    d+=line('=');
-    d+=ESC+'E\x01'+ESC+'!\x11'; // bold + double width
-    d+=row('TOTAL:','SAR '+inv.total.toFixed(2));
-    d+=ESC+'!\x00'+ESC+'E\x00';
-    d+=line('=');
-  }else{
-    // Company header
-    d+=ESC+'a\x01'; // center
-    d+=ESC+'E\x01'; // bold
-    d+=safe(s.nameEn||'FasTrack').slice(0,W)+'\n';
-    d+=ESC+'E\x00'; // normal
-    if(s.nameAr)d+=safe(s.nameAr).slice(0,W)+'\n';
-    if(s.address||s.phone)d+=safe([s.address,s.phone].filter(Boolean).join(' ')).slice(0,W)+'\n';
-    if(s.vatNumber)d+=safe('VAT:'+s.vatNumber+(s.crNumber?' CR:'+s.crNumber:'')).slice(0,W)+'\n';
-    d+=line('=');
-    d+=ESC+'E\x01'+center('TAX INVOICE')+ESC+'E\x00';
-    d+=line('=');
-    d+=ESC+'a\x00'; // left
-    d+=row('Invoice #:',inv.id);
-    d+=row('Date:',fmtDate(inv.date));
-    d+=row('Due:',fmtDate(inv.due));
-    d+=line('-');
-    d+=ESC+'E\x01'+row('Customer:',safe(c.name).slice(0,16))+ESC+'E\x00';
-    if(c.vatNumber||c.crNumber)d+=safe([c.vatNumber?'VAT:'+c.vatNumber:'',c.crNumber?'CR:'+c.crNumber:''].filter(Boolean).join(' '))+'\n';
-    if(inv.van)d+=row('Van:',safe(inv.van));
-    d+=line('-');
-    d+=ESC+'a\x01'+center('ITEMS')+ESC+'a\x00';
-    d+=line('-');
-    inv.items.forEach(it=>{
-      const p=getProduct(it.product);
-      d+=safe(p.name)+'\n';
-      d+=row('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));
-    });
-    d+=line('=');
-    d+=row('Subtotal:','SAR '+sub.toFixed(2));
-    d+=row('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2));
-    d+=line('=');
-    d+=ESC+'E\x01'+ESC+'!\x11'; // bold double-width
-    d+=row('TOTAL:','SAR '+inv.total.toFixed(2));
-    d+=ESC+'!\x00'+ESC+'E\x00';
-    if(inv.paid>0)d+=row('Paid:','SAR '+inv.paid.toFixed(2));
-    if(bal>0)d+=ESC+'E\x01'+row('Balance Due:','SAR '+bal.toFixed(2))+ESC+'E\x00';
-    d+=line('=');
-    d+=ESC+'a\x01'; // center
-    d+=ESC+'E\x01'+(isPaid?'*** PAID ***':'*** OUTSTANDING ***')+'\n'+ESC+'E\x00';
-    d+=line('-');
-    d+='Thank you for your business\n';
-    d+=fmtDate(today())+'\n';
-  }
-
-  d+=ESC+'d\x04'; // feed 4 lines
-  d+=GS+'V\x01'; // full cut
-  return d;
-}
-
-// ── RAWBT (Android) ──────────────────────────────────────────────────────────
-function printViaRawBT(plainTextData){
-  // plainTextData: plain text receipt (no ESC/POS binary for URL mode)
-  const cfg=getPrinterCfg();
-  const mode=cfg.rawbtMode||'url';
-
-  // Binary-safe base64 encoder
-  function toBase64(str){
-    const chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-    const bytes=[];
-    for(let i=0;i<str.length;i++)bytes.push(str.charCodeAt(i)&0xff);
-    let b64='',i=0;
-    while(i<bytes.length){
-      const b1=bytes[i++],b2=i<bytes.length?bytes[i++]:0,b3=i<bytes.length?bytes[i++]:0;
-      const n=(b1<<16)|(b2<<8)|b3;
-      b64+=chars[(n>>18)&63]+chars[(n>>12)&63]+chars[(n>>6)&63]+chars[n&63];
-    }
-    const pad=bytes.length%3;
-    return pad?b64.slice(0,pad-3)+'==='.slice(0,3-pad):b64;
-  }
-
-  if(mode==='http'){
-    // HTTP mode: send ESC/POS binary as base64
-    const host=cfg.rawbtHost||'localhost';
-    const port=cfg.rawbtPort||8080;
-    fetch('http://'+host+':'+port+'/rawbt',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({data:toBase64(plainTextData),type:'base64'})
-    })
-    .then(r=>{if(r.ok)showToast('✓ Sent to RawBT printer','green');else showToast('RawBT error: '+r.status,'red');})
-    .catch(()=>showToast('Cannot reach RawBT — enable HTTP server in RawBT app settings','red'));
-    return;
-  }
-
-  // URL scheme: rawbt://base64/<data>
-  // RawBT opens and prints automatically when default printer is set
-  const b64=toBase64(plainTextData);
-
-  // Use anchor click — most reliable way to trigger custom URL scheme on Android Chrome
-  // without navigating away from the page
-  const anchor=document.createElement('a');
-  anchor.href='rawbt://base64/'+b64;
-  anchor.style.display='none';
-  document.body.appendChild(anchor);
-  anchor.click();
-  setTimeout(()=>{
-    try{document.body.removeChild(anchor);}catch(e){}
-  },1000);
-  showToast('Sent to RawBT — printing...','amber');
-}
-
-// ── QZ TRAY (Laptop/Desktop) ─────────────────────────────────────────────────
-let _qzConnected=false;
-let _qzConnecting=false;
-
-function qzConnect(){
-  return new Promise((resolve,reject)=>{
-    if(_qzConnected&&qz.websocket.isActive()){resolve();return;}
-    if(_qzConnecting){reject(new Error('Already connecting'));return;}
-    if(typeof qz==='undefined'){reject(new Error('QZ Tray not loaded'));return;}
-    _qzConnecting=true;
-    qz.security.setCertificatePromise(()=>Promise.resolve(''));
-    qz.security.setSignatureAlgorithm('SHA512');
-    qz.security.setSignaturePromise(()=>Promise.resolve(''));
-    qz.websocket.connect()
-      .then(()=>{_qzConnected=true;_qzConnecting=false;resolve();})
-      .catch(e=>{_qzConnecting=false;reject(e);});
-  });
-}
-
-function printViaQZTray(escposText){
-  const cfg=getPrinterCfg();
-  const printerName=cfg.qzPrinterName||'';
-  if(!printerName)return showToast('Set printer name in Admin Settings → Printer tab','amber');
-
-  if(typeof qz==='undefined'){
-    // Load QZ Tray JS dynamically
-    const script=document.createElement('script');
-    script.src='https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js';
-    script.onload=()=>printViaQZTray(escposText);
-    script.onerror=()=>showToast('Failed to load QZ Tray library. Is QZ Tray installed?','red');
-    document.head.appendChild(script);
-    return;
-  }
-
-  showToast('Connecting to QZ Tray...','amber');
-  qzConnect()
-    .then(()=>qz.printers.find(printerName))
-    .then(printer=>{
-      const config=qz.configs.create(printer);
-      const data=[{type:'raw',format:'plain',data:escposText}];
-      return qz.print(config,data);
-    })
-    .then(()=>showToast('Printed via '+printerName+' ✓','green'))
-    .catch(e=>{
-      _qzConnected=false;
-      showToast('QZ Tray error: '+e.message,'red');
-    });
-}
-
-// ── SMART PRINT DISPATCHER ────────────────────────────────────────────────────
-function buildPlainTextReceipt(inv){
-  // Plain text receipt for RawBT URL scheme (no binary ESC/POS)
-  const s=db.settings||{};
-  const c=getCustomer(inv.customer);
-  const bal=inv.total-inv.paid;
-  const isPaid=bal<=0;
-  const isEst=inv.isEstimate===true;
-  const vatPct=Math.round(getVatRate()*100);
-  const sub=inv.subtotal||(inv.total/(1+getVatRate()));
-  const vat=inv.vatAmount||(inv.total-sub);
+// ── ANDROID NATIVE BLUETOOTH PRINT BRIDGE ────────────────────────────────────
+function isNativeAndroidApp(){return typeof AndroidBT!=='undefined'&&AndroidBT.isNativeApp();}
+function _buildPlainReceipt(inv){
+  const s=db.settings||{},c=getCustomer(inv.customer);
+  const bal=inv.total-inv.paid,isPaid=bal<=0,isEst=inv.isEstimate===true;
+  const vatPct=Math.round(getVatRate()*100),sub=inv.subtotal||(inv.total/(1+getVatRate())),vat=inv.vatAmount||(inv.total-sub);
   const W=32;
-  function safe(t){return (t||'').replace(/[^\x20-\x7e]/g,'').slice(0,W);}
-  function line(ch){return (ch||'=').repeat(W)+'\n';}
-  function row(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
-  function center(t){t=safe(t).slice(0,W);const p=Math.max(0,Math.floor((W-t.length)/2));return ' '.repeat(p)+t+'\n';}
+  function safe(t){return(t||'').replace(/[^\x20-\x7e]/g,'').slice(0,W);}
+  function ln(c){return(c||'=').repeat(W)+'\n';}
+  function rw(l,r){const sp=Math.max(1,W-l.length-r.length);return l+' '.repeat(sp)+r+'\n';}
+  function ct(t){t=safe(t).slice(0,W);const p=Math.max(0,Math.floor((W-t.length)/2));return' '.repeat(p)+t+'\n';}
   let d='';
   if(isEst){
-    d+=line('=');d+=center('ESTIMATE');d+=line('=');
-    d+=row('Ref:',inv.id);d+=row('Date:',fmtDate(inv.date));
-    d+=line('-');d+='Customer: '+safe(c.name)+'\n';d+=line('-');
-    d+=center('ITEMS');d+=line('-');
-    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=row(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
-    d+=line('=');d+=row('TOTAL:','SAR '+inv.total.toFixed(2));d+=line('=');
+    d+=ln('=');d+=ct('ESTIMATE');d+=ln('=');d+=rw('Ref:',inv.id);d+=rw('Date:',fmtDate(inv.date));
+    d+=ln('-');d+='Customer: '+safe(c.name)+'\n';d+=ln('-');d+=ct('ITEMS');d+=ln('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=ln('=');d+=rw('TOTAL:','SAR '+inv.total.toFixed(2));d+=ln('=');
   }else{
-    d+=center(safe(s.nameEn||'FasTrack'));
-    if(s.nameAr)d+=center(safe(s.nameAr));
-    if(s.address||s.phone)d+=center(safe([s.address,s.phone].filter(Boolean).join(' ')));
-    if(s.vatNumber)d+=center(safe('VAT:'+s.vatNumber+(s.crNumber?' CR:'+s.crNumber:'')));
-    d+=line('=');d+=center('TAX INVOICE');d+=line('=');
-    d+=row('Invoice:',inv.id);d+=row('Date:',fmtDate(inv.date));d+=row('Due:',fmtDate(inv.due));
-    d+=line('-');d+='Customer: '+safe(c.name)+'\n';
-    if(c.vatNumber)d+='VAT: '+c.vatNumber+'\n';
-    if(inv.van)d+=row('Van:',safe(inv.van));
-    d+=line('-');d+=center('ITEMS');d+=line('-');
-    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=row(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
-    d+=line('=');
-    d+=row('Subtotal:','SAR '+sub.toFixed(2));
-    d+=row('VAT '+vatPct+'%:','SAR '+vat.toFixed(2));
-    d+=line('=');d+=row('TOTAL:','SAR '+inv.total.toFixed(2));
-    if(inv.paid>0)d+=row('Paid:','SAR '+inv.paid.toFixed(2));
-    if(bal>0)d+=row('Balance Due:','SAR '+bal.toFixed(2));
-    d+=line('=');d+=center(isPaid?'*** PAID ***':'*** OUTSTANDING ***');
-    d+=line('-');d+=center('Thank you for your business');d+=center(fmtDate(today()));
+    d+=ct(safe(s.nameEn||'FasTrack'));if(s.nameAr)d+=ct(safe(s.nameAr));
+    if(s.address||s.phone)d+=ct(safe([s.address,s.phone].filter(Boolean).join(' ')));
+    if(s.vatNumber)d+=ct(safe('VAT:'+s.vatNumber+(s.crNumber?' CR:'+s.crNumber:'')));
+    d+=ln('=');d+=ct('TAX INVOICE');d+=ln('=');
+    d+=rw('Invoice:',inv.id);d+=rw('Date:',fmtDate(inv.date));d+=rw('Due:',fmtDate(inv.due));
+    d+=ln('-');d+='Customer: '+safe(c.name)+'\n';if(c.vatNumber)d+='VAT: '+c.vatNumber+'\n';
+    if(inv.van)d+=rw('Van:',safe(inv.van));
+    d+=ln('-');d+=ct('ITEMS');d+=ln('-');
+    inv.items.forEach(it=>{const p=getProduct(it.product);d+=safe(p.name)+'\n';d+=rw(' '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));});
+    d+=ln('=');d+=rw('Subtotal:','SAR '+sub.toFixed(2));d+=rw('VAT '+vatPct+'%:','SAR '+vat.toFixed(2));
+    d+=ln('=');d+=rw('TOTAL:','SAR '+inv.total.toFixed(2));
+    if(inv.paid>0)d+=rw('Paid:','SAR '+inv.paid.toFixed(2));
+    if(bal>0)d+=rw('Balance Due:','SAR '+bal.toFixed(2));
+    d+=ln('=');d+=ct(isPaid?'*** PAID ***':'*** OUTSTANDING ***');
+    d+=ln('-');d+=ct('Thank you for your business');d+=ct(fmtDate(today()));
   }
-  d+='\n\n\n\n';
-  return d;
+  d+='\n\n\n\n';return d;
 }
-
-function smartThermalPrint(inv){
-  const cfg=getPrinterCfg();
-  const method=cfg.method||'browser'; // 'rawbt' | 'qztray' | 'browser'
-  const isAndroid=/Android/i.test(navigator.userAgent);
-  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isDesktop=!isAndroid&&!isIOS;
-
-  // Auto-detect if no preference set
-  let useMethod=method;
-  if(method==='auto'){
-    if(isAndroid)useMethod='rawbt';
-    else if(isDesktop)useMethod='qztray';
-    else useMethod='browser';
+function _nativePrint(inv){
+  if(AndroidBT.isConnected()){
+    const ok=AndroidBT.printText(_buildPlainReceipt(inv));
+    if(ok)showToast('✓ Printed','green');else showToast('Print failed','red');
+    return;
   }
-
-  if(useMethod==='rawbt'){
-    const cfg=getPrinterCfg();
-    // URL mode: plain text (RawBT handles formatting)
-    // HTTP mode: ESC/POS binary (full control)
-    const data=(cfg.rawbtMode||'url')==='http'?buildEscPosReceipt(inv):buildPlainTextReceipt(inv);
-    printViaRawBT(data);
-  }else if(useMethod==='qztray'){
-    const escpos=buildEscPosReceipt(inv);
-    printViaQZTray(escpos);
-  }else{
-    // Fallback: browser HTML print (original method)
-    printThermalInvoice(inv);
-  }
-}
-
-// ── PRINTER SETTINGS PANEL ────────────────────────────────────────────────────
-function renderPrinterSettingsPanel(){
-  const root=document.getElementById('printer-settings-root');if(!root)return;
-  const cfg=getPrinterCfg();
-  const isAndroid=/Android/i.test(navigator.userAgent);
-  const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const isDesktop=!isAndroid&&!isIOS;
-  const method=cfg.method||'browser';
-
-  root.innerHTML=`
-  <div class="card" style="margin-bottom:16px">
-    <div class="card-hdr"><span class="card-title"><i class="ti ti-printer" style="color:var(--blue);margin-right:6px"></i>Thermal Printer Setup</span></div>
-    <div style="padding:4px 0 16px">
-      <div style="background:var(--bg3);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-        <i class="ti ti-device-mobile" style="margin-right:6px;color:var(--blue)"></i>
-        <strong>Detected device:</strong> ${isAndroid?'Android':isIOS?'iOS (iPhone/iPad)':'Desktop / Laptop'}
-        ${isIOS?'<div style="margin-top:6px;color:var(--amber)"><i class="ti ti-alert-triangle" style="margin-right:4px"></i>iOS Safari blocks direct Bluetooth printing. Use browser HTML print or WiFi printer.</div>':''}
-      </div>
-
-      <label style="font-size:13px;font-weight:600;display:block;margin-bottom:10px">Print Method</label>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-        ${[
-          {val:'browser',icon:'ti-world',title:'Browser Print (Default)',desc:'Opens a print dialog — works everywhere. No setup needed. Good for A4 and desktop.'},
-          {val:'rawbt',icon:'ti-brand-android',title:'RawBT App (Android)',desc:'Direct Bluetooth printing on Android. Requires RawBT app installed on your phone. Instant — no dialogs.'},
-          {val:'qztray',icon:'ti-device-laptop',title:'QZ Tray (Laptop / Desktop)',desc:'Direct printing to Bluetooth/USB printer on Windows or Mac. Requires QZ Tray app installed.'},
-          {val:'auto',icon:'ti-wand',title:'Auto-Detect',desc:'Automatically uses RawBT on Android, QZ Tray on desktop, browser on iOS.'},
-        ].map(opt=>`
-          <label style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border:2px solid ${method===opt.val?'var(--blue)':'var(--border)'};border-radius:12px;cursor:pointer;background:${method===opt.val?'rgba(24,95,165,.05)':'var(--card)'}">
-            <input type="radio" name="printer-method" value="${opt.val}" ${method===opt.val?'checked':''} onchange="savePrinterMethod(this.value)" style="margin-top:2px;accent-color:var(--blue)">
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-                <i class="ti ${opt.icon}" style="color:${method===opt.val?'var(--blue)':'var(--text3)'}"></i>
-                <span style="font-size:13px;font-weight:600;color:${method===opt.val?'var(--blue)':'var(--text)'}">${opt.title}</span>
-              </div>
-              <div style="font-size:12px;color:var(--text2)">${opt.desc}</div>
-            </div>
-          </label>
-        `).join('')}
-      </div>
-    </div>
-  </div>
-
-  <!-- RawBT Config -->
-  <div class="card" id="rawbt-config-card" style="margin-bottom:16px;${method==='rawbt'||method==='auto'?'':'display:none'}">
-    <div class="card-hdr"><span class="card-title"><i class="ti ti-brand-android" style="color:#3ddc84;margin-right:6px"></i>RawBT Setup (Android)</span></div>
-    <div style="padding:4px 0 16px">
-      <div style="background:rgba(61,220,132,.06);border:1px solid rgba(61,220,132,.2);border-radius:10px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Setup Steps:</div>
-        <ol style="font-size:13px;color:var(--text2);padding-left:18px;line-height:2">
-          <li>Install <strong>RawBT</strong> from Google Play Store</li>
-          <li>Open RawBT → tap the Bluetooth icon → pair your Goojprt printer</li>
-          <li>In RawBT Settings → enable <strong>"Default Printer"</strong></li>
-          <li>Come back here and tap <strong>Test Print</strong></li>
-        </ol>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">RawBT Mode</label>
-        <select id="rawbt-mode-sel" onchange="savePrinterField('rawbtMode',this.value)" style="width:100%;padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:14px">
-          <option value="url" ${(cfg.rawbtMode||'url')==='url'?'selected':''}>URL Scheme (tap opens RawBT — recommended)</option>
-          <option value="http" ${cfg.rawbtMode==='http'?'selected':''}>HTTP API (background — enable HTTP server in RawBT app)</option>
-        </select>
-      </div>
-      <div id="rawbt-http-fields" style="${cfg.rawbtMode==='http'?'':'display:none'}">
-        <div class="fgrid" style="margin-bottom:14px">
-          <div class="fg"><label>RawBT Host</label><input type="text" id="rawbt-host" value="${cfg.rawbtHost||'localhost'}" placeholder="localhost" oninput="savePrinterField('rawbtHost',this.value)"></div>
-          <div class="fg"><label>Port</label><input type="number" id="rawbt-port" value="${cfg.rawbtPort||8080}" placeholder="8080" oninput="savePrinterField('rawbtPort',parseInt(this.value)||8080)"></div>
-        </div>
-      </div>
-      <button class="btn btn-primary" onclick="testRawBTPrint()"><i class="ti ti-printer"></i> Test Print via RawBT</button>
-    </div>
-  </div>
-
-  <!-- QZ Tray Config -->
-  <div class="card" id="qztray-config-card" style="margin-bottom:16px;${method==='qztray'||method==='auto'?'':'display:none'}">
-    <div class="card-hdr"><span class="card-title"><i class="ti ti-device-laptop" style="color:var(--blue);margin-right:6px"></i>QZ Tray Setup (Laptop / Desktop)</span></div>
-    <div style="padding:4px 0 16px">
-      <div style="background:rgba(24,95,165,.06);border:1px solid rgba(24,95,165,.2);border-radius:10px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:13px;font-weight:600;margin-bottom:8px">Setup Steps:</div>
-        <ol style="font-size:13px;color:var(--text2);padding-left:18px;line-height:2">
-          <li>Download and install <strong>QZ Tray</strong> from <a href="https://qz.io/download/" target="_blank" style="color:var(--blue)">qz.io/download</a></li>
-          <li>Launch QZ Tray — it runs in the system tray (bottom right)</li>
-          <li>Pair your Goojprt printer to your laptop via Windows/Mac Bluetooth settings</li>
-          <li>Type the exact printer name below (must match Windows Devices list)</li>
-          <li>Tap <strong>Test Print</strong></li>
-        </ol>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Printer Name <span style="font-size:11px;font-weight:400;color:var(--text3)">(exactly as shown in Windows Devices / Mac System Prefs)</span></label>
-        <input type="text" id="qz-printer-name" value="${cfg.qzPrinterName||''}" placeholder="e.g. GOOJPRT PT-260" style="width:100%;margin-bottom:10px" oninput="savePrinterField('qzPrinterName',this.value)">
-        <button class="btn btn-outline btn-sm" onclick="listQZPrinters()" style="margin-right:8px"><i class="ti ti-list"></i> List Available Printers</button>
-        <div id="qz-printer-list" style="margin-top:10px"></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:13px;font-weight:600;display:block;margin-bottom:6px">Paper Width</label>
-        <select id="qz-paper-width" onchange="savePrinterField('paperWidth',this.value)" style="padding:10px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-size:14px">
-          <option value="80" ${(cfg.paperWidth||'80')==='80'?'selected':''}>80mm (standard)</option>
-          <option value="58" ${cfg.paperWidth==='58'?'selected':''}>58mm (small)</option>
-        </select>
-      </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="testQZTrayPrint()"><i class="ti ti-printer"></i> Test Print via QZ Tray</button>
-        <div id="qz-status" style="font-size:13px;color:var(--text2);display:flex;align-items:center;gap:6px"></div>
-      </div>
-    </div>
-  </div>`;
-
-  // Show/hide config cards based on method
-  document.querySelectorAll('input[name="printer-method"]').forEach(r=>{
-    r.addEventListener('change',()=>{
-      const v=document.querySelector('input[name="printer-method"]:checked')?.value||'browser';
-      const rawbt=document.getElementById('rawbt-config-card');
-      const qzt=document.getElementById('qztray-config-card');
-      if(rawbt)rawbt.style.display=v==='rawbt'||v==='auto'?'':'none';
-      if(qzt)qzt.style.display=v==='qztray'||v==='auto'?'':'none';
-    });
+  let devices=[];
+  try{devices=JSON.parse(AndroidBT.getPairedDevices());}catch(e){}
+  if(!devices.length){showAlert('No Paired Printers','Pair your Goojprt in Android Bluetooth Settings first.','warning');return;}
+  window._pendingPrintInv=inv;
+  _showDialog({
+    icon:'<i class="ti ti-bluetooth"></i>',iconBg:'rgba(24,95,165,.12)',iconColor:'var(--blue)',
+    title:'Select Printer',
+    body:'<div style="font-size:13px;color:var(--text2);margin-bottom:10px">Choose your Goojprt printer:</div>'
+      +devices.map(d=>`<button onclick="_connectAndPrint('${d.address}',window._pendingPrintInv)" style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;font-size:14px;font-family:var(--font);color:var(--text)"><i class="ti ti-printer" style="margin-right:8px;color:var(--blue)"></i><strong>${d.name}</strong><div style="font-size:11px;color:var(--text3);margin-top:2px">${d.address}</div></button>`).join(''),
+    buttons:[{label:'Cancel',value:false,primary:false}]
   });
-
-  // Show/hide HTTP fields
-  const modesel=document.getElementById('rawbt-mode-sel');
-  if(modesel){modesel.addEventListener('change',()=>{
-    const hf=document.getElementById('rawbt-http-fields');
-    if(hf)hf.style.display=modesel.value==='http'?'':'none';
-  });}
 }
-
-function savePrinterMethod(val){
-  if(!db.settings)db.settings={};
-  if(!db.settings.printer)db.settings.printer={};
-  db.settings.printer.method=val;
-  saveAppState();
-  showToast('Print method saved');
-}
-function savePrinterField(key,val){
-  if(!db.settings)db.settings={};
-  if(!db.settings.printer)db.settings.printer={};
-  db.settings.printer[key]=val;
-  saveAppState();
-}
-
-function testRawBTPrint(){
-  const testText='================================\n'
-    +'         FASTRACK TEST PRINT    \n'
-    +'================================\n'
-    +'Printer connection: OK\n'
-    +'RawBT: Connected\n'
-    +'Date: '+fmtDate(today())+'\n'
-    +'================================\n'
-    +'   If you see this it works!    \n'
-    +'================================\n'
-    +'\n\n\n\n';
-  printViaRawBT(testText);
-}
-
-function testQZTrayPrint(){
-  const testInv={id:'TEST-001',date:today(),due:today(),customer:'test',isEstimate:false,
-    taxMode:'exclusive',subtotal:100,vatAmount:15,total:115,paid:115,van:'Van 1',
-    items:[{product:db.products[0]?.id||'p1',qty:2,price:50,total:100}]};
-  if(!db.customers.find(c=>c.id==='test'))db.customers.push({id:'test',name:'Test Customer',phone:'',area:''});
-  const escpos=buildEscPosReceipt(testInv);
-  printViaQZTray(escpos);
-}
-
-function listQZPrinters(){
-  const statusEl=document.getElementById('qz-status');
-  const listEl=document.getElementById('qz-printer-list');
-  if(statusEl)statusEl.innerHTML='<i class="ti ti-loader ti-spin"></i> Connecting to QZ Tray...';
-
-  if(typeof qz==='undefined'){
-    const script=document.createElement('script');
-    script.src='https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.js';
-    script.onload=listQZPrinters;
-    script.onerror=()=>{if(statusEl)statusEl.innerHTML='<span style="color:var(--red)"><i class="ti ti-x"></i> QZ Tray library failed to load</span>';};
-    document.head.appendChild(script);return;
-  }
-
-  qzConnect()
-    .then(()=>qz.printers.find())
-    .then(printers=>{
-      if(statusEl)statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> QZ Tray connected</span>';
-      if(listEl){
-        if(!printers.length){listEl.innerHTML='<div style="font-size:12px;color:var(--text3)">No printers found</div>';return;}
-        listEl.innerHTML='<div style="font-size:12px;color:var(--text3);margin-bottom:6px">Click a printer to select it:</div>'
-          +printers.map(p=>`<button class="btn btn-outline btn-sm" style="margin:3px;font-size:12px" onclick="document.getElementById('qz-printer-name').value='${p}';savePrinterField('qzPrinterName','${p}');showToast('Selected: ${p}')">${p}</button>`).join('');
-      }
-    })
-    .catch(e=>{
-      _qzConnected=false;
-      if(statusEl)statusEl.innerHTML='<span style="color:var(--red)"><i class="ti ti-x"></i> '+e.message+'</span>';
-      if(listEl)listEl.innerHTML='<div style="font-size:12px;color:var(--red);margin-top:6px">Make sure QZ Tray is installed and running on this computer.<br><a href="https://qz.io/download/" target="_blank" style="color:var(--blue)">Download QZ Tray →</a></div>';
-    });
+function _connectAndPrint(address,inv){
+  const overlay=document.getElementById('app-dialog-overlay');
+  if(overlay){overlay.style.display='none';document.body.style.overflow='';}
+  showToast('Connecting...','amber');
+  setTimeout(()=>{
+    const ok=AndroidBT.connectPrinter(address);
+    if(ok){showToast('Connected ✓','green');setTimeout(()=>{const pr=AndroidBT.printText(_buildPlainReceipt(inv));if(pr)showToast('✓ Printed','green');else showToast('Print failed','red');},600);}
+    else showToast('Could not connect — is printer on?','red');
+  },300);
 }
 function printZatcaInvoice(invId){
   viewInvoice(invId);
@@ -8507,13 +8081,6 @@ function viewInvoice(invId){
   // store current inv id for print
   document.getElementById('modal-invoice-view').dataset.invId=invId;
 
-  // Update thermal button badge to show current print method
-  const badge=document.getElementById('inv-thermal-method-badge');
-  if(badge){
-    const m=getPrinterCfg().method||'browser';
-    const labels={browser:'HTML',rawbt:'RawBT',qztray:'QZ Tray',auto:'Auto'};
-    badge.textContent=labels[m]||'HTML';
-  }
 
   // build invoice HTML
   const isEst=inv.isEstimate===true;
@@ -8683,7 +8250,7 @@ function printInvoiceFromModal(mode){
   const inv=db.invoices.find(i=>i.id===invId);
   if(!inv){showToast('Invoice not found','red');return;}
   if(mode==='thermal'){
-    smartThermalPrint(inv);
+    printThermalInvoice(inv);
   }else{
     const body=document.getElementById('inv-view-body');
     if(!body)return;
@@ -8704,6 +8271,8 @@ function printInvoiceFromModal(mode){
 }
 
 function printThermalInvoice(inv){
+  // If running inside FasTrack Android app — use direct Bluetooth
+  if(isNativeAndroidApp()){_nativePrint(inv);return;}
   const c=getCustomer(inv.customer);
   const s=db.settings||{};
   const bal=inv.total-inv.paid;
@@ -8736,24 +8305,28 @@ function printThermalInvoice(inv){
     const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+inv.id+'</title>'
       +'<style>'
       +'*{margin:0;padding:0;box-sizing:border-box}'
-      +'body{font-family:"Courier New",Courier,monospace;font-size:12px;color:#000;width:72mm;margin:0 auto;padding:4mm 2mm;background:#fff}'
+      // Body sized exactly for 80mm thermal paper
+      +'body{font-family:"Courier New",Courier,monospace;font-size:13px;color:#000;width:80mm;margin:0;padding:3mm 2mm;background:#fff}'
       +'.center{text-align:center}'
-      +'.right{text-align:right}'
       +'.bold{font-weight:bold}'
-      +'.big{font-size:16px;font-weight:bold}'
+      +'.big{font-size:15px;font-weight:bold;letter-spacing:1px}'
       +'.med{font-size:13px;font-weight:bold}'
-      +'.line{border-top:1px solid #000;margin:4px 0}'
-      +'.dashed{border-top:1px dashed #aaa;margin:3px 0}'
-      +'.row{display:flex;justify-content:space-between;align-items:baseline}'
-      +'.row .r{text-align:right}'
-      +'.total-row{display:flex;justify-content:space-between;font-size:14px;font-weight:bold;margin:4px 0}'
-      +'.status{font-size:14px;font-weight:900;text-align:center;padding:4px;margin:6px 0;border:2px solid #000}'
+      +'.line{border-top:1.5px solid #000;margin:4px 0}'
+      +'.dashed{border-top:1px dashed #555;margin:3px 0}'
+      +'.row{display:flex;justify-content:space-between;align-items:baseline;line-height:1.6}'
+      +'.total-row{display:flex;justify-content:space-between;font-size:15px;font-weight:bold;margin:5px 0;line-height:1.6}'
+      +'.status{font-size:13px;font-weight:900;text-align:center;padding:5px 4px;margin:6px 0;border:2px solid #000;letter-spacing:2px}'
       +'.qr-wrap{text-align:center;margin:8px 0}'
+      // Critical for ESC/POS Print Service - exact 80mm page, no margins
       +'@media print{'
-      +'  body{width:72mm;padding:2mm}'
-      +'  @page{margin:0;size:80mm auto}'
+      +'*{-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+      +'body{width:80mm;padding:2mm 1mm;margin:0}'
+      +'@page{margin:0;size:80mm auto;padding:0}'
       +'}'
-      +'</style></head><body>'
+      +'</style>'
+      // Auto-print immediately when page loads (works with ESC/POS service)
+      +'<script>window.onload=function(){setTimeout(function(){window.print();},300);}<\/script>'
+      +'</head><body>'
 
       // ── ESTIMATE layout (no company header/footer)
       +(isEst
