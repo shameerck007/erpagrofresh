@@ -398,6 +398,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="nsec"><div class="nsec-lbl">Inventory</div>
     <div class="ni" data-access="stock" onclick="navigate('stock')"><i class="ti ti-package"></i>Products &amp; Prices</div>
     <div class="ni" data-access="warehouses" onclick="navigate('warehouses')"><i class="ti ti-building-warehouse"></i>Inventory &amp; Stock</div>
+    <div class="ni" data-access="price-list" onclick="navigate('price-list')"><i class="ti ti-list-details"></i>Price List</div>
   </div>
   <div class="nsec"><div class="nsec-lbl">Procurement</div>
     <div class="ni" data-access="po" onclick="navigate('po')"><i class="ti ti-file-invoice"></i>Purchase Orders</div>
@@ -562,14 +563,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 </div>
 <!-- STOCK -->
 <div class="page" id="page-stock">
-  <div class="pghdr"><div><div class="pgtitle">Products &amp; Prices</div><div class="pgsub">Product catalog, selling prices and price change history</div></div></div>
+  <div class="pghdr"><div><div class="pgtitle">Products &amp; Prices</div><div class="pgsub">Product catalog, selling prices and price change history</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-outline" onclick="printBulkBarcodes()" style="color:var(--blue);border-color:var(--blue)" id="btn-print-barcodes"><i class="ti ti-barcode"></i> Print All Barcodes</button>
+  </div>
+  </div>
   <div class="tabs"><button class="tab-btn active" id="tab-btn-prices" onclick="switchProductTab('prices',this)"><i class="ti ti-tag"></i>Selling Prices</button><button class="tab-btn" id="tab-btn-price-history" onclick="switchProductTab('price-history',this)"><i class="ti ti-history"></i>Price History</button></div>
   <div id="products-panel-prices"></div>
   <div id="products-panel-price-history" style="display:none"></div>
 </div>
 <!-- WAREHOUSES -->
 <div class="page" id="page-warehouses">
-  <div class="pghdr"><div><div class="pgtitle">Inventory &amp; Stock</div><div class="pgsub">Live stock levels across all warehouses and vans</div></div><div style="display:flex;gap:8px"><button class="btn btn-outline" style="color:var(--red);border-color:rgba(220,53,69,.3)" onclick="navigate('damages')"><i class="ti ti-alert-triangle"></i>Log Damage</button><button class="btn btn-primary" onclick="openModal('modal-stock-transfer')"><i class="ti ti-arrows-transfer-up"></i>Transfer Stock</button></div></div>
+  <div class="pghdr"><div><div class="pgtitle">Inventory &amp; Stock</div><div class="pgsub">Live stock levels across all warehouses and vans</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" style="color:var(--red);border-color:rgba(220,53,69,.3)" onclick="navigate('damages')"><i class="ti ti-alert-triangle"></i>Log Damage</button><button class="btn btn-primary" onclick="openModal('modal-stock-transfer')"><i class="ti ti-arrows-transfer-up"></i>Transfer Stock</button></div></div>
   <div class="kpi-grid" id="wh-kpis"></div>
   <div class="sec-lbl" style="margin-bottom:14px"><i class="ti ti-building-warehouse" style="font-size:13px"></i>Warehouse capacity</div>
   <div id="wh-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:22px"></div>
@@ -588,6 +593,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div id="wh-alerts-wrap" style="margin-bottom:20px"><div class="sec-lbl" style="margin-bottom:14px"><i class="ti ti-alert-triangle" style="font-size:13px;color:var(--red)"></i>Low stock alerts</div><div id="wh-alerts"></div></div>
   <div class="sec-lbl" style="margin-bottom:14px"><i class="ti ti-arrows-transfer-up" style="font-size:13px"></i>Transfer history</div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Product</th><th>From</th><th>To</th><th>Qty</th><th>Done By</th></tr></thead><tbody id="wh-transfers-body"></tbody></table></div></div>
+</div>
+<!-- PRICE LIST PAGE -->
+<div class="page" id="page-price-list">
+  <div class="pghdr">
+    <div><div class="pgtitle">Price List</div><div class="pgsub">Current product prices — print or share as PDF</div></div>
+    <button class="btn btn-primary" onclick="printPriceList()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+  </div>
+  <div id="pl-page-root"></div>
 </div>
 <!-- SALES -->
 <div class="page" id="page-sales">
@@ -740,7 +753,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 </div>
 <!-- CUSTOMERS -->
 <div class="page" id="page-customers">
-  <div class="pghdr"><div><div class="pgtitle">Customers</div><div class="pgsub" id="cust-pgsub">All customers and billing history</div></div><button class="btn btn-primary" id="btn-add-customer" onclick="openAddCustomerModal()"><i class="ti ti-user-plus"></i>Add Customer</button></div>
+  <div class="pghdr"><div><div class="pgtitle">Customers</div><div class="pgsub" id="cust-pgsub">All customers and billing history</div></div><div style="display:flex;gap:8px"><button class="btn btn-primary" id="btn-add-customer" onclick="openAddCustomerModal()"><i class="ti ti-user-plus"></i>Add Customer</button></div></div>
   <div class="toolbar"><div class="sbox"><i class="ti ti-search"></i><input type="text" placeholder="Search customers..." id="cust-search" oninput="renderCustomers()"></div><select class="fsel" id="cust-van-filter" onchange="renderCustomers()"><option value="">All Vans</option></select></div>
   <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Customer</th><th>Contact</th><th>VAT / CR No.</th><th>Van</th><th>Total Purchased</th><th>Outstanding</th><th>Last Invoice</th><th>Actions</th></tr></thead><tbody id="customers-body"></tbody></table></div></div>
 </div>
@@ -1663,13 +1676,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- ALL MODALS -->
 <div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg"><label>Item Code <span style="font-size:10px;color:var(--text3);font-weight:400">(optional)</span></label><div style="display:flex;gap:6px"><input type="text" id="ap-code" placeholder="Auto or type custom" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateItemCode()" style="flex-shrink:0" title="Auto generate from product name"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
 <!-- ADD CUSTOMER -->
-<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg"><label>Full Name *</label><input type="text" id="ac-name"></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
+<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg full"><label>Full Name *</label><input type="text" id="ac-name"></div><div class="fg"><label>Customer Code <span style="font-size:10px;color:var(--text3);font-weight:400">(auto)</span></label><div style="display:flex;gap:6px"><input type="text" id="ac-code" placeholder="e.g. CUST-001" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateCustomerCode()" title="Auto generate customer code"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
 <!-- NEW SALE MODAL -->
 <div class="modal-overlay" id="modal-new-sale">
   <div class="modal" style="width:min(680px,96vw)">
     <div class="modal-title"><div>New Invoice <span id="ns-inv-number" style="font-size:13px;font-family:var(--mono);color:var(--green);background:rgba(24,95,165,.1);padding:3px 10px;border-radius:6px;margin-left:6px"></span></div><button class="btn btn-sm btn-outline" onclick="closeModal('modal-new-sale')"><i class="ti ti-x"></i></button></div>
 
-    <div class="fgrid" style="margin-bottom:14px"><div class="fg"><label>Date</label><input type="date" id="ns-date"></div><div class="fg"><label>Due Date</label><input type="date" id="ns-due"></div><div class="fg"><label>Customer</label><select id="ns-customer"></select></div><div class="fg" id="ns-van-row"><label>Van (for delivery tracking)</label><select id="ns-van"></select></div></div>
+    <div class="fgrid" style="margin-bottom:14px"><div class="fg"><label>Date</label><input type="date" id="ns-date"></div><div class="fg"><label>Due Date</label><input type="date" id="ns-due"></div><div class="fg" style="position:relative"><label>Customer</label><input type="text" id="ns-customer-search" placeholder="Search by name or code..." autocomplete="off" style="width:100%;font-size:16px;padding:10px 12px;border:2px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none" oninput="_nsSearchCustomer(this)" onfocus="_nsSearchCustomer(this)" onblur="_nsHideCustomerDrop(200)"><input type="hidden" id="ns-customer"><div id="ns-customer-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:9999;background:var(--card);border:2px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div></div><div class="fg" id="ns-van-row"><label>Van (for delivery tracking)</label><select id="ns-van"></select></div></div>
     <div style="background:rgba(24,95,165,.06);border:1px solid rgba(24,95,165,.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap"><i class="ti ti-building-warehouse" style="font-size:20px;color:var(--green);flex-shrink:0"></i><div style="flex:1;min-width:160px"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--green);margin-bottom:4px">Deduct Stock From *</div><select id="ns-location" onchange="nsOnLocationChange()" style="font-size:13px;padding:7px 10px;border:1px solid rgba(24,95,165,.3);border-radius:8px;background:#fff;color:var(--text);font-family:var(--font);width:100%"><option value="">— Select location —</option></select></div><div id="ns-loc-summary" style="font-size:12px;color:var(--text2);font-style:italic">Select a location to see available stock</div><div id="ns-tax-mode-badge" style="font-size:11px;margin-top:4px"></div></div>
     <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;font-weight:600">Invoice Items</span><div style="display:flex;gap:8px"><button class="btn btn-sm btn-outline" onclick="openBarcodeScanner('__invoice_item__')" style="color:var(--blue);border-color:var(--blue)"><i class="ti ti-scan"></i> Scan Product</button><button class="btn btn-sm btn-outline" onclick="addInvoiceItem()" style="color:var(--green);border-color:var(--green)"><i class="ti ti-plus"></i> Add Item</button></div></div><div id="invoice-items-list"></div></div>
     <div id="ns-stock-errors" style="display:none;background:rgba(220,53,69,.07);border:1px solid rgba(220,53,69,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)"></div>
@@ -1775,16 +1788,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <script>
 // ── ROLE / AUTH ──────────────────────────────────────────────────────────────
 const ROLE_PERMISSIONS={
-  admin:['dashboard','daily','stock','warehouses','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','expenses','sales','sales-returns','sales-report','quotations','delivery-notes','customers','customer-statement','fleet','assets','reports','pl','vat','cash-book','partners','settings'],
+  admin:['dashboard','daily','stock','warehouses','price-list','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','expenses','sales','sales-returns','sales-report','quotations','delivery-notes','customers','customer-statement','fleet','assets','reports','pl','vat','cash-book','partners','settings'],
   owner:['owner-dashboard'],
-  warehouse:['dashboard','daily','stock','warehouses','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','quotations','delivery-notes','sales-report','assets'],
-  van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement'],
-  accountant:['dashboard','sales','sales-returns','sales-report','customers','customer-statement','expenses','reports','pl','vat','cash-book','partners','supplier-payments','supplier-statement','assets']
+  warehouse:['dashboard','daily','stock','warehouses','price-list','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','quotations','delivery-notes','sales-report','assets'],
+  van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement','stock','price-list'],
+  accountant:['dashboard','sales','sales-returns','sales-report','customers','customer-statement','expenses','reports','pl','vat','cash-book','partners','supplier-payments','supplier-statement','assets','price-list']
 };
 const ROLE_LABELS={admin:'Administrator',owner:'Business Owner',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
 const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},owner:{bg:'rgba(93,202,165,.15)',color:'var(--teal)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
 const ROLE_ICONS={admin:'ti-crown',owner:'ti-star',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
-const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
+const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock','price-list':'Price List',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
 let _currentUser=null;
 
 function doLogin(){
@@ -2010,12 +2023,20 @@ function restoreSession(){
 }
 function applyRBAC(){
   if(!_currentUser)return;
-  const allowed=ROLE_PERMISSIONS[_currentUser.role]||[];
+  const isAdmin=_currentUser.role==='admin';
   const isOwner=_currentUser.role==='owner';
-  // Show/hide sidebar nav items
-  document.querySelectorAll('.ni[data-access]').forEach(ni=>{const page=ni.getAttribute('data-access');ni.style.display=allowed.includes(page)?'':'none';});
+  const isVanSalesUser=_currentUser.role==='van_sales';
+  const allowed=isAdmin?Object.keys(PERM_LABELS):ROLE_PERMISSIONS[_currentUser.role]||[];
+  // Hide Print All Barcodes from van_sales
+  const barcodesBtn=document.getElementById('btn-print-barcodes');
+  if(barcodesBtn)barcodesBtn.style.display=isVanSalesUser?'none':'';
+  // Show/hide sidebar nav items — admin always sees everything
+  document.querySelectorAll('.ni[data-access]').forEach(ni=>{
+    const page=ni.getAttribute('data-access');
+    ni.style.display=(isAdmin||allowed.includes(page))?'':'none';
+  });
   const settingsNi=document.querySelector('.ni[onclick*="settings"]');
-  if(settingsNi)settingsNi.style.display=_currentUser.role==='admin'?'':'none';
+  if(settingsNi)settingsNi.style.display=isAdmin?'':'none';
   // Regular dashboard nav — hide for owner
   const dashNi=document.querySelector('.ni[onclick*="\'dashboard\'"]');
   if(dashNi)dashNi.style.display=isOwner?'none':'';
@@ -2162,7 +2183,7 @@ function saveRolePermissions(){
 function loadSavedPermissions(){
   try{
     // Version key — bump this whenever new pages/permissions are added to force cache refresh
-    const PERM_VERSION='v4';
+    const PERM_VERSION='v5';
     const storedVersion=localStorage.getItem('fastrack_perms_version');
     if(storedVersion!==PERM_VERSION){
       // Stale cache — clear it and save the current hardcoded defaults
@@ -2589,6 +2610,54 @@ function seedData(){
   db.distributions=[];
 }
 
+function seedBulkCustomers(){
+  // 23 VAN-1 Malaz customers — only adds if not already in db (checks by phone)
+  const bulk=[
+    {name:'Almas Restaurent',customerCode:'ALR-001',phone:'966568065187',area:'Malaz',van:'VAN-1'},
+    {name:'Cherries Restaurant',customerCode:'CHR-001',phone:'966556209757',area:'Malaz',van:'VAN-1'},
+    {name:'Chilly Master',customerCode:'CHM-001',phone:'966594355511',area:'Malaz',van:'VAN-1'},
+    {name:'Ghazi Restaurent',customerCode:'GHR-001',phone:'966561473963',area:'Malaz',van:'VAN-1'},
+    {name:'Spicy Club',customerCode:'SPC-001',phone:'966537366920',area:'Malaz',van:'VAN-1'},
+    {name:'Kailash Parbat',customerCode:'KAP-001',phone:'966538829777',area:'Malaz',van:'VAN-1'},
+    {name:'Tanoor indian restaurant',customerCode:'TIR-001',phone:'966530394456',area:'Malaz',van:'VAN-1'},
+    {name:'Hotel Rayan',customerCode:'HOR-001',phone:'966538678756',area:'Malaz',van:'VAN-1'},
+    {name:'Malaz Restaurent',customerCode:'MAR-001',phone:'966566107335',area:'Malaz',van:'VAN-1'},
+    {name:'Grand Lucky Indian Multi Cuisine',customerCode:'GLI-001',phone:'966506337430',area:'Malaz',van:'VAN-1'},
+    {name:'Sagar Indian Restaurent',customerCode:'SIR-001',phone:'966570024126',area:'Malaz',van:'VAN-1'},
+    {name:'Chennai Spice',customerCode:'CHS-001',phone:'966581185878',area:'Malaz',van:'VAN-1'},
+    {name:'Indian and Arabic Restaurent',customerCode:'IAA-001',phone:'966583461916',area:'Malaz',van:'VAN-1'},
+    {name:'Honey Chilly',customerCode:'HOC-001',phone:'966593026036',area:'Malaz',van:'VAN-1'},
+    {name:'Palakkad Restaurent',customerCode:'PAR-001',phone:'966574700972',area:'Malaz',van:'VAN-1'},
+    {name:'Bangalore Dosa Bhavan',customerCode:'BDB-001',phone:'966509975670',area:'Malaz',van:'VAN-1'},
+    {name:'LuLu Restaurent',customerCode:'LUR-001',phone:'966536463852',area:'Malaz',van:'VAN-1'},
+    {name:'Rifayi Restaurent',customerCode:'RIR-001',phone:'966507746829',area:'Malaz',van:'VAN-1'},
+    {name:'Machali kingdom Restaurent',customerCode:'MKR-001',phone:'966544435133',area:'Malaz',van:'VAN-1'},
+    {name:'Kerala Hotel',customerCode:'KEH-001',phone:'966558828146',area:'Malaz',van:'VAN-1'},
+    {name:'Moon Light Family Restaurent',customerCode:'MLF-001',phone:'966556823632',area:'Malaz',van:'VAN-1'},
+    {name:'Malabar paris',customerCode:'MAP-001',phone:'966534280387',area:'Malaz',van:'VAN-1'},
+    {name:'Nanma Kitchen',customerCode:'NAK-001',phone:'966506475396',area:'Malaz',van:'VAN-1'},
+  ];
+  let added=0;
+  bulk.forEach(function(c,i){
+    // Skip if phone already exists
+    if(db.customers.some(x=>x.phone===c.phone))return;
+    db.customers.push({
+      id:'bulk_c_'+i+'_'+Date.now(),
+      name:c.name,customerCode:c.customerCode,
+      phone:c.phone,area:c.area,van:c.van,
+      vatNumber:'',crNumber:'',notes:'',createdBy:'Bulk Import'
+    });
+    added++;
+  });
+  if(added>0){
+    saveAppState();
+    showToast(added+' customers imported successfully','green');
+    if(typeof renderCustomers==='function')renderCustomers();
+  }else{
+    showToast('All customers already exist — no duplicates added','amber');
+  }
+}
+
 function navigate(page){
   if(page!=='dashboard'&&!hasAccess(page)){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -2601,7 +2670,7 @@ function navigate(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>{if((n.getAttribute('onclick')||'').includes("'"+page+"'"))n.classList.add('active');});
-  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
+  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,'price-list':renderPriceListPage,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
   if(renders[page])renders[page]();
   // mobile: update header title, sync bottom tab bar, close the drawer
   const mht=document.getElementById('mobile-header-title');if(mht)mht.textContent=PERM_LABELS[page]||'FasTrack';
@@ -2621,6 +2690,69 @@ function closeMobileSidebar(){
   if(sb)sb.classList.remove('mobile-open');
   if(bd)bd.style.display='none';
 }
+// ── Invoice customer searchable dropdown ─────────────────────────────────────
+function _nsSearchCustomer(inp){
+  const dd=document.getElementById('ns-customer-dropdown');
+  if(!dd)return;
+  const q=inp.value.trim().toLowerCase();
+  const isVanUser=_currentUser&&_currentUser.role==='van_sales';
+  const userLocs=getUserLocations();
+  let custs=db.customers;
+  if(isVanUser)custs=custs.filter(c=>userLocs.includes(c.van));
+  const filtered=q?custs.filter(c=>
+    c.name.toLowerCase().includes(q)||
+    (c.customerCode&&c.customerCode.toLowerCase().includes(q))||
+    (c.phone&&c.phone.includes(q))
+  ):custs;
+  if(!filtered.length){
+    dd.innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--text3)">No customers found</div>';
+    dd.style.display='block';return;
+  }
+  dd.innerHTML=filtered.slice(0,20).map(function(c){
+    var safeName=c.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div style="padding:11px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;min-height:50px"'
+      +' onmousedown="event.preventDefault();_nsPickCustomer(\''+c.id+'\',\''+safeName+'\')">'
+      +'<div>'
+      +'<div style="font-size:14px;font-weight:600;color:var(--text)">'+c.name+'</div>'
+      +(c.customerCode?'<div style="font-size:11px;font-family:var(--mono);color:var(--teal);margin-top:2px">'+c.customerCode+'</div>':'')
+      +'</div>'
+      +'<div style="text-align:right;font-size:11px;color:var(--text3)">'
+      +(c.phone?'<div>'+c.phone+'</div>':'')
+      +(c.area?'<div>'+c.area+'</div>':'')
+      +'</div></div>';
+  }).join('');
+  dd.style.display='block';
+}
+function _nsPickCustomer(cid,name){
+  const inp=document.getElementById('ns-customer-search');
+  const hidden=document.getElementById('ns-customer');
+  const dd=document.getElementById('ns-customer-dropdown');
+  if(inp){inp.value=name;inp.style.borderColor='var(--green)';}
+  if(hidden)hidden.value=cid;
+  if(dd)dd.style.display='none';
+  // Auto-select van if customer has one assigned
+  const c=db.customers.find(x=>x.id===cid);
+  if(c&&c.van){const vs=document.getElementById('ns-van');if(vs&&vs.querySelector('option[value="'+c.van+'"]'))vs.value=c.van;}
+}
+function _nsHideCustomerDrop(delay){
+  setTimeout(function(){const dd=document.getElementById('ns-customer-dropdown');if(dd)dd.style.display='none';},delay||200);
+}
+function _nsResetCustomerSearch(){
+  const inp=document.getElementById('ns-customer-search');
+  const hidden=document.getElementById('ns-customer');
+  if(inp){inp.value='';inp.style.borderColor='';}
+  if(hidden)hidden.value='';
+  const dd=document.getElementById('ns-customer-dropdown');
+  if(dd)dd.style.display='none';
+}
+function _nsSetCustomer(cid){
+  const c=db.customers.find(x=>x.id===cid);if(!c)return;
+  const inp=document.getElementById('ns-customer-search');
+  const hidden=document.getElementById('ns-customer');
+  if(inp)inp.value=c.name;
+  if(hidden)hidden.value=cid;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 function openModal(id){
   populateSelects();
   const overlay=document.getElementById(id);if(!overlay)return;
@@ -2645,14 +2777,8 @@ function openModal(id){
     // hide van selector for van users (their location IS their van)
     const nsVanRow=document.getElementById('ns-van-row');
     if(nsVanRow)nsVanRow.style.display=isVanUser?'none':'';
-    // filter customers to this van's customers only
-    const nsCust=document.getElementById('ns-customer');
-    if(nsCust){
-      const custOpts=isVanUser
-        ?'<option value="">— Walk-in —</option>'+db.customers.filter(c=>userLocs.includes(c.van)).map(c=>`<option value="${c.id}">${c.name}</option>`).join('')
-        :'<option value="">— Walk-in —</option>'+db.customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-      nsCust.innerHTML=custOpts;
-    }
+    // reset customer search field
+    _nsResetCustomerSearch();
     initInvItems();
     // reset tax invoice checkbox to checked (default = tax invoice)
     const nsTaxCb=document.getElementById('ns-is-tax-invoice');
@@ -3356,14 +3482,15 @@ function switchProductTab(tab,btn){
 }
 function renderPricesPanel(){
   const el=document.getElementById('products-panel-prices');if(!el)return;
+  const isVanSales=_currentUser&&_currentUser.role==='van_sales';
   const locs=[...db.warehouses.map(w=>({key:w.id,label:w.name})),...db.vans.map(v=>({key:v.name,label:v.name}))];
   const locHeaders=locs.map(l=>'<th>'+l.label+'</th>').join('');
   // Only build scaffold once — don't rebuild on every search keystroke
   if(!el.querySelector('#price-search')){
     el.innerHTML='<div class="toolbar" style="margin-bottom:14px">'
       +'<div class="sbox"><i class="ti ti-search"></i><input type="text" placeholder="Search by name, code or barcode..." id="price-search" oninput="renderPricesList()"></div>'
-      +'<button class="btn btn-outline btn-sm" onclick="openBarcodeLookup()"><i class="ti ti-scan"></i> Scan to Find</button>'
-      +'<button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="ti ti-plus"></i> Add Product</button>'
+      +(!isVanSales?'<button class="btn btn-outline btn-sm" onclick="openBarcodeLookup()"><i class="ti ti-scan"></i> Scan to Find</button>':'')
+      +(!isVanSales?'<button class="btn btn-primary btn-sm" onclick="openAddProductModal()"><i class="ti ti-plus"></i> Add Product</button>':'')
       +'</div>'
       +'<div class="card"><div class="tbl-wrap"><table><thead><tr><th>Product</th><th>Code</th><th>Unit</th><th>Barcode</th><th>Current Price</th>'+locHeaders+'<th>Total</th><th>Last Changed</th><th>Actions</th></tr></thead><tbody id="prices-body"></tbody></table></div></div>';
     // Store locs for renderPricesList
@@ -3374,6 +3501,7 @@ function renderPricesPanel(){
 
 function renderPricesList(){
   const el=document.getElementById('products-panel-prices');if(!el)return;
+  const isVanSales=_currentUser&&_currentUser.role==='van_sales';
   const locs=el._locs||[...db.warehouses.map(w=>({key:w.id,label:w.name})),...db.vans.map(v=>({key:v.name,label:v.name}))];
   const q=(document.getElementById('price-search')?.value||'').toLowerCase().trim();
   const rows=q?db.products.filter(p=>
@@ -3387,7 +3515,7 @@ function renderPricesList(){
     const prev=hist[0];
     const locCells=locs.map(l=>'<td style="font-family:var(--mono)">'+stockAt(p.id,l.key)+'</td>').join('');
     const total=locs.reduce((s,l)=>s+stockAt(p.id,l.key),0);
-    return`<tr><td><strong>${p.name}</strong></td><td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${p.itemCode||'—'}</td><td style="font-size:12px;color:var(--text2)">${p.unit}</td><td style="font-family:var(--mono);font-size:11px;color:${p.barcode?'var(--text2)':'var(--text3)'}">${p.barcode||'—'}</td><td style="font-family:var(--mono);font-weight:700;color:var(--green)">SAR ${p.price.toFixed(2)}</td>${locCells}<td style="font-family:var(--mono);font-weight:600">${total}</td><td style="font-size:12px;color:var(--text2)">${prev?fmtDate(prev.date):'—'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')"><i class="ti ti-pencil"></i></button>${p.barcode?`<button class="btn btn-sm btn-outline" onclick="printProductBarcode('${p.id}')" title="Print barcode label"><i class="ti ti-printer"></i></button>`:''}<button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+    return`<tr><td><strong>${p.name}</strong></td><td style="font-family:var(--mono);font-size:11px;color:var(--text2)">${p.itemCode||'—'}</td><td style="font-size:12px;color:var(--text2)">${p.unit}</td><td style="font-family:var(--mono);font-size:11px;color:${p.barcode?'var(--text2)':'var(--text3)'}">${p.barcode||'—'}</td><td style="font-family:var(--mono);font-weight:700;color:var(--green)">SAR ${p.price.toFixed(2)}</td>${locCells}<td style="font-family:var(--mono);font-weight:600">${total}</td><td style="font-size:12px;color:var(--text2)">${prev?fmtDate(prev.date):'—'}</td><td style="display:flex;gap:5px">${!isVanSales?`<button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')"><i class="ti ti-pencil"></i></button>`:''}${p.barcode?`<button class="btn btn-sm btn-outline" onclick="printProductBarcode('${p.id}')" title="Print barcode label"><i class="ti ti-printer"></i></button>`:''}<button class="btn btn-sm btn-outline" onclick="editProduct('${p.id}')" style="display:none"></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('')||'<tr><td colspan="20" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
 }
 function renderPriceHistoryPanel(){
@@ -3678,6 +3806,78 @@ function _handleBarcodeLookup(code){
     if(searchEl){searchEl.value=p.name;if(typeof renderPricesList==='function')renderPricesList();}
   },150);
 }
+function printBulkBarcodes(){
+  // Get only products that have barcodes
+  const prods=db.products.filter(p=>p.barcode);
+  if(!prods.length){
+    showAlert('No Barcodes','No products have barcodes set. Add barcodes in the Products & Prices page first.','warning');
+    return;
+  }
+  const s=db.settings||{};
+  const coName=s.nameEn||'FasTrack';
+
+  // Build one label per product with barcode SVG
+  // Uses JsBarcode — each label: product name + barcode image + barcode number
+  const labelHtml=prods.map(function(p){
+    return '<div class="label" id="label-'+p.id+'">'
+      +'<div class="pname">'+p.name+'</div>'
+      +(p.itemCode?'<div class="code-label">'+p.itemCode+'</div>':'')
+      +'<svg class="barcode" data-code="'+p.barcode+'" data-name="'+p.name+'"></svg>'
+      +'<div class="barcode-num">'+p.barcode+'</div>'
+      +'<div class="co-name">'+coName+'</div>'
+      +'</div>';
+  }).join('');
+
+  const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Barcodes — '+coName+'</title>'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:Arial,sans-serif;background:#f3f4f6;padding:12px}'
+    +'.print-bar{background:#185fa5;color:#fff;padding:14px 20px;border-radius:10px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}'
+    +'.print-bar .info{font-size:14px;font-weight:700}'
+    +'.print-bar .sub{font-size:12px;opacity:.85;margin-top:3px}'
+    +'.print-bar button{background:#fff;color:#185fa5;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}'
+    +'.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}'
+    +'.label{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;text-align:center;page-break-inside:avoid;break-inside:avoid}'
+    +'.pname{font-size:12px;font-weight:700;color:#111827;margin-bottom:3px;line-height:1.3;word-break:break-word}'
+    +'.code-label{font-size:10px;color:#6b7280;font-family:monospace;margin-bottom:4px}'
+    +'.barcode{width:100%;height:auto;display:block;margin:6px 0}'
+    +'.barcode-num{font-family:monospace;font-size:11px;letter-spacing:1.5px;color:#374151;margin-top:2px}'
+    +'.co-name{font-size:9px;color:#9ca3af;margin-top:4px}'
+    +'@media print{'
+    +'body{background:#fff;padding:0}'
+    +'.print-bar{display:none!important}'
+    +'.grid{gap:6px;padding:4mm}'
+    +'.label{border:0.5px solid #ddd}'
+    +'@page{margin:8mm;size:A4}'
+    +'}'
+    +'</style>'
+    +'<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><'+'/script>'
+    +'<script>'
+    +'window.onload=function(){'
+    +'document.querySelectorAll(".barcode").forEach(function(svg){'
+    +'var code=svg.getAttribute("data-code");'
+    +'try{JsBarcode(svg,code,{format:"CODE128",displayValue:false,height:50,margin:2,lineColor:"#000",background:"#fff"});}'
+    +'catch(e){svg.parentElement.style.opacity="0.3";}'
+    +'});'
+    +'}'
+    +'<'+'/script>'
+    +'</head><body>'
+    +'<div class="print-bar">'
+    +'<div><div class="info"><i style="margin-right:6px">🏷️</i>Barcode Labels — '+coName+'</div>'
+    +'<div class="sub">'+prods.length+' product'+( prods.length===1?'':'s')+' with barcodes · Ready to print</div></div>'
+    +'<button onclick="window.print()">🖨️ Print / Save PDF</button>'
+    +'</div>'
+    +'<div class="grid">'+labelHtml+'</div>'
+    +'</body></html>';
+
+  const w=window.open('','_blank');
+  if(!w){showToast('Allow popups to print barcodes','amber');return;}
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  // Auto-trigger print after barcodes render
+  setTimeout(function(){try{w.print();}catch(e){}},1800);
+}
 function printProductBarcode(pid){
   const p=getProduct(pid);
   if(!p.barcode){showToast('This product has no barcode set','amber');return;}
@@ -3744,6 +3944,176 @@ function saveProduct(){
 }
 function deleteProduct(pid){const p=db.products.find(x=>x.id===pid);showConfirm('Delete Product',p?'Delete "'+p.name+'"? This cannot be undone.':'Delete this product?',null,true).then(ok=>{if(!ok)return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();saveAppState();showToast('Deleted','amber');});}
 // ── WAREHOUSES / STOCK ────────────────────────────────────────────────────────
+function renderPriceListPage(){
+  const root=document.getElementById('pl-page-root');if(!root)return;
+  const prods=db.products.filter(p=>p.price>0).sort((a,b)=>a.name.localeCompare(b.name));
+  const vatPct=Math.round(getVatRate()*100);
+  root.innerHTML=
+    // Summary bar
+    '<div class="kpi-grid" style="margin-bottom:18px">'
+    +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-package" style="margin-right:5px"></i>Total Products</div><div class="kpi-value" style="color:var(--teal)">'+prods.length+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-coin" style="margin-right:5px"></i>Average Price</div><div class="kpi-value" style="color:var(--green)">SAR '+(prods.length?( prods.reduce((s,p)=>s+p.price,0)/prods.length).toFixed(2):'0.00')+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-percentage" style="margin-right:5px"></i>VAT Rate</div><div class="kpi-value" style="color:var(--amber)">'+vatPct+'%</div></div>'
+    +'</div>'
+    // Product table preview
+    +'<div class="card">'
+    +'<div class="card-hdr"><span class="card-title"><i class="ti ti-list-details" style="margin-right:6px;color:var(--teal)"></i>Current Price List</span>'
+    +'<div style="display:flex;gap:8px">'
+    +'<div class="sbox"><i class="ti ti-search"></i><input type="text" id="pl-search" placeholder="Search product..." oninput="renderPriceListPage()"></div>'
+    +'</div></div>'
+    +'<div class="tbl-wrap"><table><thead><tr>'
+    +'<th style="width:36px">#</th>'
+    +'<th style="width:80px">Code</th>'
+    +'<th>Product Name</th>'
+    +'<th style="width:60px;text-align:center">Unit</th>'
+    +'<th style="width:120px;text-align:right">Excl. VAT (SAR)</th>'
+    +'<th style="width:120px;text-align:right">Incl. '+vatPct+'% VAT (SAR)</th>'
+    +'</tr></thead><tbody>'
+    +(()=>{
+      const q=(document.getElementById('pl-search')?.value||'').toLowerCase().trim();
+      const filtered=q?prods.filter(p=>p.name.toLowerCase().includes(q)||(p.itemCode&&p.itemCode.toLowerCase().includes(q))):prods;
+      if(!filtered.length)return '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
+      return filtered.map((p,i)=>{
+        const excl=(db.settings?.vatMode==='inclusive'?p.price/(1+getVatRate()):p.price).toFixed(2);
+        const incl=(db.settings?.vatMode==='inclusive'?p.price:p.price*(1+getVatRate())).toFixed(2);
+        return '<tr>'
+          +'<td style="text-align:center;color:var(--text3);font-size:12px">'+(i+1)+'</td>'
+          +'<td style="font-family:var(--mono);font-size:11px;color:var(--text2)">'+(p.itemCode||'—')+'</td>'
+          +'<td style="font-weight:500">'+p.name+'</td>'
+          +'<td style="text-align:center;font-size:12px;color:var(--text2)">'+p.unit+'</td>'
+          +'<td style="text-align:right;font-family:var(--mono);color:var(--teal);font-weight:600">'+excl+'</td>'
+          +'<td style="text-align:right;font-family:var(--mono);color:var(--green);font-weight:700">'+incl+'</td>'
+          +'</tr>';
+      }).join('');
+    })()
+    +'</tbody></table></div>'
+    +'<div style="padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;justify-content:space-between">'
+    +'<span>'+prods.length+' products · Prices in SAR</span>'
+    +'<span>Click <strong>Print / Save PDF</strong> to generate the official price list</span>'
+    +'</div>'
+    +'</div>';
+}
+function printPriceList(){
+  const s=db.settings||{};
+  const prods=db.products.filter(p=>p.price>0).sort((a,b)=>a.name.localeCompare(b.name));
+  if(!prods.length){showAlert('No Products','No products with prices found.','warning');return;}
+  const today_str=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const vatPct=Math.round(getVatRate()*100);
+  const logoHtml=s.logo?'<img src="'+s.logo+'" style="max-height:48px;max-width:110px;object-fit:contain;display:block">':'';
+
+  const rows=prods.map((p,i)=>{
+    const excl=s.vatMode==='inclusive'?(p.price/(1+getVatRate())):p.price;
+    const incl=s.vatMode==='inclusive'?p.price:(p.price*(1+getVatRate()));
+    const bg=i%2===0?'#ffffff':'#f0faf6';
+    return '<tr style="background:'+bg+'">'
+      +'<td style="padding:7px 10px;text-align:center;color:#64748b;font-size:10pt;border-bottom:1px solid #d1fae5">'+(i+1)+'</td>'
+      +'<td style="padding:7px 10px;font-family:Courier New,monospace;font-size:9.5pt;color:#475569;border-bottom:1px solid #d1fae5">'+(p.itemCode||'—')+'</td>'
+      +'<td style="padding:7px 10px;font-size:10.5pt;font-weight:500;color:#0f172a;border-bottom:1px solid #d1fae5">'+p.name+'</td>'
+      +'<td style="padding:7px 10px;text-align:center;font-size:10pt;color:#64748b;border-bottom:1px solid #d1fae5">'+p.unit+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;font-family:Courier New,monospace;font-size:10pt;font-weight:600;color:#065f46;border-bottom:1px solid #d1fae5">'+excl.toFixed(2)+'</td>'
+      +'<td style="padding:7px 10px;text-align:right;font-family:Courier New,monospace;font-size:10.5pt;font-weight:700;color:#0f6e56;border-bottom:1px solid #d1fae5">'+incl.toFixed(2)+'</td>'
+      +'</tr>';
+  }).join('');
+
+  // Build info lines — group into max 2 lines
+  var infoLine1=[s.address,s.phone].filter(Boolean).join('  ·  ');
+  var infoLine2=[s.email,s.vatNumber?'VAT: '+s.vatNumber:'',s.crNumber?'CR: '+s.crNumber:''].filter(Boolean).join('  ·  ');
+
+  const pg='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Price List</title><style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:Arial,Helvetica,sans-serif;background:#f0faf6;color:#0f172a}'
+    +'.print-btn-bar{background:#0f6e56;color:#fff;padding:10px 22px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:99}'
+    +'.print-btn-bar span{font-size:13px;font-weight:600}'
+    +'.print-btn-bar button{background:#fff;color:#0f6e56;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}'
+    +'.sheet{background:#fff;max-width:210mm;margin:16px auto;box-shadow:0 4px 24px rgba(0,0,0,.12)}'
+    +'.accent{height:5px;background:linear-gradient(90deg,#0f6e56,#5dcaa5)}'
+    // Header
+    +'.header{padding:14px 22px;display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:2px solid #d1fae5}'
+    // Left: logo + company block
+    +'.co-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}'
+    +'.co-details{flex:1;min-width:0}'
+    +'.co-name{font-size:12pt;font-weight:800;color:#0f172a;line-height:1.2;word-break:break-word}'
+    +'.co-info{font-size:8pt;color:#64748b;margin-top:5px;line-height:1.8}'
+    // Right: title block + pills
+    +'.co-right{flex-shrink:0;text-align:right}'
+    +'.title-block{background:#0f6e56;color:#fff;padding:8px 16px;border-radius:5px;text-align:center}'
+    +'.title-block .doc-title{font-size:13pt;font-weight:800;letter-spacing:1.5px}'
+    +'.title-block .doc-sub{font-size:7pt;opacity:.85;margin-top:1px;letter-spacing:.5px}'
+    +'.meta-pills{display:flex;gap:4px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap}'
+    +'.pill{background:#f0faf6;border:1px solid #a7f3d0;border-radius:20px;padding:3px 9px;font-size:8pt;color:#065f46}'
+    +'.pill strong{color:#0f172a}'
+    // Table strip
+    +'.tbl-strip{background:#0f6e56;padding:5px 22px;font-size:8pt;color:rgba(255,255,255,.85);letter-spacing:.8px;text-transform:uppercase;font-weight:600}'
+    +'table{width:100%;border-collapse:collapse}'
+    +'thead tr{background:#0f6e56}'
+    +'thead th{padding:9px 10px;color:#fff;font-size:9pt;font-weight:600;letter-spacing:.3px}'
+    +'thead th.c{text-align:center}'
+    +'thead th.r{text-align:right}'
+    +'tfoot td{padding:7px 10px;font-size:8.5pt;color:#64748b;border-top:2px solid #d1fae5;background:#f0faf6}'
+    +'.bottom-bar{height:4px;background:linear-gradient(90deg,#5dcaa5,#0f6e56)}'
+    +'@media print{'
+    +'.print-btn-bar{display:none!important}'
+    +'body{background:#fff}'
+    +'.sheet{max-width:none;margin:0;box-shadow:none}'
+    +'@page{margin:0;size:A4}'
+    +'tr{page-break-inside:avoid}'
+    +'}'
+    +'</style>'
+    +'<script>window.onload=function(){setTimeout(function(){window.print();},600);};<\/script>'
+    +'</head><body>'
+    +'<div class="print-btn-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
+    +'<button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">&#8592; Back</button>'
+    +'<span style="font-size:13px;font-weight:600">📋 Price List &mdash; '+(s.nameEn||'FasTrack')+'</span>'
+    +'<button onclick="window.print()" style="background:#fff;color:#0f6e56;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>'
+    +'</div>'
+    +'<div class="sheet">'
+    +'<div class="accent"></div>'
+    +'<div class="header">'
+    // Left side
+    +'<div class="co-left">'
+    +(s.logo?'<div style="flex-shrink:0">'+logoHtml+'</div>':'')
+    +'<div class="co-details">'
+    +'<div class="co-name">'+(s.nameEn||'FasTrack')+'</div>'
+    +'<div class="co-info">'
+    +(infoLine1?'<div>'+infoLine1+'</div>':'')
+    +(infoLine2?'<div>'+infoLine2+'</div>':'')
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    // Right side
+    +'<div class="co-right">'
+    +'<div class="title-block"><div class="doc-title">PRICE LIST</div><div class="doc-sub">OFFICIAL PRODUCT CATALOG</div></div>'
+    +'<div class="meta-pills">'
+    +'<div class="pill">📅 <strong>'+today_str+'</strong></div>'
+    +'<div class="pill">📦 <strong>'+prods.length+'</strong> items</div>'
+    +'<div class="pill">VAT <strong>'+vatPct+'%</strong></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="tbl-strip">Product Catalog &nbsp;·&nbsp; All prices in SAR (Saudi Riyals)</div>'
+    +'<table>'
+    +'<thead><tr>'
+    +'<th class="c" style="width:34px">#</th>'
+    +'<th style="width:78px">Code</th>'
+    +'<th>Product Name</th>'
+    +'<th class="c" style="width:48px">Unit</th>'
+    +'<th class="r" style="width:110px">Excl. VAT (SAR)</th>'
+    +'<th class="r" style="width:110px">Incl. '+vatPct+'% VAT (SAR)</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot><tr>'
+    +'<td colspan="4" style="font-weight:600;color:#0f6e56">'+prods.length+' product'+(prods.length===1?'':'s')+' listed</td>'
+    +'<td colspan="2" style="text-align:right">Prices subject to change without notice</td>'
+    +'</tr></tfoot>'
+    +'</table>'
+    +'<div class="bottom-bar"></div>'
+    +'</div></body></html>';
+
+  const w=window.open('','_blank');
+  if(!w){showToast('Allow popups to print','amber');return;}
+  w.document.write(pg);w.document.close();w.focus();
+}
+
 function renderWarehouses(){
   const kpis=document.getElementById('wh-kpis');
   if(kpis){
@@ -4622,20 +4992,43 @@ function renderCustomers(){
   const q=(document.getElementById('cust-search')?.value||'').toLowerCase();const vf=isVanUser?'':(document.getElementById('cust-van-filter')?.value||'');
   const rows=db.customers.filter(c=>{
     if(isVanUser&&!userLocs.includes(c.van))return false;
-    return(!vf||c.van===vf)&&(c.name.toLowerCase().includes(q)||c.phone?.includes(q)||(c.area||'').toLowerCase().includes(q));
+    return(!vf||c.van===vf)&&(c.name.toLowerCase().includes(q)||c.phone?.includes(q)||(c.area||'').toLowerCase().includes(q)||(c.customerCode||'').toLowerCase().includes(q));
   });
   const body=document.getElementById('customers-body');if(!body)return;
   body.innerHTML=rows.map(c=>{
     const invs=db.invoices.filter(i=>i.customer===c.id);
     const total=invs.reduce((s,i)=>s+i.total,0);const bal=invs.reduce((s,i)=>s+(i.total-i.paid),0);
     const lastInv=invs.sort((a,b)=>b.date.localeCompare(a.date))[0];
-    return`<tr><td><strong>${c.name}</strong></td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+    return`<tr><td><strong>${c.name}</strong>${c.customerCode?'<div style="font-size:10px;font-family:var(--mono);color:var(--teal);margin-top:2px">'+c.customerCode+'</div>':''}</td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('')||`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No customers found</td></tr>`;
 }
+function generateCustomerCode(){
+  const nameEl=document.getElementById('ac-name');
+  const codeEl=document.getElementById('ac-code');
+  if(!codeEl)return;
+  const name=(nameEl?.value||'').trim();
+  let prefix='';
+  if(name){
+    const words=name.toUpperCase().replace(/[^A-Z\s]/g,'').trim().split(/\s+/);
+    if(words.length>=3)prefix=words[0][0]+(words[1][0]||'')+(words[2][0]||'');
+    else if(words.length===2)prefix=(words[0].slice(0,2))+(words[1][0]||'');
+    else prefix=words[0].slice(0,3);
+  }else{prefix='CST';}
+  prefix=prefix.padEnd(3,'X').slice(0,3);
+  const existing=(db.customers||[])
+    .map(c=>c.customerCode||'')
+    .filter(c=>c.startsWith(prefix+'-'))
+    .map(c=>parseInt(c.replace(prefix+'-',''))||0)
+    .sort((a,b)=>b-a);
+  const nextNum=(existing[0]||0)+1;
+  codeEl.value=prefix+'-'+String(nextNum).padStart(3,'0');
+}
+
 function saveCustomer(){
   const eid=document.getElementById('ac-id')?.value;
   if(!eid&&_currentUser&&_currentUser.role==='accountant')return showToast('Accountants are not authorized to add new customers','red');
   const name=document.getElementById('ac-name')?.value.trim();
+  const customerCode=document.getElementById('ac-code')?.value.trim().toUpperCase()||'';
   const phone=document.getElementById('ac-phone')?.value.trim()||'';
   const area=document.getElementById('ac-area')?.value.trim()||'';
   let van=document.getElementById('ac-van')?.value||'';
@@ -4643,17 +5036,14 @@ function saveCustomer(){
   const crNumber=document.getElementById('ac-cr')?.value.trim()||'';
   const notes=document.getElementById('ac-notes')?.value||'';
   if(!name)return showToast('Customer name is required','red');
-  // VAT must be exactly 15 digits if provided
   if(vatNumber&&!/^\d{15}$/.test(vatNumber)){
     document.getElementById('ac-vat').style.borderColor='var(--red)';
     return showToast('VAT number must be exactly 15 digits','red');
   }
-  // CR must be exactly 10 digits if provided
   if(crNumber&&!/^\d{10}$/.test(crNumber)){
     document.getElementById('ac-cr').style.borderColor='var(--red)';
     return showToast('CR number must be exactly 10 digits','red');
   }
-  // Van sales users can only create/edit customers assigned to their own van
   const isVanUser=_currentUser&&_currentUser.role==='van_sales';
   if(isVanUser){
     const userLocs=getUserLocations();
@@ -4665,13 +5055,28 @@ function saveCustomer(){
       if(existing&&!userLocs.includes(existing.van))return showToast('You can only edit customers on your van','red');
     }
   }
-  if(eid){const c=db.customers.find(x=>x.id===eid);if(c)Object.assign(c,{name,phone,area,van,vatNumber,crNumber,notes});saveAppState();showToast('Customer updated');}
-  else{db.customers.push({id:'c'+Date.now(),name,phone,area,van,vatNumber,crNumber,notes,createdBy:_currentUser?.name||'Unknown'});saveAppState();showToast('Customer added');}
+  if(eid){const c=db.customers.find(x=>x.id===eid);if(c)Object.assign(c,{name,customerCode,phone,area,van,vatNumber,crNumber,notes});saveAppState();showToast('Customer updated');}
+  else{
+    // Auto-generate code if not set
+    let code=customerCode;
+    if(!code){
+      const words=name.toUpperCase().replace(/[^A-Z\s]/g,'').trim().split(/\s+/);
+      let pfx=words.length>=3?words[0][0]+(words[1][0]||'')+(words[2][0]||''):words.length===2?(words[0].slice(0,2))+(words[1][0]||''):words[0].slice(0,3);
+      pfx=(pfx||'CST').padEnd(3,'X').slice(0,3);
+      const exNums=(db.customers||[]).map(c=>c.customerCode||'').filter(c=>c.startsWith(pfx+'-')).map(c=>parseInt(c.replace(pfx+'-',''))||0).sort((a,b)=>b-a);
+      code=pfx+'-'+String(((exNums[0]||0)+1)).padStart(3,'0');
+    }
+    db.customers.push({id:'c'+Date.now(),name,customerCode:code,phone,area,van,vatNumber,crNumber,notes,createdBy:_currentUser?.name||'Unknown'});
+    saveAppState();showToast('Customer added');
+  }
   closeModal('modal-add-customer');renderCustomers();
 }
 function openAddCustomerModal(){
   document.getElementById('ac-id').value='';
-  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.style.borderColor='';}});
+  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes','ac-code'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.style.borderColor='';}});
+  // Auto-generate code when name is typed
+  const nameEl=document.getElementById('ac-name');
+  if(nameEl)nameEl.oninput=function(){const c=document.getElementById('ac-code');if(c&&!c.value)generateCustomerCode();};
   openModal('modal-add-customer');
 }
 function editCustomer(cid){
@@ -4680,13 +5085,13 @@ function editCustomer(cid){
   if(isVanUser&&!getUserLocations().includes(c.van))return showToast('You can only edit customers on your van','red');
   document.getElementById('ac-id').value=cid;
   document.getElementById('ac-name').value=c.name;
+  document.getElementById('ac-code').value=c.customerCode||'';
   document.getElementById('ac-phone').value=c.phone||'';
   document.getElementById('ac-area').value=c.area||'';
   document.getElementById('ac-vat').value=c.vatNumber||'';
   document.getElementById('ac-cr').value=c.crNumber||'';
   document.getElementById('ac-notes').value=c.notes||'';
   openModal('modal-add-customer');
-  // set van value after openModal populates the (possibly restricted) options
   const acVan=document.getElementById('ac-van');if(acVan)acVan.value=c.van||'';
 }
 function deleteCustomer(cid){
@@ -5389,19 +5794,22 @@ function openExpMonthModal(mkey,mlabel){
 
 function _renderExpModalRows(exps,mkey,mlabel){
   document.getElementById('exp-modal-body').innerHTML=exps.length
-    ?exps.map(e=>`<tr>
-      <td style="font-size:12px">${fmtDate(e.date)}</td>
-      <td><span style="font-weight:600">${e.category}</span></td>
-      <td><span class="badge badge-gray">${e.period||'—'}</span></td>
-      <td style="font-family:var(--mono);color:var(--red);font-weight:600">SAR ${e.amount.toFixed(2)}</td>
-      <td style="font-size:12px;color:var(--text2)">${e.van||'General'}</td>
-      <td style="font-size:12px;color:var(--text2)">${e.notes||'—'}${e.loggedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+e.loggedBy+'</div>':''}</td>
-      <td style="display:flex;gap:4px">
-        <button class="btn btn-sm btn-outline" onclick="editExpense('${e.id}')" title="Edit"><i class="ti ti-pencil"></i></button>
-        ${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteExpenseFromModal('${e.id}','${mkey}','${mlabel}')"><i class="ti ti-trash"></i></button>`:''}
-      </td>
-    </tr>`).join('')
-    :`<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No expenses</td></tr>`;
+    ?exps.map(function(e){
+      var deleteBtn=isAdmin()?'<button class="btn btn-sm btn-danger" onclick="deleteExpenseFromModal(\''+e.id+'\',\''+mkey+'\',\''+mlabel+'\')"><i class="ti ti-trash"></i></button>':'';
+      return '<tr>'
+        +'<td style="font-size:12px">'+fmtDate(e.date)+'</td>'
+        +'<td><span style="font-weight:600">'+e.category+'</span></td>'
+        +'<td><span class="badge badge-gray">'+(e.period||'—')+'</span></td>'
+        +'<td style="font-family:var(--mono);color:var(--red);font-weight:600">SAR '+e.amount.toFixed(2)+'</td>'
+        +'<td style="font-size:12px;color:var(--text2)">'+(e.van||'General')+'</td>'
+        +'<td style="font-size:12px;color:var(--text2)">'+(e.notes||'—')+(e.loggedBy?'<div style="font-size:10px;color:var(--text3);margin-top:2px"><i class="ti ti-user" style="margin-right:3px"></i>'+e.loggedBy+'</div>':'')+'</td>'
+        +'<td style="display:flex;gap:4px">'
+        +'<button class="btn btn-sm btn-outline" onclick="editExpense(\''+e.id+'\')" title="Edit"><i class="ti ti-pencil"></i></button>'
+        +deleteBtn
+        +'</td>'
+        +'</tr>';
+    }).join('')
+    :'<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No expenses</td></tr>';
 }
 
 function _filterExpModal(){
@@ -6213,7 +6621,7 @@ function convertQuoteToInvoice(){
   closeModal('modal-quote-view');
   // Pre-fill the New Invoice modal with quotation data
   openModal('modal-new-sale');
-  document.getElementById('ns-customer').value=q.customer;
+  _nsSetCustomer(q.customer);
   document.getElementById('ns-date').value=today();
   document.getElementById('ns-due').value=addDays(today(),7);
   document.getElementById('invoice-items-list').innerHTML='';
