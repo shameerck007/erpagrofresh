@@ -8757,162 +8757,121 @@ function _buildPlainReceipt(inv){
   const vatPct=Math.round(getVatRate()*100);
   const sub=inv.subtotal||(inv.total/(1+getVatRate()));
   const vat=inv.vatAmount||(inv.total-sub);
-  const W=48; // 80mm @ normal font = 48 chars
-
-  // ESC/POS
-  const ESC='\x1B', GS='\x1D';
-  const INIT=ESC+'@';
-  const BOLD_ON=ESC+'E\x01';
-  const BOLD_OFF=ESC+'E\x00';
-  const ALIGN_C=ESC+'a\x01';
-  const ALIGN_L=ESC+'a\x00';
-  const ALIGN_R=ESC+'a\x02';
-  const SIZE_NORMAL=GS+'!\x00';
-  const SIZE_DBL_H=GS+'!\x01';   // double height only
-  const SIZE_DBL=GS+'!\x11';     // double width + height
-  const SIZE_W2=GS+'!\x10';      // double width only
-  const UNDERLINE_ON=ESC+'-\x01';
-  const UNDERLINE_OFF=ESC+'-\x00';
-  const LINE_FEED='\n';
-  const CUT=GS+'V\x42\x05';      // feed 5 lines then partial cut
+  const W=48; // 80mm paper = 48 chars wide
 
   function safe(t){
-    return(t||'').replace(/[\u0600-\u06ff\u0080-\u00bf]/g,'')
-                  .replace(/[^\x20-\x7e]/g,'').trim();
+    return(t||'').replace(/[\u0600-\u06ff]/g,'').replace(/[^\x20-\x7e]/g,'').trim();
   }
-  function pad(str,len,right){
-    str=String(str||'').slice(0,len);
-    var p=len-str.length;
-    return right?(str+' '.repeat(p)):(' '.repeat(p)+str);
+  function sep(ch){ return (ch||'=').repeat(W)+'\n'; }
+  function ctr(t){
+    t=safe(t).slice(0,W);
+    var p=Math.max(0,Math.floor((W-t.length)/2));
+    return ' '.repeat(p)+t+'\n';
   }
-  function ctr(t,w){
-    t=safe(t).slice(0,w||W);
-    var p=Math.max(0,Math.floor(((w||W)-t.length)/2));
-    return' '.repeat(p)+t;
+  function lr(l,r){
+    l=safe(l); r=safe(r);
+    l=l.slice(0,W-r.length-1);
+    var sp=Math.max(1,W-l.length-r.length);
+    return l+' '.repeat(sp)+r+'\n';
   }
-  function row(l,r,w){
-    w=w||W; l=safe(l); r=safe(r);
-    l=l.slice(0,w-r.length-1);
-    var sp=Math.max(1,w-l.length-r.length);
-    return l+' '.repeat(sp)+r;
-  }
-  function sep(ch,w){return(ch||'=').repeat(w||W);}
-  function line(t){return(t||'')+LINE_FEED;}
+  function line(t){ return safe(t).slice(0,W)+'\n'; }
 
-  var d=INIT+ALIGN_L+SIZE_NORMAL;
+  var d='';
 
   if(isEst){
-    // ── ESTIMATE ──────────────────────────────────────────
-    d+=ALIGN_C+BOLD_ON+SIZE_DBL+line(ctr('ESTIMATE',24))+SIZE_NORMAL+BOLD_OFF+ALIGN_L;
-    d+=line(sep('='));
-    d+=line(row('Ref #:',inv.id));
-    d+=line(row('Date:',fmtDate(inv.date)));
-    d+=line(sep('-'));
-    d+=BOLD_ON+line('Customer: '+safe(c.name))+BOLD_OFF;
-    d+=line(sep('='));
-    d+=ALIGN_C+BOLD_ON+line(ctr('ITEMS'))+BOLD_OFF+ALIGN_L;
-    d+=line(sep('-'));
+    d+=sep('=');
+    d+=ctr('*** ESTIMATE ***');
+    d+=sep('=');
+    d+=lr('Ref #:',inv.id);
+    d+=lr('Date:',fmtDate(inv.date));
+    d+=sep('-');
+    d+=line('Customer: '+safe(c.name));
+    d+=sep('-');
+    d+=ctr('[ ITEMS ]');
+    d+=sep('-');
     inv.items.forEach(function(it){
       var p=getProduct(it.product);
-      var nm=safe(p.name);
-      d+=BOLD_ON+line(nm.slice(0,W))+BOLD_OFF;
-      d+=line('  '+row(it.qty+' '+p.unit+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2),W-2));
+      d+=line(safe(p.name));
+      d+=lr('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));
     });
-    d+=line(sep('='));
-    d+=BOLD_ON+SIZE_DBL_H+line(row('TOTAL:','SAR '+inv.total.toFixed(2)))+SIZE_NORMAL+BOLD_OFF;
-    d+=line(sep('='));
-    d+=ALIGN_C+line(ctr('Thank you!'))+ALIGN_L;
+    d+=sep('=');
+    d+=lr('TOTAL:','SAR '+inv.total.toFixed(2));
+    d+=sep('=');
+    d+=ctr('Thank you!');
   } else {
-    // ── TAX INVOICE ───────────────────────────────────────
+    // ── HEADER ────────────────────────────────────────────
+    d+=ctr(safe(s.nameEn||'AgroFresh'));
+    if(s.address) d+=ctr(safe(s.address));
+    if(s.phone)   d+=ctr('Tel: '+safe(s.phone));
+    if(s.email)   d+=ctr(safe(s.email));
+    if(s.vatNumber) d+=ctr('VAT No: '+safe(s.vatNumber));
+    if(s.crNumber)  d+=ctr('CR No:  '+safe(s.crNumber));
+    d+=sep('=');
+    d+=ctr('*** TAX INVOICE ***');
+    d+=sep('=');
 
-    // Company Header
-    d+=ALIGN_C;
-    d+=BOLD_ON+SIZE_DBL_H+line(ctr(safe(s.nameEn||'AgroFresh')))+SIZE_NORMAL+BOLD_OFF;
-    if(s.address) d+=line(ctr(safe(s.address)));
-    if(s.phone)   d+=line(ctr(safe('Tel: '+s.phone)));
-    if(s.email)   d+=line(ctr(safe(s.email)));
-    d+=ALIGN_L+line(sep('='));
+    // ── INVOICE INFO ──────────────────────────────────────
+    d+=lr('Invoice No:',inv.id);
+    d+=lr('Date:',fmtDate(inv.date));
+    d+=lr('Due Date:',fmtDate(inv.due));
+    d+=sep('-');
 
-    // Invoice type
-    d+=ALIGN_C+BOLD_ON+SIZE_W2+line(ctr('TAX INVOICE',24))+SIZE_NORMAL+BOLD_OFF+ALIGN_L;
-    d+=line(sep('='));
-
-    // Invoice info — two columns
-    d+=line(row('Invoice No:',inv.id));
-    d+=line(row('Date:',fmtDate(inv.date)));
-    d+=line(row('Due Date:',fmtDate(inv.due)));
-    if(s.vatNumber) d+=line(row('VAT No:',safe(s.vatNumber)));
-
-    d+=line(sep('-'));
-
-    // Customer block
-    d+=BOLD_ON+line('BILL TO:')+BOLD_OFF;
-    d+=line('  '+safe(c.name).slice(0,W-2));
-    if(c.phone) d+=line('  Tel: '+safe(c.phone));
+    // ── CUSTOMER ──────────────────────────────────────────
+    d+=line('BILL TO:');
+    d+=line('  '+safe(c.name));
+    if(c.phone)     d+=line('  Tel: '+safe(c.phone));
     if(c.vatNumber) d+=line('  VAT: '+safe(c.vatNumber));
     if(c.crNumber)  d+=line('  CR:  '+safe(c.crNumber));
-    if(inv.van)     d+=line(row('  Van:',safe(inv.van)));
+    if(inv.van)     d+=lr('  Van:',safe(inv.van));
+    d+=sep('=');
 
-    d+=line(sep('='));
-    // Items header
-    d+=BOLD_ON;
-    d+=line(pad('ITEM',W-22,true)+pad('QTY',7)+pad('PRICE',8)+pad('TOTAL',8));
-    d+=BOLD_OFF;
-    d+=line(sep('-'));
+    // ── ITEMS HEADER ──────────────────────────────────────
+    // Columns: Name(26) Qty(5) Price(8) Total(9)
+    var C1=24, C2=5, C3=8, C4=W-C1-C2-C3;
+    function padR(t,n){ t=String(t||'').slice(0,n); return t+' '.repeat(n-t.length); }
+    function padL(t,n){ t=String(t||'').slice(0,n); return ' '.repeat(n-t.length)+t; }
+    d+=padR('ITEM',C1)+padL('QTY',C2)+padL('PRICE',C3)+padL('TOTAL',C4)+'\n';
+    d+=sep('-');
 
-    // Items
+    // ── ITEMS ─────────────────────────────────────────────
     inv.items.forEach(function(it){
       var p=getProduct(it.product);
       var nm=safe(p.name);
-      var tot=(it.qty*it.price).toFixed(2);
-      var prc=it.price.toFixed(2);
       var qty=String(it.qty);
-
-      // Name on first line (full width if long)
-      if(nm.length>W-22){
-        d+=BOLD_ON+line(nm.slice(0,W))+BOLD_OFF;
-        d+=line(' '.repeat(W-22)+pad(qty,7)+pad(prc,8)+pad(tot,8));
-      }else{
-        d+=BOLD_ON+line(pad(nm,W-22,true)+pad(qty,7)+pad(prc,8)+pad(tot,8))+BOLD_OFF;
+      var prc=it.price.toFixed(2);
+      var tot=(it.qty*it.price).toFixed(2);
+      if(nm.length<=C1){
+        d+=padR(nm,C1)+padL(qty,C2)+padL(prc,C3)+padL(tot,C4)+'\n';
+      } else {
+        // Long name wraps to next line
+        d+=line(nm.slice(0,W));
+        d+=' '.repeat(C1)+padL(qty,C2)+padL(prc,C3)+padL(tot,C4)+'\n';
       }
     });
 
-    d+=line(sep('='));
+    // ── TOTALS ────────────────────────────────────────────
+    d+=sep('=');
+    d+=lr('Subtotal:','SAR '+sub.toFixed(2));
+    d+=lr('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2));
+    d+=sep('-');
+    d+=lr('TOTAL (incl. VAT):','SAR '+inv.total.toFixed(2));
+    d+=sep('-');
+    if(inv.paid>0) d+=lr('Paid:','SAR '+inv.paid.toFixed(2));
+    if(bal>0)      d+=lr('Balance Due:','SAR '+bal.toFixed(2));
+    d+=sep('=');
 
-    // Totals
-    var colW=W-20;
-    d+=line(' '.repeat(colW)+row('Subtotal:','SAR '+sub.toFixed(2),20));
-    d+=line(' '.repeat(colW)+row('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2),20));
-    d+=line(sep('-'));
-    d+=BOLD_ON+SIZE_DBL_H+line(row('TOTAL:','SAR '+inv.total.toFixed(2)))+SIZE_NORMAL+BOLD_OFF;
-    d+=line(sep('-'));
+    // ── STATUS ────────────────────────────────────────────
+    d+=ctr(isPaid?'*** PAID IN FULL ***':'*** AMOUNT DUE: SAR '+bal.toFixed(2)+' ***');
+    d+=sep('=');
 
-    // Payment
-    if(inv.paid>0)
-      d+=line(row('Paid:','SAR '+inv.paid.toFixed(2)));
-    if(bal>0)
-      d+=BOLD_ON+line(row('Balance Due:','SAR '+bal.toFixed(2)))+BOLD_OFF;
-
-    d+=line(sep('='));
-
-    // Status
-    d+=ALIGN_C+BOLD_ON+SIZE_DBL;
-    d+=line(ctr(isPaid?'PAID':'UNPAID',24));
-    d+=SIZE_NORMAL+BOLD_OFF+ALIGN_L;
-
-    // Footer
-    d+=line(sep('-'));
-    d+=ALIGN_C;
-    d+=line(ctr('Thank you for choosing'));
-    d+=BOLD_ON+line(ctr(safe(s.nameEn||'AgroFresh')))+BOLD_OFF;
-    if(s.phone) d+=line(ctr(safe(s.phone)));
-    d+=line(ctr('Prices valid as of '+fmtDate(today())));
-    d+=ALIGN_L;
-    d+=line(sep('='));
+    // ── FOOTER ────────────────────────────────────────────
+    d+=ctr('Thank you for your business!');
+    d+=ctr(safe(s.nameEn||'AgroFresh'));
+    if(s.phone) d+=ctr('Tel: '+safe(s.phone));
+    d+=sep('=');
   }
 
-  d+='\n\n\n\n';
-  d+=CUT;
+  d+='\n\n\n\n\n';
   return d;
 }
 
@@ -9543,50 +9502,54 @@ function printThermalInvoice(inv){
   const isEst=inv.isEstimate===true;
   const text=_buildPlainReceipt(inv);
 
-  // Build header canvas: logo + QR (80mm = 576px @ 203dpi)
-  const CW=576, PAD=16;
+  // Build header canvas: logo (top) + QR code (bottom)
+  // 80mm paper = 576px canvas width
+  const CW=576, PAD=12;
   var qrCv=null, logoImg=null;
   var logoReady=false, qrReady=false;
 
   function renderAndSend(){
-    var hasLogo=!!logoImg, hasQR=!!qrCv&&!isEst;
+    var hasLogo=!!logoImg&&!isEst;
+    var hasQR=!!qrCv&&!isEst;
+
     if(!hasLogo&&!hasQR){
       _sendRawBTText(text,inv.id);
       return;
     }
 
-    // Compute canvas height
-    var h=PAD;
-    if(hasLogo){ var lh=Math.round(CW*0.28); h+=lh+PAD*2; }
-    if(hasQR){   var qsz=Math.round(CW*0.55); h+=qsz+28+PAD; }
+    // Build header image
+    var logoH=hasLogo?Math.round(CW*0.28):0;
+    var qrSz=hasQR?Math.round(CW*0.52):0;
+    var labelH=hasQR?52:0;
+    var totalH=PAD+(hasLogo?logoH+PAD*2:0)+(hasQR?qrSz+labelH+PAD:0)+PAD;
 
     var cv=document.createElement('canvas');
-    cv.width=CW; cv.height=Math.ceil(h);
+    cv.width=CW; cv.height=Math.ceil(totalH);
     var ctx=cv.getContext('2d');
-    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,CW,cv.height);
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,CW,cv.height);
     var y=PAD;
 
     if(hasLogo){
-      var lh2=Math.round(CW*0.28);
-      var lw=Math.round(lh2*(logoImg.naturalWidth/Math.max(logoImg.naturalHeight,1)));
+      var lw=Math.round(logoH*(logoImg.naturalWidth/Math.max(logoImg.naturalHeight,1)));
       lw=Math.min(lw,CW-PAD*4);
-      ctx.drawImage(logoImg,Math.floor((CW-lw)/2),y,lw,lh2);
-      y+=lh2+PAD*2;
+      ctx.drawImage(logoImg,Math.floor((CW-lw)/2),y,lw,logoH);
+      y+=logoH+PAD*2;
     }
 
     if(hasQR){
-      var qsz2=Math.round(CW*0.55);
-      ctx.drawImage(qrCv,Math.floor((CW-qsz2)/2),y,qsz2,qsz2);
-      y+=qsz2+8;
-      // Label under QR
-      ctx.font='bold 22px monospace';
-      ctx.fillStyle='#000';
+      // Draw QR
+      ctx.drawImage(qrCv,Math.floor((CW-qrSz)/2),y,qrSz,qrSz);
+      y+=qrSz+10;
+      // ZATCA label
       ctx.textAlign='center';
-      ctx.fillText('ZATCA Verified Receipt',CW/2,y);
-      y+=26;
-      ctx.font='18px monospace';
-      ctx.fillStyle='#444';
-      ctx.fillText('Scan QR code to verify',CW/2,y);
+      ctx.font='bold 24px monospace';
+      ctx.fillStyle='#000000';
+      ctx.fillText('Scan to Verify - ZATCA',CW/2,y);
+      y+=30;
+      ctx.font='20px monospace';
+      ctx.fillStyle='#333333';
+      ctx.fillText('فاتورة إلكترونية معتمدة',CW/2,y);
     }
 
     cv.toBlob(function(blob){
@@ -9594,17 +9557,16 @@ function printThermalInvoice(inv){
       var reader=new FileReader();
       reader.onload=function(){
         var b64=reader.result.split(',')[1];
-        // Send bitmap (logo+QR) first
         var iframe=document.createElement('iframe');
         iframe.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;border:none';
         document.body.appendChild(iframe);
         iframe.src='rawbt://base64/'+b64;
         showToast('Sending to printer...','amber');
-        // Then send text after short delay
+        // Send text body 1 second after bitmap
         setTimeout(function(){
           try{document.body.removeChild(iframe);}catch(e){}
           _sendRawBTText(text,inv.id);
-        },900);
+        },1000);
       };
       reader.readAsDataURL(blob);
     },'image/png',1.0);
@@ -9627,41 +9589,38 @@ function printThermalInvoice(inv){
     img.onload=function(){logoImg=img;logoReady=true;if(qrReady)renderAndSend();};
     img.onerror=function(){logoReady=true;if(qrReady)renderAndSend();};
     img.src=s.logo;
-  }else{
+  } else {
     logoReady=true;
     if(qrReady)renderAndSend();
   }
 }
 
 function _sendRawBTText(text,invId){
+  // rawbt://text/ sends pure UTF-8 text — no ESC/POS commands
   try{
-    var encoded=btoa(unescape(encodeURIComponent(text)));
+    var b64=btoa(unescape(encodeURIComponent(text)));
     var iframe=document.createElement('iframe');
     iframe.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;border:none';
     document.body.appendChild(iframe);
-    iframe.src='rawbt://text/'+encoded;
-    setTimeout(function(){try{document.body.removeChild(iframe);}catch(e){}},4000);
-    // Fallback: if RawBT not installed, open browser print
+    iframe.src='rawbt://text/'+b64;
+    setTimeout(function(){try{document.body.removeChild(iframe);}catch(e){}},5000);
+    // Browser print fallback if RawBT not handling it
     setTimeout(function(){
       if(document.visibilityState==='visible'){
-        var clean=text.replace(/[\x00-\x1f\x7f]/g,function(ch){return ch==='\n'?'\n':' ';});
-        _thermalFallbackPrint(invId,clean);
+        _thermalFallbackPrint(invId,text);
       }
-    },2000);
+    },2500);
   }catch(e){
-    var clean=text.replace(/[\x00-\x1f\x7f]/g,function(ch){return ch==='\n'?'\n':' ';});
-    _thermalFallbackPrint(invId,clean);
+    _thermalFallbackPrint(invId,text);
   }
 }
 
 function _thermalFallbackPrint(invId,t){
-  // Strip ESC/POS control chars for browser display
-  var clean=t.replace(/[\x00-\x1f\x7f]/g,function(ch){return ch==='\n'?'\n':ch==='\r'?'':' ';});
   var page='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+invId+'</title>'
-    +'<style>*{margin:0;padding:0}body{font-family:"Courier New",monospace;font-size:10pt;width:58mm;background:#fff}'
-    +'pre{white-space:pre;font-size:10pt;line-height:1.4;padding:2mm;width:54mm}'
-    +'@media print{body{width:58mm;margin:0}@page{margin:0;size:58mm auto}}'
-    +'</style></head><body><pre>'+clean+'</pre></body></html>';
+    +'<style>*{margin:0;padding:0}body{font-family:"Courier New",monospace;font-size:9pt;width:80mm;background:#fff;color:#000}'
+    +'pre{white-space:pre-wrap;word-break:break-all;font-size:9pt;line-height:1.35;padding:2mm;width:76mm}'
+    +'@media print{body{width:80mm;margin:0}@page{margin:0;size:80mm auto}}</style>'
+    +'</head><body><pre>'+t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</pre></body></html>';
   _printHTML(page,600,true);
 }
 
