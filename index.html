@@ -9557,16 +9557,19 @@ function printThermalInvoice(inv){
       var reader=new FileReader();
       reader.onload=function(){
         var b64=reader.result.split(',')[1];
-        var iframe=document.createElement('iframe');
-        iframe.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;border:none';
-        document.body.appendChild(iframe);
-        iframe.src='rawbt://base64/'+b64;
-        showToast('Sending to printer...','amber');
-        // Send text body 1 second after bitmap
-        setTimeout(function(){
-          try{document.body.removeChild(iframe);}catch(e){}
+        var ua=navigator.userAgent.toLowerCase();
+        if(ua.indexOf('android')>-1){
+          // ✅ Correct RawBT image URL: rawbt:data:image/png;base64,DATA
+          var imgUrl='rawbt:data:image/png;base64,'+b64;
+          window.location.href=imgUrl;
+          showToast('Sending logo+QR to printer...','amber');
+          // After 2s send the text body
+          setTimeout(function(){
+            _sendRawBTText(text,inv.id);
+          },2000);
+        } else {
           _sendRawBTText(text,inv.id);
-        },1000);
+        }
       };
       reader.readAsDataURL(blob);
     },'image/png',1.0);
@@ -9596,21 +9599,17 @@ function printThermalInvoice(inv){
 }
 
 function _sendRawBTText(text,invId){
-  // rawbt://text/ sends pure UTF-8 text — no ESC/POS commands
-  try{
-    var b64=btoa(unescape(encodeURIComponent(text)));
-    var iframe=document.createElement('iframe');
-    iframe.style.cssText='position:fixed;top:-999px;left:-999px;width:1px;height:1px;opacity:0;border:none';
-    document.body.appendChild(iframe);
-    iframe.src='rawbt://text/'+b64;
-    setTimeout(function(){try{document.body.removeChild(iframe);}catch(e){}},5000);
-    // Browser print fallback if RawBT not handling it
-    setTimeout(function(){
-      if(document.visibilityState==='visible'){
-        _thermalFallbackPrint(invId,text);
-      }
-    },2500);
-  }catch(e){
+  var ua=navigator.userAgent.toLowerCase();
+  var isAndroid=ua.indexOf('android')>-1;
+
+  if(isAndroid){
+    // ✅ CORRECT RawBT URL: intent scheme with encodeURI (NOT base64)
+    // Text goes directly in the URL, encoded with encodeURI
+    var encoded=encodeURI(text);
+    var intentUrl='intent:'+encoded+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+    window.location.href=intentUrl;
+  } else {
+    // Desktop: open browser print window
     _thermalFallbackPrint(invId,text);
   }
 }
