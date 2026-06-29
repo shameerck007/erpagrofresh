@@ -136,23 +136,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .access-denied h2{font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px}
 .access-denied p{font-size:13px;color:var(--text2)}
 /* ── MOBILE HEADER (hidden on desktop) ── */
-#mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:56px;background:var(--bg2);align-items:center;justify-content:space-between;padding:0 12px;z-index:150;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+#mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:calc(56px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);background:var(--bg2);align-items:center;justify-content:space-between;padding-left:12px;padding-right:12px;z-index:150;box-shadow:0 2px 10px rgba(0,0,0,.12)}
 #mobile-menu-btn{background:rgba(255,255,255,.08);border:none;width:38px;height:38px;border-radius:10px;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 #mobile-header-title{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
 #mobile-header-avatar{width:34px;height:34px;border-radius:9px;background:rgba(93,202,165,.25);color:#5dcaa5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
 #sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:155;backdrop-filter:blur(2px)}
 /* ── MOBILE BOTTOM TAB BAR (hidden on desktop) ── */
-#mobile-tabbar{display:none;position:fixed;bottom:0;left:0;right:0;height:60px;background:var(--card);border-top:1px solid var(--border);z-index:150;box-shadow:0 -2px 14px rgba(0,0,0,.08);padding-bottom:env(safe-area-inset-bottom)}
-.mtab{flex:1;height:60px;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text3);cursor:pointer;font-family:var(--font)}
-.mtab i{font-size:21px}
-.mtab span{font-size:10px;font-weight:500}
+#mobile-tabbar{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);z-index:150;box-shadow:0 -2px 14px rgba(0,0,0,.08);padding-bottom:env(safe-area-inset-bottom);display:none}
+.mtab{flex:1;min-height:56px;background:none;border:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text3);cursor:pointer;font-family:var(--font);padding:8px 4px;-webkit-tap-highlight-color:transparent;transition:color .15s}
+.mtab i{font-size:22px;transition:transform .15s}
+.mtab span{font-size:10px;font-weight:500;letter-spacing:.2px}
 .mtab.active{color:var(--green)}
+.mtab.active i{transform:translateY(-1px)}
+.mtab:active i{transform:scale(.88)}
 @media(max-width:900px){
   #mobile-header{display:flex}
   #mobile-tabbar{display:flex}
   #sidebar{position:fixed;left:0;top:0;bottom:0;width:min(82vw,300px);transform:translateX(-100%);transition:transform .25s ease;z-index:160;box-shadow:8px 0 30px rgba(0,0,0,.3)}
   #sidebar.mobile-open{transform:translateX(0)}
-  #main{margin-left:0!important;padding:72px 14px 78px!important;width:100%}
+  #main{margin-left:0!important;padding:64px 14px calc(74px + env(safe-area-inset-bottom))!important;width:100%}
   .pghdr{flex-wrap:wrap;gap:10px;margin-bottom:18px;padding-bottom:14px}
   .pgtitle{font-size:18px}
   .two-col,.fgrid{grid-template-columns:1fr}
@@ -161,9 +163,12 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   .kpi-value{font-size:17px!important}
   table{font-size:12px}
   th,td{padding:8px 6px!important}
+  /* Modals slide up from bottom — feels native */
   .modal-overlay{align-items:flex-end!important}
-  .modal{width:100%!important;max-width:none!important;max-height:92vh;border-radius:18px 18px 0 0!important;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
-  .viewer-card{width:100%!important;max-width:none!important;border-radius:18px 18px 0 0!important;max-height:94vh!important}
+  .modal{width:100%!important;max-width:none!important;max-height:94vh;border-radius:20px 20px 0 0!important;padding:20px 16px calc(24px + env(safe-area-inset-bottom))}
+  /* Drag handle on modals */
+  .modal::before{content:'';display:block;width:36px;height:4px;background:var(--border2);border-radius:2px;margin:-8px auto 16px;opacity:.6}
+  .viewer-card{width:100%!important;max-width:none!important;border-radius:20px 20px 0 0!important;max-height:96vh!important}
   .viewer-card>div:first-child{flex-direction:column;align-items:stretch!important;gap:10px}
   .viewer-card>div:first-child>div:last-child{justify-content:stretch}
   .viewer-card>div:first-child>div:last-child button{flex:1;justify-content:center}
@@ -173,47 +178,63 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   .viewer-card th,.viewer-card td{padding:7px 6px!important}
   .toolbar{flex-direction:column;align-items:stretch}
   .toolbar>*{width:100%}
-  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  .tab-btn{flex-shrink:0}
-  input,select,textarea,button{font-size:15px!important}
-  .btn{min-height:42px}
-  .btn-sm{min-height:36px}
-  .factions{flex-direction:column-reverse}
-  .factions .btn{width:100%;justify-content:center}
-  body{padding-bottom:0}
+  .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab-btn{flex-shrink:0;white-space:nowrap}
+  /* Prevent iOS text zoom on input focus */
+  input,select,textarea{font-size:16px!important}
+  button{font-size:15px!important}
+  /* Bigger touch targets */
+  .btn{min-height:44px;padding:0 14px}
+  .btn-sm{min-height:40px}
+  .btn-sm i{font-size:16px}
+  .factions{flex-direction:column-reverse;gap:8px}
+  .factions .btn{width:100%;justify-content:center;min-height:48px;font-size:15px}
+  body{padding-bottom:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   /* Table horizontal scroll with momentum */
   .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  /* Page header buttons wrap and fill width */
+  /* Page header buttons */
   .pghdr>div:last-child{display:flex;flex-wrap:wrap;gap:8px;width:100%}
   .pghdr>div:last-child .btn{flex:1;min-width:120px;justify-content:center}
-  /* Card header action buttons */
+  /* Card headers */
   .card-hdr{flex-wrap:wrap;gap:8px}
-  /* Distribution filters wrap */
+  /* Filters wrap */
   #dist-filter-year,#dist-filter-month,#dist-filter-partner{flex:1;min-width:80px;font-size:13px!important}
-  /* Invoice item rows on mobile */
+  /* Invoice item rows */
   #invoice-items-list .inv-item-row{flex-wrap:wrap}
-  /* Better touch targets for icon-only buttons */
+  /* Icon-only buttons */
   .btn.btn-sm{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center}
   /* Login screen */
   #login-screen>div{padding:28px 20px!important;border-radius:16px!important}
   /* Modal title */
   .modal-title{font-size:16px!important;padding-bottom:16px}
-  /* Status badge in tables */
+  /* Badges don't wrap */
   .badge{white-space:nowrap}
-  /* Prevent text zoom on input focus iOS */
-  input[type="text"],input[type="number"],input[type="date"],input[type="email"],input[type="password"],select,textarea{font-size:16px!important}
+  /* Search boxes full width */
+  .sbox{width:100%}
+  /* Cards have better touch feel */
+  .card{-webkit-tap-highlight-color:transparent}
+  /* Active state feedback */
+  .btn:active{transform:scale(.96);transition:transform .1s}
+  .ni:active{opacity:.7}
+  /* Grid adjustments for P&L */
+  #page-pl [style*="grid-template-columns:1.4fr 1fr"]{grid-template-columns:1fr!important}
+  #page-pl [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
+  /* Sales goal page */
+  #sg-root .kpi-grid{grid-template-columns:1fr 1fr}
 }
 @media(max-width:480px){
   .kpi-grid{grid-template-columns:1fr 1fr}
   .pgtitle{font-size:16px}
-  #main{padding:68px 10px 76px!important}
-  /* Stack 2-col KPIs tighter */
+  #main{padding:60px 10px calc(70px + env(safe-area-inset-bottom))!important}
   .kpi-card .kpi-label{font-size:10px}
-  /* Smaller action buttons */
   td .btn.btn-sm{min-width:34px;min-height:34px;padding:0 6px!important}
-  /* Print bar bigger on small phones */
   #mobile-print-bar{padding:14px 12px!important}
   #mobile-print-bar button{padding:12px 16px!important;font-size:14px!important}
+  /* Smaller screens: stack P&L charts */
+  #page-pl .card{padding:14px!important}
+  /* Full-width modals on small phones */
+  .modal{padding:16px 14px calc(20px + env(safe-area-inset-bottom))}
 }
 /* ── OWNER DASHBOARD ── */
 .od-hero{background:linear-gradient(135deg,#042c53 0%,#185fa5 60%,#0f6e56 100%);border-radius:20px;padding:28px 24px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
@@ -409,6 +430,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <div class="ni" data-access="expenses" onclick="navigate('expenses')"><i class="ti ti-receipt-2"></i>Expenses</div>
   </div>
   <div class="nsec"><div class="nsec-lbl">Sales</div>
+    <div class="ni" data-access="sales-goal" onclick="navigate('sales-goal')"><i class="ti ti-target"></i>My Sales Goal</div>
     <div class="ni" data-access="sales" onclick="navigate('sales')"><i class="ti ti-shopping-cart"></i>Sales &amp; Invoices</div>
     <div class="ni" data-access="sales-returns" onclick="navigate('sales-returns')"><i class="ti ti-rotate-2"></i>Sales Returns</div>
     <div class="ni" data-access="sales-report" onclick="navigate('sales-report')"><i class="ti ti-chart-line"></i>Sales Report</div>
@@ -450,7 +472,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <nav id="mobile-tabbar">
   <button class="mtab active" data-page="owner-dashboard" onclick="navigate('owner-dashboard')" id="mtab-owner" style="display:none"><i class="ti ti-star"></i><span>Overview</span></button>
   <button class="mtab active" data-page="dashboard" onclick="navigate('dashboard')" id="mtab-dash"><i class="ti ti-layout-dashboard"></i><span>Home</span></button>
-  <button class="mtab" data-page="daily" onclick="navigate('daily')"><i class="ti ti-calendar-event"></i><span>Daily</span></button>
+  <button class="mtab" data-page="sales-goal" onclick="navigate('sales-goal')" id="mtab-goal" style="display:none"><i class="ti ti-target"></i><span>My Goal</span></button>
+  <button class="mtab" data-page="daily" onclick="navigate('daily')" id="mtab-daily"><i class="ti ti-calendar-event"></i><span>Daily</span></button>
   <button class="mtab" data-page="sales" onclick="navigate('sales')"><i class="ti ti-shopping-cart"></i><span>Sales</span></button>
   <button class="mtab" data-page="customers" onclick="navigate('customers')"><i class="ti ti-users"></i><span>Customers</span></button>
   <button class="mtab" onclick="toggleMobileSidebar()"><i class="ti ti-menu-2"></i><span>More</span></button>
@@ -601,6 +624,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     <button class="btn btn-primary" onclick="printPriceList()"><i class="ti ti-printer"></i> Print / Save PDF</button>
   </div>
   <div id="pl-page-root"></div>
+</div>
+<!-- MY SALES GOAL PAGE -->
+<div class="page" id="page-sales-goal">
+  <div class="pghdr">
+    <div><div class="pgtitle"><i class="ti ti-target" style="margin-right:8px;color:var(--green)"></i>My Sales Goal</div><div class="pgsub" id="sg-pgsub">Your monthly target and progress</div></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="sg-month-sel" onchange="renderSalesGoalPage()" style="font-size:13px;padding:7px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text)"></select>
+    </div>
+  </div>
+  <div id="sg-root"></div>
 </div>
 <!-- SALES -->
 <div class="page" id="page-sales">
@@ -1331,14 +1364,93 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 </div>
 <!-- P&L -->
 <div class="page" id="page-pl">
-  <div class="pghdr"><div><div class="pgtitle">P&amp;L Report</div><div class="pgsub">Monthly profit &amp; loss — click any month card for full detail</div></div><div style="display:flex;gap:10px;align-items:center"><select class="fsel" id="pl-trend-range" onchange="renderPL()"><option value="6">Last 6 months</option><option value="12" selected>Last 12 months</option><option value="24">Last 24 months</option></select></div></div>
-  <div class="kpi-grid" id="pl-kpis"></div>
-  <div class="card" style="margin-bottom:22px">
-    <div class="card-hdr" style="margin-bottom:18px"><span class="card-title"><i class="ti ti-chart-line" style="color:var(--green);margin-right:6px"></i>Profit &amp; Loss Trend</span><div style="display:flex;gap:16px;font-size:12px;color:var(--text2)"><span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:var(--green);border-radius:2px;display:inline-block"></span>Revenue</span><span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:var(--amber);border-radius:2px;display:inline-block"></span>Expenses</span><span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:3px;background:var(--blue);border-radius:2px;display:inline-block"></span>Net Profit</span></div></div>
-    <div style="position:relative;height:240px"><canvas id="pl-trend-chart"></canvas></div>
-    <div id="pl-trend-summary" style="display:flex;gap:0;border-top:1px solid var(--border);margin-top:14px"></div>
+  <div class="pghdr">
+    <div><div class="pgtitle">Profit &amp; Loss Trend</div><div class="pgsub">Financial performance at a glance — click any month for full detail</div></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <select class="fsel" id="pl-trend-range" onchange="renderPL()">
+        <option value="6">Last 6 months</option>
+        <option value="12" selected>Last 12 months</option>
+        <option value="24">Last 24 months</option>
+      </select>
+    </div>
   </div>
-  <div class="sec-lbl" style="margin-bottom:16px"><i class="ti ti-calendar-month" style="font-size:13px"></i>Month-by-month P&amp;L — click to expand</div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid" id="pl-kpis" style="margin-bottom:20px"></div>
+
+  <!-- Health indicator strip -->
+  <div class="card" id="pl-health-strip" style="margin-bottom:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap"></div>
+
+  <!-- Main Trend Chart — bigger, cleaner -->
+  <div class="card" style="margin-bottom:16px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div class="card-title" style="font-size:15px;font-weight:700"><i class="ti ti-chart-area-line" style="color:var(--green);margin-right:7px"></i>Revenue · Expenses · Net Profit</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Monthly trend — hover for details · bars = revenue, lines = costs &amp; profit</div>
+      </div>
+      <div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap;align-items:center">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:12px;background:rgba(15,110,86,.18);border:2px solid #0f6e56;border-radius:3px;display:inline-block"></span>Revenue</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#e8900a;border-radius:2px;display:inline-block"></span>Expenses</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:3px;background:#185fa5;border-radius:2px;display:inline-block"></span>Net Profit</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:16px;height:12px;background:rgba(24,95,165,.1);border:2px solid rgba(24,95,165,.3);border-radius:3px;display:inline-block"></span>COGS</span>
+      </div>
+    </div>
+    <div style="position:relative;height:300px"><canvas id="pl-trend-chart"></canvas></div>
+    <div id="pl-trend-summary" style="display:flex;gap:0;border-top:1px solid var(--border);margin-top:16px"></div>
+  </div>
+
+  <!-- Row 2: Margin trend + Waterfall combo -->
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px">
+
+    <!-- Profit Margin trend — enhanced with zones -->
+    <div class="card" style="padding:18px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <div class="card-title" style="font-size:14px;font-weight:700"><i class="ti ti-percentage" style="color:var(--teal);margin-right:6px"></i>Net Profit Margin %</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Monthly net profit as % of revenue</div>
+        </div>
+        <div id="pl-margin-badge" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px"></div>
+      </div>
+      <div style="position:relative;height:200px"><canvas id="pl-margin-chart"></canvas></div>
+      <!-- Margin zones legend -->
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">
+        <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:3px;background:rgba(220,38,38,.3)"></span>Loss zone</span>
+        <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:3px;background:rgba(232,144,10,.3)"></span>Below 10%</span>
+        <span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px"><span style="display:inline-block;width:20px;height:3px;background:rgba(15,110,86,.3)"></span>Healthy 10%+</span>
+      </div>
+    </div>
+
+    <!-- Cost Breakdown donut — cleaner layout -->
+    <div class="card" style="padding:18px">
+      <div style="margin-bottom:14px">
+        <div class="card-title" style="font-size:14px;font-weight:700"><i class="ti ti-chart-donut" style="color:var(--amber);margin-right:6px"></i>Cost Breakdown</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Where your money goes</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <div style="position:relative;height:150px;width:150px"><canvas id="pl-cost-donut"></canvas></div>
+        <div id="pl-donut-legend" style="width:100%;font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Revenue vs Net Profit grouped bar -->
+  <div class="card" style="margin-bottom:16px;padding:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+        <div class="card-title" style="font-size:14px;font-weight:700"><i class="ti ti-chart-bar" style="color:var(--blue);margin-right:6px"></i>Revenue vs Net Profit — Month by Month</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">Green bar = profitable · Red bar = loss month</div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:12px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:rgba(15,110,86,.2);border:1.5px solid #0f6e56;border-radius:2px;display:inline-block"></span>Revenue</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:rgba(15,110,86,.7);border-radius:2px;display:inline-block"></span>Net Profit</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;background:rgba(220,38,38,.6);border-radius:2px;display:inline-block"></span>Net Loss</span>
+      </div>
+    </div>
+    <div style="position:relative;height:220px"><canvas id="pl-bar-chart"></canvas></div>
+  </div>
+
+  <!-- Monthly cards -->
+  <div class="sec-lbl" style="margin-bottom:16px"><i class="ti ti-calendar-month" style="font-size:13px"></i>Month-by-month breakdown — click to expand</div>
   <div id="pl-monthly-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px"></div>
 </div>
 <!-- P&L MODAL -->
@@ -1676,7 +1788,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- ALL MODALS -->
 <div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg"><label>Item Code <span style="font-size:10px;color:var(--text3);font-weight:400">(optional)</span></label><div style="display:flex;gap:6px"><input type="text" id="ap-code" placeholder="Auto or type custom" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateItemCode()" style="flex-shrink:0" title="Auto generate from product name"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
 <!-- ADD CUSTOMER -->
-<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg full"><label>Full Name *</label><input type="text" id="ac-name"></div><div class="fg"><label>Customer Code <span style="font-size:10px;color:var(--text3);font-weight:400">(auto)</span></label><div style="display:flex;gap:6px"><input type="text" id="ac-code" placeholder="e.g. CUST-001" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateCustomerCode()" title="Auto generate customer code"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
+<div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg full"><label>Company Name *</label><input type="text" id="ac-name" placeholder="e.g. Almas Restaurent"></div><div class="fg"><label>Customer Code <span style="font-size:10px;color:var(--text3);font-weight:400">(auto)</span></label><div style="display:flex;gap:6px"><input type="text" id="ac-code" placeholder="e.g. CUST-001" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateCustomerCode()" title="Auto generate customer code"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Contact Person Name</label><input type="text" id="ac-contact" placeholder="e.g. Ahmed Al-Rashid"></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
 <!-- NEW SALE MODAL -->
 <div class="modal-overlay" id="modal-new-sale">
   <div class="modal" style="width:min(680px,96vw)">
@@ -1797,16 +1909,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <script>
 // ── ROLE / AUTH ──────────────────────────────────────────────────────────────
 const ROLE_PERMISSIONS={
-  admin:['dashboard','daily','stock','warehouses','price-list','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','expenses','sales','sales-returns','sales-report','quotations','delivery-notes','customers','customer-statement','fleet','assets','reports','pl','vat','cash-book','partners','settings'],
+  admin:['dashboard','daily','stock','warehouses','price-list','sales-goal','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','expenses','sales','sales-returns','sales-report','quotations','delivery-notes','customers','customer-statement','fleet','assets','reports','pl','vat','cash-book','partners','settings'],
   owner:['owner-dashboard'],
   warehouse:['dashboard','daily','stock','warehouses','price-list','damages','po','purchase-returns','suppliers','supplier-payments','supplier-statement','quotations','delivery-notes','sales-report','assets'],
-  van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement','stock','price-list'],
+  van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement','stock','price-list','sales-goal'],
   accountant:['dashboard','sales','sales-returns','sales-report','customers','customer-statement','expenses','reports','pl','vat','cash-book','partners','supplier-payments','supplier-statement','assets','price-list']
 };
 const ROLE_LABELS={admin:'Administrator',owner:'Business Owner',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
 const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},owner:{bg:'rgba(93,202,165,.15)',color:'var(--teal)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
 const ROLE_ICONS={admin:'ti-crown',owner:'ti-star',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
-const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock','price-list':'Price List',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
+const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock','price-list':'Price List','sales-goal':'My Sales Goal',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
 let _currentUser=null;
 
 function doLogin(){
@@ -1824,7 +1936,8 @@ function doLogin(){
   try{localStorage.setItem('fastrack_session',JSON.stringify({id:user.id,username:user.username}));}catch(e){}
   saveAppState();
   // Owner goes to their dedicated dashboard
-  navigate(_currentUser.role==='owner'?'owner-dashboard':'dashboard');
+  const landingPage=_currentUser.role==='owner'?'owner-dashboard':_currentUser.role==='van_sales'?'sales-goal':'dashboard';
+  navigate(landingPage);
 }
 function showLoginError(msg){const el=document.getElementById('login-error');if(el){el.textContent=msg;el.style.display='';}document.getElementById('login-pass').value='';}
 function toggleLoginPassVis(){const inp=document.getElementById('login-pass');const ico=document.getElementById('login-eye-icon');if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}else{inp.type='password';ico.className='ti ti-eye';}}
@@ -1986,7 +2099,7 @@ function saveAppState(){
 async function _doSave(){
   try{
     const batch=_fsdb.batch(),col=_fsdb.collection('fastrack');
-    const dm={products:db.products,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments,distributions:db.distributions};
+    const dm={products:db.products,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments,distributions:db.distributions,salesGoals:db.salesGoals||{},salesGoalHistory:db.salesGoalHistory||[]};
     Object.entries(dm).forEach(([k,v])=>batch.set(col.doc(k),{data:JSON.stringify(v)}));
     batch.set(col.doc('settings'),{data:JSON.stringify({...db.settings,logo:null})});
     batch.set(col.doc('counters'),{data:JSON.stringify({nextInvId:db.nextInvId,nextPoId:db.nextPoId,nextQuoId:db.nextQuoId,nextDnId:db.nextDnId,nextSrId:db.nextSrId})});
@@ -2009,7 +2122,8 @@ async function loadAppState(){
       const snap=await _fsdb.collection('fastrack').get();
       if(snap.empty){_hideLoadingScreen();return false;}
       const m={};snap.forEach(doc=>{try{m[doc.id]=JSON.parse(doc.data().data||'[]');}catch(e){}});
-      ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments','distributions'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
+      ['products','customers','invoices','payments','transfers','damages','expenses','purchaseOrders','purchaseReturns','supplierPayments','salesReturns','quotations','deliveryNotes','priceHistory','systemUsers','vans','warehouses','suppliers','assets','assetMaintenance','dailyOps','partners','capitalInvestments','distributions','salesGoalHistory'].forEach(k=>{if(m[k]!==undefined)db[k]=m[k];});
+      if(m.salesGoals&&typeof m.salesGoals==='object'&&!Array.isArray(m.salesGoals))db.salesGoals=m.salesGoals;
       if(m.settings){const logo=db.settings.logo;Object.assign(db.settings,m.settings);db.settings.logo=logo;}
       if(m.counters){const c=m.counters;['nextInvId','nextPoId','nextQuoId','nextDnId','nextSrId'].forEach(k=>{if(c[k])db[k]=c[k];});}
       if(m.stock)db.stock=m.stock;
@@ -2051,6 +2165,11 @@ function applyRBAC(){
   if(dashNi)dashNi.style.display=isOwner?'none':'';
   const dailyNi=document.querySelector('.ni[onclick*="\'daily\'"]');
   if(dailyNi&&isOwner)dailyNi.style.display='none';
+  // Mobile tabbar tab visibility
+  const mtabGoal=document.getElementById('mtab-goal');
+  const mtabDaily=document.getElementById('mtab-daily');
+  if(mtabGoal)mtabGoal.style.display=isVanSalesUser?'flex':'none';
+  if(mtabDaily)mtabDaily.style.display=isVanSalesUser?'none':'flex';
   // Mobile tabbar — owner gets only their dashboard tab + More
   const mtabOwner=document.getElementById('mtab-owner');
   const mtabDash=document.getElementById('mtab-dash');
@@ -2582,9 +2701,15 @@ function invStatus(inv){const bal=inv.total-inv.paid;if(bal<=0)return'paid';cons
 function statusBadge(s){const map={paid:'badge-green',overdue:'badge-red','due-soon':'badge-amber',pending:'badge-blue',draft:'badge-gray',approved:'badge-teal',sent:'badge-blue',received:'badge-green',partial:'badge-amber'};return`<span class="badge ${map[s]||'badge-gray'}">${s}</span>`;}
 function rcColor(r){return r>=80?'var(--green)':r>=55?'var(--amber)':'var(--red)';}
 function rcBadge(r){return r>=80?'badge-green':r>=55?'badge-amber':'badge-red';}
-function getMonths(){
+function getMonths(count){
+  count=count||12;
   const months=[];const now=new Date();
-  for(let i=11;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');const label=d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});months.push({key,label});}
+  for(let i=count-1;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label=d.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+    months.push({key,label});
+  }
   return months;
 }
 
@@ -2617,6 +2742,8 @@ function seedData(){
   db.partners=[];
   db.capitalInvestments=[];
   db.distributions=[];
+  db.salesGoals={};
+  db.salesGoalHistory=[];
 }
 
 function seedBulkCustomers(){
@@ -2679,7 +2806,7 @@ function navigate(page){
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
   const el=document.getElementById('page-'+page);if(el)el.classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>{if((n.getAttribute('onclick')||'').includes("'"+page+"'"))n.classList.add('active');});
-  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,'price-list':renderPriceListPage,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
+  const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,'price-list':renderPriceListPage,'sales-goal':renderSalesGoalPage,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
   if(renders[page])renders[page]();
   // mobile: update header title, sync bottom tab bar, close the drawer
   const mht=document.getElementById('mobile-header-title');if(mht)mht.textContent=PERM_LABELS[page]||'FasTrack';
@@ -3964,6 +4091,318 @@ function saveProduct(){
 }
 function deleteProduct(pid){const p=db.products.find(x=>x.id===pid);showConfirm('Delete Product',p?'Delete "'+p.name+'"? This cannot be undone.':'Delete this product?',null,true).then(ok=>{if(!ok)return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();saveAppState();showToast('Deleted','amber');});}
 // ── WAREHOUSES / STOCK ────────────────────────────────────────────────────────
+function renderSalesGoalPage(){
+  const sel=document.getElementById('sg-month-sel');
+  if(sel&&!sel.options.length){
+    const now=new Date();
+    for(var i=0;i<12;i++){
+      const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+      const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+      const lbl=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      const opt=document.createElement('option');
+      opt.value=key;opt.textContent=lbl;sel.appendChild(opt);
+    }
+  }
+  const mkey=sel?sel.value:(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+  const root=document.getElementById('sg-root');if(!root)return;
+  const isAdminView=isAdmin();
+  const user=_currentUser;if(!user)return;
+  if(!db.salesGoals)db.salesGoals={};
+  if(!db.salesGoalHistory)db.salesGoalHistory=[];
+
+  // Motivation quotes per 10% bracket
+  const QUOTES=[
+    {min:0,  max:9,  icon:'🎯', bg:'#fff8e1', border:'#ffd54f', text:'Set your target and start selling!',                                         sub:'Your goal is waiting — every sale counts'},
+    {min:10, max:19, icon:'🚀', bg:'#fff3e0', border:'#ffb74d', text:"Every journey begins with a single step. You've started — keep going!",       sub:'10% done · Momentum is building'},
+    {min:20, max:29, icon:'💪', bg:'#fff3e0', border:'#ffb74d', text:'20% done! The road ahead is shorter than where you came from.',               sub:'Consistency is your superpower'},
+    {min:30, max:39, icon:'🔥', bg:'#fce4ec', border:'#f48fb1', text:'Almost a third of the way! Your hard work is showing.',                       sub:'30% achieved · Stay focused and hungry'},
+    {min:40, max:49, icon:'⚡', bg:'#e3f2fd', border:'#64b5f6', text:"40% achieved! You're in the zone — don't stop now.",                         sub:'Strong progress · Keep the energy high'},
+    {min:50, max:59, icon:'🌟', bg:'#e3f2fd', border:'#64b5f6', text:'Halfway there! Half the battle is won. Push for the finish line!',            sub:'50% done · Champions are made in the second half'},
+    {min:60, max:69, icon:'🏃', bg:'#e8f5e9', border:'#81c784', text:'60% and climbing! Champions are made when no one is watching.',               sub:'You are ahead · Keep pushing hard'},
+    {min:70, max:79, icon:'🦁', bg:'#e8f5e9', border:'#81c784', text:'70% done! The finish line is in sight — give it everything you have!',        sub:'Almost there · This is your moment'},
+    {min:80, max:89, icon:'🏅', bg:'#e8f5e9', border:'#66bb6a', text:'80%! This is where legends are made. One final push!',                        sub:'Outstanding · You are so close now'},
+    {min:90, max:99, icon:'🔔', bg:'#f3e5f5', border:'#ce93d8', text:"90%! So close you can taste it. Don't slow down — finish strong!",            sub:'One last sprint · You can do this!'},
+    {min:100,max:109,icon:'🏆', bg:'#e8f5e9', border:'#4caf50', text:'TARGET ACHIEVED! Outstanding work! You are a true sales champion!',            sub:'Goal complete · Incredible performance this month!'},
+    {min:110,max:999,icon:'👑', bg:'#ede7f6', border:'#9575cd', text:"You've gone BEYOND the target! Exceptional — you're in a league of your own!", sub:'110%+ · Legendary performance — absolutely unreal!'},
+  ];
+
+  function getQuote(pct){
+    return QUOTES.find(function(q){return pct>=q.min&&pct<=q.max;})||QUOTES[0];
+  }
+
+  const salesUsers=isAdminView
+    ?db.systemUsers.filter(u=>u.role==='van_sales'&&u.status==='active')
+    :[user];
+
+  function getSalesData(uid,mk){
+    const [yr,mo]=mk.split('-').map(Number);
+    const userObj=db.systemUsers.find(u=>u.id===uid)||user;
+    const userLocs=userObj.assignedLocations||[];
+    const invs=db.invoices.filter(function(inv){
+      if(inv.isEstimate)return false;
+      const d=inv.date||'';
+      const iYear=parseInt(d.slice(0,4)),iMo=parseInt(d.slice(5,7));
+      if(iYear!==yr||iMo!==mo)return false;
+      if(inv.createdBy===userObj.name)return true;
+      if(userLocs.length&&userLocs.some(loc=>inv.van===loc||inv.location===loc))return true;
+      return false;
+    });
+    const totalSales=invs.reduce((s,i)=>s+(i.total||0),0);
+    const totalPaid=invs.reduce((s,i)=>s+(i.paid||0),0);
+    const custSet=new Set(invs.map(i=>i.customer).filter(Boolean));
+    return{invs,totalSales,totalPaid,customers:custSet.size,invoices:invs.length};
+  }
+
+  function getGoal(uid,mk){return(db.salesGoals[uid+':'+mk])||{target:0,visitTarget:0,note:''};}
+
+  const [yr,mo]=mkey.split('-').map(Number);
+  const daysInMonth=new Date(yr,mo,0).getDate();
+  const today_d=new Date();
+  const isCurrentMonth=(today_d.getFullYear()===yr&&today_d.getMonth()+1===mo);
+  const daysPassed=isCurrentMonth?today_d.getDate():daysInMonth;
+  const monthProgress=Math.round((daysPassed/daysInMonth)*100);
+
+  let html='';
+
+  // Month progress bar
+  html+='<div class="card" style="margin-bottom:16px;padding:14px 18px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<span style="font-size:13px;font-weight:600;color:var(--text2)"><i class="ti ti-calendar" style="margin-right:6px"></i>Month Progress</span>'
+    +'<span style="font-size:12px;color:var(--text3)">Day '+daysPassed+' of '+daysInMonth+'</span>'
+    +'</div>'
+    +'<div style="background:var(--border);border-radius:6px;height:8px;overflow:hidden">'
+    +'<div style="height:8px;border-radius:6px;background:var(--blue);width:'+monthProgress+'%"></div>'
+    +'</div>'
+    +'</div>';
+
+  salesUsers.forEach(function(su){
+    const data=getSalesData(su.id,mkey);
+    const goal=getGoal(su.id,mkey);
+    const target=goal.target||0;
+    const rawPct=target>0?Math.round((data.totalSales/target)*100):0;
+    const pct=Math.min(rawPct,100);
+    const onTrack=target>0?(data.totalSales/(daysPassed/daysInMonth))>=target*0.9:null;
+    const barColor=rawPct>=100?'var(--green)':rawPct>=70?'var(--teal)':rawPct>=40?'var(--amber)':'var(--red)';
+    const remaining=Math.max(0,target-data.totalSales);
+    const dailyNeeded=remaining>0&&daysPassed<daysInMonth?(remaining/(daysInMonth-daysPassed)):0;
+    const q=getQuote(rawPct);
+
+    html+='<div class="card" style="margin-bottom:16px;padding:20px">';
+
+    // Admin header
+    if(isAdminView){
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+        +'<div style="display:flex;align-items:center;gap:10px">'
+        +'<div style="width:38px;height:38px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">'+su.name.slice(0,1).toUpperCase()+'</div>'
+        +'<div><div style="font-weight:600;color:var(--text)">'+su.name+'</div><div style="font-size:12px;color:var(--text3)">'+su.username+'</div></div>'
+        +'</div>'
+        +'<button class="btn btn-outline btn-sm" onclick="openGoalSetModal(\''+su.id+'\',\''+mkey+'\')"><i class="ti ti-settings"></i> Set Goal</button>'
+        +'</div>';
+    }
+
+    // ── Motivation quote banner ────────────────────────────────
+    html+='<div style="border-radius:12px;padding:16px 18px;margin-bottom:16px;border:1.5px solid '+q.border+';background:'+q.bg+'">'
+      +'<div style="display:flex;align-items:flex-start;gap:12px">'
+      +'<div style="font-size:32px;line-height:1;flex-shrink:0">'+q.icon+'</div>'
+      +'<div>'
+      +'<div style="font-size:14px;font-weight:700;color:#1a1a1a;line-height:1.4;margin-bottom:4px">'+q.text+'</div>'
+      +'<div style="font-size:12px;color:#555">'+q.sub+'</div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+
+    // KPI grid
+    html+='<div class="kpi-grid" style="margin-bottom:16px">'
+      +'<div class="kpi-card"><div class="kpi-label">Sales Target</div><div class="kpi-value" style="color:var(--blue)">'+(target>0?'SAR '+target.toFixed(0):'Not set')+'</div></div>'
+      +'<div class="kpi-card"><div class="kpi-label">Actual Sales</div><div class="kpi-value" style="color:var(--green)">SAR '+data.totalSales.toFixed(0)+'</div></div>'
+      +'<div class="kpi-card"><div class="kpi-label">Collected</div><div class="kpi-value" style="color:var(--teal)">SAR '+data.totalPaid.toFixed(0)+'</div></div>'
+      +'<div class="kpi-card"><div class="kpi-label">Invoices</div><div class="kpi-value" style="color:var(--purple)">'+data.invoices+'</div></div>'
+      +'</div>';
+
+    // Progress bar with milestone markers
+    if(target>0){
+      html+='<div style="margin-bottom:14px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+        +'<span style="font-size:13px;font-weight:600;color:var(--text)">Target Progress</span>'
+        +'<span style="font-size:14px;font-weight:700;color:'+barColor+'">'+rawPct+'%</span>'
+        +'</div>'
+        // Progress bar
+        +'<div style="background:var(--border);border-radius:8px;height:22px;overflow:hidden;position:relative;margin-bottom:8px">'
+        +'<div style="height:22px;border-radius:8px;background:'+barColor+';width:'+pct+'%">'
+        +(pct>18?'<span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:11px;color:#fff;font-weight:700">SAR '+data.totalSales.toFixed(0)+'</span>':'')
+        +'</div>'
+        +'</div>'
+        // Milestone dots
+        +'<div style="display:flex;gap:4px;flex-wrap:wrap">'
+        +[10,20,30,40,50,60,70,80,90,100].map(function(m){
+          const done=rawPct>=m;
+          return '<span style="font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;border:1px solid '+(done?'var(--green)':'var(--border)')+';background:'+(done?'rgba(34,197,94,.12)':'var(--bg3)')+';color:'+(done?'var(--green)':'var(--text3)')+'">'+m+'%'+(done?' ✓':'')+'</span>';
+        }).join('')
+        +'</div>'
+        +'</div>';
+
+      // Status badges
+      html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">';
+      if(rawPct>=100){
+        html+='<span class="badge badge-green">🎯 Target Achieved!</span>';
+        if(rawPct>=110)html+='<span class="badge badge-green">👑 Exceeded by '+(rawPct-100)+'%!</span>';
+      } else {
+        html+='<span class="badge '+(onTrack?'badge-green':'badge-amber')+'">'+(onTrack?'✅ On Track':'⚠️ Behind target')+'</span>';
+        if(remaining>0)html+='<span class="badge badge-gray">SAR '+remaining.toFixed(0)+' remaining</span>';
+        if(dailyNeeded>0)html+='<span class="badge badge-blue">SAR '+dailyNeeded.toFixed(0)+'/day needed</span>';
+      }
+      // Admin note
+      if(goal.note)html+='<span class="badge badge-gray" style="font-style:italic">💬 '+goal.note+'</span>';
+      html+='</div>';
+
+    } else if(!isAdminView){
+      html+='<div style="padding:16px;background:var(--bg3);border-radius:10px;text-align:center;color:var(--text3);font-size:13px;margin-bottom:12px">'
+        +'<i class="ti ti-target" style="font-size:28px;display:block;margin-bottom:8px"></i>'
+        +'No target set for this month yet.<br>Your admin will set your monthly goal soon.</div>';
+    }
+
+    // Last 7 days mini chart
+    if(isCurrentMonth){
+      const dayTotals=[];
+      for(var d=6;d>=0;d--){
+        const dd=new Date(today_d);dd.setDate(dd.getDate()-d);
+        const ds=dd.toISOString().slice(0,10);
+        const dayTotal=data.invs.filter(i=>i.date===ds).reduce((s,i)=>s+(i.total||0),0);
+        dayTotals.push({ds,dayTotal,dd,isToday:d===0});
+      }
+      const maxDay=Math.max(...dayTotals.map(x=>x.dayTotal),1);
+      html+='<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">'
+        +'<div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Last 7 days sales</div>'
+        +'<div style="display:flex;gap:4px;align-items:flex-end;height:56px">';
+      dayTotals.forEach(function(x){
+        const barH=x.dayTotal>0?Math.max(8,Math.round((x.dayTotal/maxDay)*52)):4;
+        html+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">'
+          +'<div style="font-size:9px;color:var(--text3);margin-bottom:1px">'+(x.dayTotal>0?('SAR '+Math.round(x.dayTotal)):'')+'</div>'
+          +'<div title="SAR '+x.dayTotal.toFixed(0)+'" style="width:100%;background:'+(x.isToday?'var(--green)':'var(--teal)')+';border-radius:3px 3px 0 0;height:'+barH+'px;opacity:'+(x.dayTotal>0?1:0.25)+';min-height:4px"></div>'
+          +'<div style="font-size:9px;color:var(--text3)">'+x.dd.toLocaleDateString('en',{weekday:'narrow'})+'</div>'
+          +'</div>';
+      });
+      html+='</div></div>';
+    }
+
+    html+='</div>';
+  });
+
+  if(isAdminView&&!salesUsers.length){
+    html+='<div class="card" style="padding:32px;text-align:center;color:var(--text3)">'
+      +'<i class="ti ti-users" style="font-size:36px;display:block;margin-bottom:8px"></i>'
+      +'No active van sales staff found.<br>Add a user with "Van Sales" role to set goals.</div>';
+  }
+  if(isAdminView){
+    html+='<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Click "Set Goal" on any card to set or update targets.</div>';
+  }
+
+  root.innerHTML=html;
+  document.getElementById('sg-pgsub').textContent=isAdminView?'Set and monitor team targets':'Your monthly target and daily progress';
+}
+
+function closeGoalModal(){
+  const el=document.getElementById('goal-set-overlay');
+  if(el)el.remove();
+}
+
+function openGoalSetModal(uid,defaultMkey){
+  if(!db.salesGoals)db.salesGoals={};
+  const u=db.systemUsers.find(x=>x.id===uid);
+
+  // Build month options — current month + next 5 months
+  const now=new Date();
+  var monthOpts='';
+  for(var i=0;i<6;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const lbl=d.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    const sel=(key===defaultMkey||(!defaultMkey&&i===0))?'selected':'';
+    monthOpts+='<option value="'+key+'" '+sel+'>'+lbl+'</option>';
+  }
+
+  // Pre-fill from existing goal for the default month
+  const g=db.salesGoals[(uid+':'+(defaultMkey||''))]||{target:'',visitTarget:'',note:''};
+
+  const existing=document.getElementById('goal-set-overlay');
+  if(existing)existing.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='goal-set-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  overlay.innerHTML=
+    '<div style="background:var(--card);border-radius:16px;padding:24px;width:min(420px,96vw);box-shadow:0 8px 40px rgba(0,0,0,.25)">'
+    // Title
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+    +'<div>'
+    +'<div style="font-size:16px;font-weight:700">Set Sales Goal</div>'
+    +'<div style="font-size:12px;color:var(--text3);margin-top:2px">'+(u?u.name:'Salesperson')+'</div>'
+    +'</div>'
+    +'<button onclick="closeGoalModal()" style="background:none;border:none;font-size:22px;cursor:pointer;color:var(--text3);line-height:1;padding:4px 8px">×</button>'
+    +'</div>'
+    // Target Month
+    +'<div style="margin-bottom:14px">'
+    +'<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Target Month *</label>'
+    +'<select id="gm-month" onchange="goalModalMonthChanged(\''+uid+'\')" style="width:100%;font-size:14px;padding:10px 12px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text)">'
+    +monthOpts+'</select>'
+    +'</div>'
+    // Sales Target
+    +'<div style="margin-bottom:14px">'
+    +'<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Monthly Sales Target (SAR) *</label>'
+    +'<input type="number" id="gm-target" value="'+(g.target||'')+'" placeholder="e.g. 10000" min="0" step="100" inputmode="decimal"'
+    +' style="width:100%;font-size:22px;font-weight:700;padding:12px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--green);text-align:center">'
+    +'</div>'
+    // Visit Target
+    +'<div style="margin-bottom:14px">'
+    +'<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Daily Visit Target (customers/day)</label>'
+    +'<input type="number" id="gm-visits" value="'+(g.visitTarget||'')+'" placeholder="e.g. 8" min="0" inputmode="numeric"'
+    +' style="width:100%;font-size:16px;padding:10px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);text-align:center">'
+    +'</div>'
+    // Note
+    +'<div style="margin-bottom:20px">'
+    +'<label style="font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:6px">Message to salesperson</label>'
+    +'<input type="text" id="gm-note" value="'+(g.note||'')+'" placeholder="e.g. Focus on new customers this month"'
+    +' style="width:100%;font-size:13px;padding:10px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text)">'
+    +'</div>'
+    // Buttons
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="closeGoalModal()" class="btn btn-outline" style="flex:1">Cancel</button>'
+    +'<button onclick="saveGoal(\''+uid+'\')" class="btn btn-primary" style="flex:2"><i class="ti ti-device-floppy"></i> Save Goal</button>'
+    +'</div>'
+    +'</div>';
+
+  document.body.appendChild(overlay);
+  setTimeout(function(){const el=document.getElementById('gm-target');if(el){el.focus();el.select();}},100);
+}
+
+function goalModalMonthChanged(uid){
+  // When month changes, prefill existing goal values if any
+  if(!db.salesGoals)return;
+  const mkey=document.getElementById('gm-month')?.value;
+  if(!mkey)return;
+  const g=db.salesGoals[uid+':'+mkey]||{target:'',visitTarget:'',note:''};
+  const t=document.getElementById('gm-target');if(t)t.value=g.target||'';
+  const v=document.getElementById('gm-visits');if(v)v.value=g.visitTarget||'';
+  const n=document.getElementById('gm-note');if(n)n.value=g.note||'';
+}
+
+function saveGoal(uid){
+  if(!db.salesGoals)db.salesGoals={};
+  const mkey=document.getElementById('gm-month')?.value;
+  if(!mkey){showToast('Please select a target month','amber');return;}
+  const target=parseFloat(document.getElementById('gm-target')?.value)||0;
+  const visitTarget=parseInt(document.getElementById('gm-visits')?.value)||0;
+  const note=document.getElementById('gm-note')?.value||'';
+  if(!target){showToast('Please enter a sales target (SAR)','amber');return;}
+  db.salesGoals[uid+':'+mkey]={target,visitTarget,note,setBy:_currentUser?.name||'Admin',setOn:today()};
+  if(!db.salesGoalHistory)db.salesGoalHistory=[];
+  db.salesGoalHistory.push({uid,mkey,target,visitTarget,note,setBy:_currentUser?.name,setOn:today()});
+  saveAppState();
+  showToast('Goal saved — '+mkey,'green');
+  closeGoalModal();
+  renderSalesGoalPage();
+}
 function renderPriceListPage(){
   const root=document.getElementById('pl-page-root');if(!root)return;
   const prods=db.products.filter(p=>p.price>0).sort((a,b)=>a.name.localeCompare(b.name));
@@ -5023,7 +5462,7 @@ function renderCustomers(){
     const invs=db.invoices.filter(i=>i.customer===c.id);
     const total=invs.reduce((s,i)=>s+i.total,0);const bal=invs.reduce((s,i)=>s+(i.total-i.paid),0);
     const lastInv=invs.sort((a,b)=>b.date.localeCompare(a.date))[0];
-    return`<tr><td><strong>${c.name}</strong>${c.customerCode?'<div style="font-size:10px;font-family:var(--mono);color:var(--teal);margin-top:2px">'+c.customerCode+'</div>':''}</td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+    return`<tr><td><strong>${c.name}</strong>${c.customerCode?'<div style="font-size:10px;font-family:var(--mono);color:var(--teal);margin-top:2px">'+c.customerCode+'</div>':''}</td><td style="font-size:12px;color:var(--text2)">${c.phone||'—'}${c.contactPerson?'<div style="font-size:11px;color:var(--text3);margin-top:2px">👤 '+c.contactPerson+'</div>':''}${c.area?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+c.area+'</div>':''}</td><td style="font-size:11px;font-family:var(--mono);color:var(--text2)">${c.vatNumber?'VAT: '+c.vatNumber:''}${c.vatNumber&&c.crNumber?'<br>':''}${c.crNumber?'CR: '+c.crNumber:''}${!c.vatNumber&&!c.crNumber?'—':''}</td><td><span class="badge ${c.van==='Van 1'?'badge-green':'badge-blue'}">${c.van||'—'}</span></td><td style="font-family:var(--mono);color:var(--green)">${fmtShort(total)}</td><td style="font-family:var(--mono)"><strong style="color:${bal>0?'var(--red)':'var(--green)'}">${bal>0?'SAR '+bal.toFixed(2):'Clear'}</strong>${bal>0?'<div style="margin-top:2px"><span class="badge badge-amber" style="font-size:9px">Outstanding</span></div>':''}</td><td style="font-size:12px;color:var(--text2)">${lastInv?fmtDate(lastInv.date):'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="openStatementForCustomer('${c.id}')"><i class="ti ti-file-text"></i></button><button class="btn btn-sm btn-outline" onclick="editCustomer('${c.id}')"><i class="ti ti-pencil"></i></button>${isAdmin()?`<button class="btn btn-sm btn-danger" onclick="deleteCustomer('${c.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('')||`<tr><td colspan="8" style="text-align:center;padding:28px;color:var(--text3)">No customers found</td></tr>`;
 }
 function generateCustomerCode(){
@@ -5053,6 +5492,7 @@ function saveCustomer(){
   if(!eid&&_currentUser&&_currentUser.role==='accountant')return showToast('Accountants are not authorized to add new customers','red');
   const name=document.getElementById('ac-name')?.value.trim();
   const customerCode=document.getElementById('ac-code')?.value.trim().toUpperCase()||'';
+  const contactPerson=document.getElementById('ac-contact')?.value.trim()||'';
   const phone=document.getElementById('ac-phone')?.value.trim()||'';
   const area=document.getElementById('ac-area')?.value.trim()||'';
   let van=document.getElementById('ac-van')?.value||'';
@@ -5079,7 +5519,7 @@ function saveCustomer(){
       if(existing&&!userLocs.includes(existing.van))return showToast('You can only edit customers on your van','red');
     }
   }
-  if(eid){const c=db.customers.find(x=>x.id===eid);if(c)Object.assign(c,{name,customerCode,phone,area,van,vatNumber,crNumber,notes});saveAppState();showToast('Customer updated');}
+  if(eid){const c=db.customers.find(x=>x.id===eid);if(c)Object.assign(c,{name,customerCode,contactPerson,phone,area,van,vatNumber,crNumber,notes});saveAppState();showToast('Customer updated');}
   else{
     // Auto-generate code if not set
     let code=customerCode;
@@ -5090,14 +5530,14 @@ function saveCustomer(){
       const exNums=(db.customers||[]).map(c=>c.customerCode||'').filter(c=>c.startsWith(pfx+'-')).map(c=>parseInt(c.replace(pfx+'-',''))||0).sort((a,b)=>b-a);
       code=pfx+'-'+String(((exNums[0]||0)+1)).padStart(3,'0');
     }
-    db.customers.push({id:'c'+Date.now(),name,customerCode:code,phone,area,van,vatNumber,crNumber,notes,createdBy:_currentUser?.name||'Unknown'});
+    db.customers.push({id:'c'+Date.now(),name,customerCode:code,contactPerson,phone,area,van,vatNumber,crNumber,notes,createdBy:_currentUser?.name||'Unknown'});
     saveAppState();showToast('Customer added');
   }
   closeModal('modal-add-customer');renderCustomers();
 }
 function openAddCustomerModal(){
   document.getElementById('ac-id').value='';
-  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes','ac-code'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.style.borderColor='';}});
+  ['ac-name','ac-phone','ac-area','ac-vat','ac-cr','ac-notes','ac-code','ac-contact'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el.style.borderColor='';}});
   // Auto-generate code when name is typed
   const nameEl=document.getElementById('ac-name');
   if(nameEl)nameEl.oninput=function(){const c=document.getElementById('ac-code');if(c&&!c.value)generateCustomerCode();};
@@ -5110,6 +5550,7 @@ function editCustomer(cid){
   document.getElementById('ac-id').value=cid;
   document.getElementById('ac-name').value=c.name;
   document.getElementById('ac-code').value=c.customerCode||'';
+  document.getElementById('ac-contact').value=c.contactPerson||'';
   document.getElementById('ac-phone').value=c.phone||'';
   document.getElementById('ac-area').value=c.area||'';
   document.getElementById('ac-vat').value=c.vatNumber||'';
@@ -6194,25 +6635,286 @@ function editWarehouse(wid){const w=db.warehouses.find(x=>x.id===wid);if(!w)retu
 function deleteWarehouse(wid){showConfirm('Delete Warehouse','This warehouse will be permanently removed.',null,true).then(ok=>{if(!ok)return;db.warehouses=db.warehouses.filter(x=>x.id!==wid);renderFleetPage();saveAppState();showToast('Deleted','amber');});}
 // ── P&L ───────────────────────────────────────────────────────────────────────
 function renderPL(){
-  const months=getMonths().slice(-12);
+  const rangeEl=document.getElementById('pl-trend-range');
+  const range=parseInt(rangeEl?rangeEl.value:12)||12;
+  const months=getMonths(range);
+
+  const mData=months.map(function(m){
+    const rev=db.invoices.filter(i=>!i.isEstimate&&i.date&&i.date.startsWith(m.key)).reduce((s,i)=>s+(i.total||0),0);
+    const exp=db.expenses.filter(e=>e.date&&e.date.startsWith(m.key)).reduce((s,e)=>s+(e.amount||0),0);
+    const cogs=db.purchaseOrders.filter(p=>p.date&&p.date.startsWith(m.key)&&p.status==='received').reduce((s,p)=>s+(p.total||0),0);
+    const capInj=(db.capitalInvestments||[]).filter(i=>i.date&&i.date.startsWith(m.key)).reduce((s,i)=>s+(i.amount||0),0);
+    const distrib=(db.distributions||[]).filter(d=>d.date&&d.date.startsWith(m.key)).reduce((s,d)=>s+(d.amount||0),0);
+    const gross=rev-cogs;
+    const net=gross-exp;
+    const margin=rev>0?Math.round(net/rev*100):0;
+    return{key:m.key,label:m.label,short:m.label.substring(0,3)+' \''+m.key.substring(2,4),rev,exp,cogs,gross,net,margin,capInj,distrib};
+  });
+
+  // Totals
+  const totRev=mData.reduce((s,m)=>s+m.rev,0);
+  const totExp=mData.reduce((s,m)=>s+m.exp,0);
+  const totCOGS=mData.reduce((s,m)=>s+m.cogs,0);
+  const totNet=mData.reduce((s,m)=>s+m.net,0);
+  const totCapInj=mData.reduce((s,m)=>s+m.capInj,0);
+  const totDistrib=mData.reduce((s,m)=>s+m.distrib,0);
+  const avgMargin=totRev>0?Math.round(totNet/totRev*100):0;
+
+  // ── KPI Cards ──
   const kpis=document.getElementById('pl-kpis');
-  const totRev=months.reduce((s,m)=>s+db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((x,i)=>x+i.total,0),0);
-  const totExp=months.reduce((s,m)=>s+db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((x,e)=>x+e.amount,0),0);
-  const totCOGS=months.reduce((s,m)=>s+db.purchaseOrders.filter(p=>p.date.startsWith(m.key)&&p.status==='received').reduce((x,p)=>x+p.total,0),0);
-  const totCapInj=months.reduce((s,m)=>s+(db.capitalInvestments||[]).filter(i=>i.date.startsWith(m.key)).reduce((x,i)=>x+i.amount,0),0);
-  const totDistrib=months.reduce((s,m)=>s+(db.distributions||[]).filter(d=>d.date.startsWith(m.key)).reduce((x,d)=>x+d.amount,0),0);
-  const totNet=totRev-totExp-totCOGS;
-  if(kpis)kpis.innerHTML=[{label:'Revenue (12m)',value:fmtShort(totRev),color:'var(--green)',icon:'ti-coin'},{label:'COGS',value:fmtShort(totCOGS),color:'var(--blue)',icon:'ti-package'},{label:'Expenses',value:fmtShort(totExp),color:'var(--red)',icon:'ti-receipt-2'},{label:'Net Profit',value:fmtShort(totNet),color:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-trending-up'},{label:'Capital Injected (12m)',value:fmtShort(totCapInj),color:'var(--blue)',icon:'ti-users-group'},{label:'Profit Distributed (12m)',value:fmtShort(totDistrib),color:'var(--amber)',icon:'ti-cash'}].map(k=>`<div class="kpi-card" style="--kpi-c:${k.color}"><div class="kpi-label"><i class="ti ${k.icon}" style="margin-right:5px"></i>${k.label}</div><div class="kpi-value">${k.value}</div></div>`).join('');
-  // trend chart
-  const rev12=months.map(m=>db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.total,0));
-  const exp12=months.map(m=>db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((s,e)=>s+e.amount,0));
-  const net12=rev12.map((r,i)=>r-exp12[i]);
-  const ctx=document.getElementById('pl-trend-chart');
-  if(ctx){if(ctx._chart)ctx._chart.destroy();ctx._chart=new Chart(ctx,{type:'line',data:{labels:months.map(m=>m.label.substring(0,3)+' '+m.key.substring(0,4)),datasets:[{label:'Revenue',data:rev12,borderColor:'#185fa5',backgroundColor:'rgba(24,95,165,.08)',tension:0.3,fill:true,pointRadius:3},{label:'Expenses',data:exp12,borderColor:'#e8900a',backgroundColor:'transparent',tension:0.3,pointRadius:3},{label:'Net',data:net12,borderColor:'#2e7dd1',backgroundColor:'transparent',tension:0.3,pointRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'SAR '+v.toLocaleString()},grid:{color:'rgba(0,0,0,.04)'}},x:{grid:{display:false}}}}});}
+  if(kpis)kpis.innerHTML=[
+    {label:'Revenue',value:fmtShort(totRev),color:'var(--green)',icon:'ti-coin'},
+    {label:'COGS',value:fmtShort(totCOGS),color:'var(--blue)',icon:'ti-package'},
+    {label:'Expenses',value:fmtShort(totExp),color:'var(--red)',icon:'ti-receipt-2'},
+    {label:'Net Profit',value:fmtShort(totNet),color:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-trending-up'},
+    {label:'Profit Margin',value:avgMargin+'%',color:avgMargin>=20?'var(--green)':avgMargin>=10?'var(--amber)':'var(--red)',icon:'ti-percentage'},
+    {label:'Capital Injected',value:fmtShort(totCapInj),color:'var(--blue)',icon:'ti-users-group'},
+  ].map(k=>'<div class="kpi-card" style="--kpi-c:'+k.color+'"><div class="kpi-label"><i class="ti '+k.icon+'" style="margin-right:5px"></i>'+k.label+'</div><div class="kpi-value">'+k.value+'</div></div>').join('');
+
+  // ── Health indicator strip ──
+  const healthEl=document.getElementById('pl-health-strip');
+  if(healthEl){
+    const profMonths=mData.filter(m=>m.net>0).length;
+    const bestMonth=mData.reduce((a,b)=>b.net>a.net?b:a,mData[0]||{net:0,label:'—'});
+    const worstMonth=mData.reduce((a,b)=>b.net<a.net?b:a,mData[0]||{net:0,label:'—'});
+    const trend=mData.length>=2?(mData[mData.length-1].net-mData[mData.length-2].net):0;
+    const healthScore=avgMargin>=20?'Excellent':avgMargin>=10?'Healthy':avgMargin>=0?'Break-even':'Loss';
+    const healthColor=avgMargin>=20?'var(--green)':avgMargin>=10?'var(--teal)':avgMargin>=0?'var(--amber)':'var(--red)';
+    healthEl.innerHTML=
+      '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">'
+      +'<i class="ti ti-heart-rate-monitor" style="color:'+healthColor+';font-size:18px"></i>'
+      +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Business Health</div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+healthColor+'">'+healthScore+'</div></div>'
+      +'</div>'
+      +'<div style="flex:1;height:1px;background:var(--border)"></div>'
+      +'<div style="display:flex;gap:20px;flex-wrap:wrap">'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Profitable months</div><div style="font-size:15px;font-weight:700;color:var(--green)">'+profMonths+' / '+mData.length+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Best month</div><div style="font-size:13px;font-weight:700;color:var(--teal)">'+(bestMonth.label||'—')+'</div><div style="font-size:11px;color:var(--green)">SAR '+fmtShort(bestMonth.net||0)+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">Worst month</div><div style="font-size:13px;font-weight:700;color:var(--text2)">'+(worstMonth.label||'—')+'</div><div style="font-size:11px;color:'+(worstMonth.net<0?'var(--red)':'var(--amber)')+'">SAR '+fmtShort(worstMonth.net||0)+'</div></div>'
+      +'<div style="text-align:center"><div style="font-size:10px;color:var(--text3)">vs last month</div><div style="font-size:15px;font-weight:700;color:'+(trend>=0?'var(--green)':'var(--red)')+'">'+( trend>=0?'▲':'▼')+' SAR '+fmtShort(Math.abs(trend))+'</div></div>'
+      +'</div>';
+  }
+
+  // Margin badge
+  const mbadge=document.getElementById('pl-margin-badge');
+  if(mbadge){
+    mbadge.textContent='Avg '+avgMargin+'%';
+    mbadge.style.background=avgMargin>=10?'rgba(15,110,86,.1)':avgMargin>=0?'rgba(232,144,10,.1)':'rgba(220,38,38,.1)';
+    mbadge.style.color=avgMargin>=10?'var(--green)':avgMargin>=0?'var(--amber)':'var(--red)';
+  }
+  if(kpis)kpis.innerHTML=[
+    {label:'Revenue',value:fmtShort(totRev),color:'var(--green)',icon:'ti-coin'},
+    {label:'COGS',value:fmtShort(totCOGS),color:'var(--blue)',icon:'ti-package'},
+    {label:'Expenses',value:fmtShort(totExp),color:'var(--red)',icon:'ti-receipt-2'},
+    {label:'Net Profit',value:fmtShort(totNet),color:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-trending-up'},
+    {label:'Profit Margin',value:avgMargin+'%',color:avgMargin>=20?'var(--green)':avgMargin>=10?'var(--amber)':'var(--red)',icon:'ti-percentage'},
+    {label:'Capital Injected',value:fmtShort(totCapInj),color:'var(--blue)',icon:'ti-users-group'},
+  ].map(k=>'<div class="kpi-card" style="--kpi-c:'+k.color+'"><div class="kpi-label"><i class="ti '+k.icon+'" style="margin-right:5px"></i>'+k.label+'</div><div class="kpi-value">'+k.value+'</div></div>').join('');
+
+  const labels=mData.map(m=>m.short);
+
+  // ── Chart 1: Main Trend ──
+  const c1=document.getElementById('pl-trend-chart');
+  if(c1){
+    if(c1._chart)c1._chart.destroy();
+    c1._chart=new Chart(c1,{
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          {label:'Revenue',data:mData.map(m=>m.rev),backgroundColor:'rgba(15,110,86,0.12)',borderColor:'#0f6e56',borderWidth:2,borderRadius:5,order:4,type:'bar'},
+          {label:'COGS',data:mData.map(m=>m.cogs),backgroundColor:'rgba(24,95,165,0.08)',borderColor:'rgba(24,95,165,0.25)',borderWidth:1,borderRadius:5,order:5,type:'bar'},
+          {label:'Expenses',data:mData.map(m=>m.exp),borderColor:'#e8900a',backgroundColor:'rgba(232,144,10,0.06)',borderWidth:2.5,tension:0.4,fill:true,pointRadius:4,pointBackgroundColor:'#e8900a',pointBorderColor:'#fff',pointBorderWidth:2,order:2,type:'line'},
+          {label:'Net Profit',data:mData.map(m=>m.net),borderColor:'#185fa5',backgroundColor:'rgba(24,95,165,0.05)',borderWidth:3,tension:0.4,fill:true,pointRadius:5,pointBackgroundColor:mData.map(m=>m.net>=0?'#185fa5':'#dc2626'),pointBorderColor:'#fff',pointBorderWidth:2.5,order:1,type:'line',
+            segment:{borderColor:function(ctx){return ctx.p1.parsed.y<0?'rgba(220,38,38,0.9)':'#185fa5';}}
+          },
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'rgba(15,23,42,0.92)',titleColor:'#fff',bodyColor:'rgba(255,255,255,0.85)',
+            padding:12,cornerRadius:8,
+            callbacks:{
+              label:function(ctx){
+                var icons={Revenue:'💰',COGS:'📦',Expenses:'💸','Net Profit':'📊'};
+                return ' '+(icons[ctx.dataset.label]||'')+' '+ctx.dataset.label+': SAR '+Math.round(ctx.raw).toLocaleString();
+              },
+              afterBody:function(items){
+                var i=items[0].dataIndex,m=mData[i];
+                return['','  '+(m.net>=0?'🟢':'🔴')+' Gross: SAR '+Math.round(m.gross).toLocaleString(),'  📈 Margin: '+m.margin+'%'];
+              }
+            }
+          }
+        },
+        scales:{
+          y:{ticks:{callback:function(v){return'SAR '+Math.round(v/1000)+'k';},font:{size:11}},grid:{color:'rgba(0,0,0,.04)'},border:{display:false}},
+          x:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+  }
+
+  // ── Summary strip ──
   const tsum=document.getElementById('pl-trend-summary');
-  if(tsum){const avg=v=>months.length?Math.round(v/months.length):0;tsum.innerHTML=[{lbl:'Avg Revenue/Month',val:fmtShort(avg(totRev)),clr:'var(--green)'},{lbl:'Avg Expenses/Month',val:fmtShort(avg(totExp)),clr:'var(--red)'},{lbl:'Avg Net/Month',val:fmtShort(avg(totNet)),clr:totNet>=0?'var(--teal)':'var(--red)'}].map(k=>`<div style="flex:1;text-align:center;padding:14px 10px"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:4px">${k.lbl}</div><div style="font-size:16px;font-weight:700;color:${k.clr}">${k.val}</div></div>`).join('');}
+  if(tsum){
+    const avg=function(v){return months.length?Math.round(v/months.length):0;};
+    tsum.innerHTML=[
+      {lbl:'Avg Revenue/Month',val:'SAR '+fmtShort(avg(totRev)),clr:'var(--green)',icon:'ti-trending-up'},
+      {lbl:'Avg COGS/Month',val:'SAR '+fmtShort(avg(totCOGS)),clr:'var(--blue)',icon:'ti-package'},
+      {lbl:'Avg Expenses/Month',val:'SAR '+fmtShort(avg(totExp)),clr:'var(--amber)',icon:'ti-receipt-2'},
+      {lbl:'Avg Net Profit/Month',val:'SAR '+fmtShort(avg(totNet)),clr:totNet>=0?'var(--teal)':'var(--red)',icon:'ti-coin'},
+    ].map(k=>'<div style="flex:1;text-align:center;padding:12px 8px;border-right:1px solid var(--border)"><div style="font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:4px"><i class="ti '+k.icon+'" style="margin-right:3px"></i>'+k.lbl+'</div><div style="font-size:15px;font-weight:700;color:'+k.clr+'">'+k.val+'</div></div>').join('');
+  }
+
+  // ── Chart 2: Profit Margin % ──
+  const c2=document.getElementById('pl-margin-chart');
+  if(c2){
+    if(c2._chart)c2._chart.destroy();
+    c2._chart=new Chart(c2,{
+      type:'line',
+      data:{
+        labels,
+        datasets:[{
+          label:'Margin %',
+          data:mData.map(m=>m.margin),
+          borderColor:'#0f6e56',
+          backgroundColor:function(ctx){
+            const chart=ctx.chart;
+            const {ctx:c,chartArea}=chart;
+            if(!chartArea)return'rgba(15,110,86,0.1)';
+            const g=c.createLinearGradient(0,chartArea.top,0,chartArea.bottom);
+            g.addColorStop(0,'rgba(15,110,86,0.25)');
+            g.addColorStop(1,'rgba(15,110,86,0.01)');
+            return g;
+          },
+          borderWidth:2.5,tension:0.4,fill:true,
+          pointRadius:4,pointBackgroundColor:mData.map(m=>m.margin>=0?'#0f6e56':'#dc2626'),
+          pointBorderColor:'#fff',pointBorderWidth:2,
+          segment:{borderColor:function(ctx){return ctx.p1.parsed.y<0?'#dc2626':'#0f6e56';}}
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return' Margin: '+ctx.raw+'%';}}}},
+        scales:{
+          y:{
+            ticks:{callback:function(v){return v+'%';},font:{size:11}},
+            grid:{color:function(ctx){
+              if(ctx.tick.value===0)return'rgba(220,38,38,0.4)';
+              if(ctx.tick.value===10)return'rgba(15,110,86,0.3)';
+              return'rgba(0,0,0,.04)';
+            },lineWidth:function(ctx){return(ctx.tick.value===0||ctx.tick.value===10)?2:1;}},
+            border:{display:false}
+          },
+          x:{grid:{display:false},border:{display:false},ticks:{font:{size:11}}}
+        }
+      }
+    });
+  }
+
+  // ── Chart 3: Cost Breakdown Donut ──
+  const c3=document.getElementById('pl-cost-donut');
+  if(c3){
+    if(c3._chart)c3._chart.destroy();
+    const totalCosts=totCOGS+totExp;
+    c3._chart=new Chart(c3,{
+      type:'doughnut',
+      data:{
+        labels:['COGS','Operating Expenses'],
+        datasets:[{
+          data:[totCOGS,totExp],
+          backgroundColor:['rgba(24,95,165,0.8)','rgba(232,144,10,0.8)'],
+          borderColor:['#185fa5','#e8900a'],
+          borderWidth:2,hoverOffset:6
+        }]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,cutout:'72%',
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return' '+ctx.label+': SAR '+fmtShort(ctx.raw)+' ('+Math.round(ctx.raw/Math.max(totalCosts,1)*100)+'%)';}}}
+        }
+      }
+    });
+    // Legend
+    const leg=document.getElementById('pl-donut-legend');
+    if(leg){
+      const cogsP=totalCosts>0?Math.round(totCOGS/totalCosts*100):0;
+      const expP=totalCosts>0?Math.round(totExp/totalCosts*100):0;
+      leg.innerHTML=[
+        {label:'COGS',val:fmtShort(totCOGS),pct:cogsP,color:'#185fa5'},
+        {label:'Expenses',val:fmtShort(totExp),pct:expP,color:'#e8900a'},
+      ].map(function(x){
+        return '<div style="margin-bottom:12px">'
+          +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+          +'<span style="width:10px;height:10px;border-radius:50%;background:'+x.color+';flex-shrink:0"></span>'
+          +'<span style="font-size:12px;color:var(--text2)">'+x.label+'</span>'
+          +'</div>'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text)">SAR '+x.val+'</div>'
+          +'<div style="font-size:11px;color:var(--text3)">'+x.pct+'% of total costs</div>'
+          +'</div>';
+      }).join('');
+    }
+  }
+
+  // ── Chart 4: Revenue vs Net Bar ──
+  const c4=document.getElementById('pl-bar-chart');
+  if(c4){
+    if(c4._chart)c4._chart.destroy();
+    c4._chart=new Chart(c4,{
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          {label:'Revenue',data:mData.map(m=>m.rev),backgroundColor:'rgba(15,110,86,0.18)',borderColor:'#0f6e56',borderWidth:1.5,borderRadius:4,order:2},
+          {label:'Net Profit',data:mData.map(m=>m.net),backgroundColor:mData.map(m=>m.net>=0?'rgba(15,110,86,0.7)':'rgba(220,38,38,0.7)'),borderColor:mData.map(m=>m.net>=0?'#0f6e56':'#dc2626'),borderWidth:1.5,borderRadius:4,order:1},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:function(ctx){return' '+ctx.dataset.label+': SAR '+Math.round(ctx.raw).toLocaleString();}}}
+        },
+        scales:{
+          y:{ticks:{callback:function(v){return'SAR '+Math.round(v/1000)+'k';}},grid:{color:'rgba(0,0,0,.04)'},border:{display:false}},
+          x:{grid:{display:false},border:{display:false}}
+        }
+      }
+    });
+  }
+
+  // ── Monthly cards ──
   const cards=document.getElementById('pl-monthly-cards');
-  if(cards)cards.innerHTML=[...months].reverse().map(m=>{const rev=db.invoices.filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.total,0);const exp=db.expenses.filter(e=>e.date.startsWith(m.key)).reduce((s,e)=>s+e.amount,0);const cogs=db.purchaseOrders.filter(p=>p.date.startsWith(m.key)&&p.status==='received').reduce((s,p)=>s+p.total,0);const capInj=(db.capitalInvestments||[]).filter(i=>i.date.startsWith(m.key)).reduce((s,i)=>s+i.amount,0);const distrib=(db.distributions||[]).filter(d=>d.date.startsWith(m.key)).reduce((s,d)=>s+d.amount,0);const net=rev-exp-cogs;const margin=rev>0?Math.round(net/rev*100):0;return`<div class="card" style="cursor:pointer;border-top:3px solid ${net>=0?'var(--green)':'var(--red)'}" onclick="plOpenModal('${m.key}','${m.label}')"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div style="font-size:14px;font-weight:600">${m.label}</div><span class="badge ${net>=0?'badge-green':'badge-red'}">${margin}% margin</span></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div style="background:rgba(24,95,165,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Revenue</div><div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)">${fmtShort(rev)}</div></div><div style="background:rgba(232,144,10,.06);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Expenses</div><div style="font-size:14px;font-weight:700;color:var(--amber);font-family:var(--mono)">${fmtShort(exp)}</div></div></div><div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--text2)">Net Profit</span><span style="font-size:16px;font-weight:700;font-family:var(--mono);color:${net>=0?'var(--green)':'var(--red)'}">SAR ${fmtShort(net)}</span></div>${capInj>0?`<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;background:rgba(24,95,165,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-users-group" style="margin-right:4px"></i>Capital Injected</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--blue)">SAR ${fmtShort(capInj)}</span></div>`:''}${distrib>0?`<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;background:rgba(232,144,10,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-cash" style="margin-right:4px"></i>Profit Distributed</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--amber)">SAR ${fmtShort(distrib)}</span></div>`:''}</div>`;}).join('');
+  if(cards)cards.innerHTML=[...mData].reverse().map(function(m){
+    const profitColor=m.net>=0?'var(--green)':'var(--red)';
+    const topBorder=m.net>=0?'var(--green)':'var(--red)';
+    return '<div class="card" style="cursor:pointer;border-top:3px solid '+topBorder+'" onclick="plOpenModal(\''+m.key+'\',\''+m.label+'\')">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      +'<div style="font-size:14px;font-weight:600">'+m.label+'</div>'
+      +'<span class="badge '+(m.net>=0?'badge-green':'badge-red')+'">'+m.margin+'% margin</span>'
+      +'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'
+      +'<div style="background:rgba(15,110,86,.07);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Revenue</div><div style="font-size:14px;font-weight:700;color:var(--green);font-family:var(--mono)">'+fmtShort(m.rev)+'</div></div>'
+      +'<div style="background:rgba(232,144,10,.07);border-radius:6px;padding:8px 10px"><div style="font-size:10px;color:var(--text3)">Expenses</div><div style="font-size:14px;font-weight:700;color:var(--amber);font-family:var(--mono)">'+fmtShort(m.exp)+'</div></div>'
+      +'</div>'
+      // Mini progress bar showing margin
+      +'<div style="background:var(--border);border-radius:4px;height:4px;margin-bottom:10px;overflow:hidden">'
+      +'<div style="height:4px;border-radius:4px;background:'+profitColor+';width:'+Math.max(0,Math.min(100,m.margin))+'%"></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:10px">'
+      +'<span style="font-size:12px;color:var(--text2)">Net Profit</span>'
+      +'<span style="font-size:16px;font-weight:700;font-family:var(--mono);color:'+profitColor+'">SAR '+fmtShort(m.net)+'</span>'
+      +'</div>'
+      +(m.capInj>0?'<div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;background:rgba(24,95,165,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-users-group" style="margin-right:4px"></i>Capital Injected</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--blue)">SAR '+fmtShort(m.capInj)+'</span></div>':'')
+      +(m.distrib>0?'<div style="margin-top:4px;display:flex;justify-content:space-between;align-items:center;background:rgba(232,144,10,.06);border-radius:6px;padding:6px 10px"><span style="font-size:11px;color:var(--text3)"><i class="ti ti-cash" style="margin-right:4px"></i>Distributed</span><span style="font-size:13px;font-weight:700;font-family:var(--mono);color:var(--amber)">SAR '+fmtShort(m.distrib)+'</span></div>':'')
+      +'</div>';
+  }).join('');
 }
 function plOpenModal(mkey,mlabel){
   const rev=db.invoices.filter(i=>i.date.startsWith(mkey)).reduce((s,i)=>s+i.total,0);
@@ -9498,120 +10200,213 @@ function _buildThermalCanvas(inv,callback){
 function printThermalInvoice(inv){
   if(isNativeAndroidApp()){_nativePrint(inv);return;}
 
-  const s=db.settings||{};
+  const s=db.settings||{}, c=getCustomer(inv.customer);
   const isEst=inv.isEstimate===true;
-  const text=_buildPlainReceipt(inv);
+  const bal=inv.total-inv.paid, isPaid=bal<=0;
+  const vatPct=Math.round(getVatRate()*100);
+  const sub=inv.subtotal||(inv.total/(1+getVatRate()));
+  const vat=inv.vatAmount||(inv.total-sub);
 
-  // Build header canvas: logo (top) + QR code (bottom)
-  // 80mm paper = 576px canvas width
-  const CW=576, PAD=12;
-  var qrCv=null, logoImg=null;
-  var logoReady=false, qrReady=false;
+  // 80mm paper @ 203dpi = 576px. Use 576px canvas.
+  const CW=576;
+  const FONT='monospace';
+  const FS=22;       // font size px — readable on 80mm
+  const LH=30;       // line height px
+  const PAD=16;      // left/right padding
+  const TW=CW-PAD*2; // text width
 
-  function renderAndSend(){
-    var hasLogo=!!logoImg&&!isEst;
-    var hasQR=!!qrCv&&!isEst;
+  function safe(t){
+    return(t||'').replace(/[\u0600-\u06ff]/g,'').replace(/[^\x20-\x7e]/g,'').trim();
+  }
 
-    if(!hasLogo&&!hasQR){
-      _sendRawBTText(text,inv.id);
-      return;
+  // ── Build QR canvas first (so we know its size) ───────────────────────
+  var qrSize=300; // large enough to scan reliably
+  var qrCv=null;
+  if(!isEst){
+    try{
+      qrCv=document.createElement('canvas');
+      qrCv.width=qrSize;qrCv.height=qrSize;
+      _drawQR(qrCv,buildZatcaTLV(inv),qrSize);
+    }catch(e){qrCv=null;}
+  }
+
+  // ── Helper: measure text height needed ───────────────────────────────
+  function buildLines(){
+    var lines=[];
+    function add(t,bold,center,big){lines.push({t:t||'',bold:!!bold,center:!!center,big:!!big});}
+    function sep(ch){add((ch||'=').repeat(Math.floor(TW/(FS*0.6))),false,false,false);}
+    function lr(l,r){
+      // pad to fill line
+      var lS=safe(l), rS=safe(r);
+      var maxChars=Math.floor(TW/(FS*0.6));
+      var sp=Math.max(1,maxChars-lS.length-rS.length);
+      add(lS+' '.repeat(sp)+rS,false,false,false);
     }
 
-    // Build header image
-    var logoH=hasLogo?Math.round(CW*0.28):0;
-    var qrSz=hasQR?Math.round(CW*0.52):0;
-    var labelH=hasQR?52:0;
-    var totalH=PAD+(hasLogo?logoH+PAD*2:0)+(hasQR?qrSz+labelH+PAD:0)+PAD;
+    if(isEst){
+      sep('=');add('** ESTIMATE **',true,true);sep('=');
+      lr('Ref:',inv.id);lr('Date:',fmtDate(inv.date));
+      sep('-');add('Customer: '+safe(c.name),true);sep('-');
+      add('ITEMS',true,true);sep('-');
+      inv.items.forEach(function(it){
+        var p=getProduct(it.product);
+        add(safe(p.name),true);
+        lr('  '+it.qty+' x SAR '+it.price.toFixed(2),'SAR '+(it.qty*it.price).toFixed(2));
+      });
+      sep('=');lr('TOTAL:','SAR '+inv.total.toFixed(2));sep('=');
+    } else {
+      // Header
+      add(safe(s.nameEn||'AgroFresh'),true,true,true);
+      if(s.address)add(safe(s.address),false,true);
+      if(s.phone)add('Tel: '+safe(s.phone),false,true);
+      if(s.email)add(safe(s.email),false,true);
+      if(s.vatNumber)add('VAT: '+safe(s.vatNumber),false,true);
+      sep('=');add('*** TAX INVOICE ***',true,true);sep('=');
+      // Info
+      lr('Invoice No:',inv.id);
+      lr('Date:',fmtDate(inv.date));
+      lr('Due Date:',fmtDate(inv.due));
+      sep('-');
+      // Customer
+      add('BILL TO:',true);
+      add('  '+safe(c.name),false);
+      if(c.phone)add('  Tel: '+safe(c.phone),false);
+      if(c.vatNumber)add('  VAT: '+safe(c.vatNumber),false);
+      if(inv.van)lr('  Van:',safe(inv.van));
+      sep('=');
+      // Items header
+      add('ITEM                  QTY   PRICE  TOTAL',true);
+      sep('-');
+      // Items
+      inv.items.forEach(function(it){
+        var p=getProduct(it.product);
+        var nm=safe(p.name);
+        var qty=String(it.qty);
+        var prc=it.price.toFixed(2);
+        var tot=(it.qty*it.price).toFixed(2);
+        if(nm.length<=22){
+          var row=nm+' '.repeat(Math.max(1,22-nm.length))+(' '.repeat(Math.max(0,5-qty.length))+qty)+(' '.repeat(Math.max(0,8-prc.length))+prc)+(' '.repeat(Math.max(0,7-tot.length))+tot);
+          add(row,false);
+        }else{
+          add(nm.slice(0,34),false);
+          var row2=' '.repeat(22)+(' '.repeat(Math.max(0,5-qty.length))+qty)+(' '.repeat(Math.max(0,8-prc.length))+prc)+(' '.repeat(Math.max(0,7-tot.length))+tot);
+          add(row2,false);
+        }
+      });
+      sep('=');
+      lr('Subtotal:','SAR '+sub.toFixed(2));
+      lr('VAT ('+vatPct+'%):','SAR '+vat.toFixed(2));
+      sep('-');
+      lr('TOTAL (incl. VAT):','SAR '+inv.total.toFixed(2));
+      sep('-');
+      if(inv.paid>0)lr('Paid:','SAR '+inv.paid.toFixed(2));
+      if(bal>0)lr('Balance Due:','SAR '+bal.toFixed(2));
+      sep('=');
+      add(isPaid?'*** PAID IN FULL ***':'*** AMOUNT DUE: SAR '+bal.toFixed(2)+' ***',true,true);
+      sep('=');
+      add('Thank you for your business!',false,true);
+      if(s.phone)add('Tel: '+safe(s.phone),false,true);
+    }
+    return lines;
+  }
+
+  function renderFull(logoImg){
+    var lines=buildLines();
+
+    // Measure total height
+    var logoH=logoImg?Math.round(CW*0.25):0;
+    var qrH=qrCv?(qrSize+LH*2+16):0;
+    var textH=lines.length*(LH+2);
+    var totalH=PAD+(logoH?logoH+PAD:0)+textH+PAD+(qrH?PAD+qrH+PAD:0)+PAD*2;
 
     var cv=document.createElement('canvas');
-    cv.width=CW; cv.height=Math.ceil(totalH);
+    cv.width=CW;
+    cv.height=Math.ceil(totalH);
     var ctx=cv.getContext('2d');
+
+    // White background
     ctx.fillStyle='#ffffff';
-    ctx.fillRect(0,0,CW,cv.height);
+    ctx.fillRect(0,0,cv.width,cv.height);
+
     var y=PAD;
 
-    if(hasLogo){
+    // Logo
+    if(logoImg){
       var lw=Math.round(logoH*(logoImg.naturalWidth/Math.max(logoImg.naturalHeight,1)));
       lw=Math.min(lw,CW-PAD*4);
       ctx.drawImage(logoImg,Math.floor((CW-lw)/2),y,lw,logoH);
-      y+=logoH+PAD*2;
+      y+=logoH+PAD;
     }
 
-    if(hasQR){
-      // Draw QR
-      ctx.drawImage(qrCv,Math.floor((CW-qrSz)/2),y,qrSz,qrSz);
-      y+=qrSz+10;
-      // ZATCA label
-      ctx.textAlign='center';
-      ctx.font='bold 24px monospace';
+    // Text lines
+    lines.forEach(function(ln){
+      var fs=ln.big?(FS+4):FS;
+      ctx.font=(ln.bold?'bold ':'')+fs+'px '+FONT;
       ctx.fillStyle='#000000';
-      ctx.fillText('Scan to Verify - ZATCA',CW/2,y);
-      y+=30;
-      ctx.font='20px monospace';
-      ctx.fillStyle='#333333';
-      ctx.fillText('فاتورة إلكترونية معتمدة',CW/2,y);
+      ctx.textAlign=ln.center?'center':'left';
+      var x=ln.center?CW/2:PAD;
+      ctx.fillText(ln.t,x,y+fs);
+      y+=LH+(ln.big?4:0);
+    });
+
+    y+=PAD;
+
+    // QR code — large and centered
+    if(qrCv){
+      var qrPrintSize=Math.round(CW*0.65); // 65% of paper = ~374px
+      var qrX=Math.floor((CW-qrPrintSize)/2);
+      // White border around QR
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(qrX-8,y-8,qrPrintSize+16,qrPrintSize+16);
+      ctx.drawImage(qrCv,qrX,y,qrPrintSize,qrPrintSize);
+      y+=qrPrintSize+10;
+      // Label
+      ctx.font='bold 20px '+FONT;
+      ctx.fillStyle='#000000';
+      ctx.textAlign='center';
+      ctx.fillText('Scan to verify - ZATCA',CW/2,y+20);
+      y+=LH+PAD;
     }
 
+    // Feed space at bottom
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,y,CW,PAD*4);
+
+    // Send as ONE image to RawBT
     cv.toBlob(function(blob){
-      if(!blob){_sendRawBTText(text,inv.id);return;}
+      if(!blob){showToast('Print failed','red');return;}
       var reader=new FileReader();
       reader.onload=function(){
         var b64=reader.result.split(',')[1];
         var ua=navigator.userAgent.toLowerCase();
         if(ua.indexOf('android')>-1){
-          // ✅ Correct RawBT image URL: rawbt:data:image/png;base64,DATA
-          var imgUrl='rawbt:data:image/png;base64,'+b64;
-          window.location.href=imgUrl;
-          showToast('Sending logo+QR to printer...','amber');
-          // After 2s send the text body
-          setTimeout(function(){
-            _sendRawBTText(text,inv.id);
-          },2000);
+          // ✅ Single image print — no text URL needed
+          window.location.href='rawbt:data:image/png;base64,'+b64;
+          showToast('Sending to printer...','amber');
         } else {
-          _sendRawBTText(text,inv.id);
+          // Desktop fallback
+          _thermalFallbackPrint(inv.id,_buildPlainReceipt(inv));
         }
       };
       reader.readAsDataURL(blob);
     },'image/png',1.0);
   }
 
-  // Generate QR
-  if(!isEst){
-    try{
-      qrCv=document.createElement('canvas');
-      qrCv.width=500;qrCv.height=500;
-      _drawQR(qrCv,buildZatcaTLV(inv),500);
-    }catch(e){qrCv=null;}
-  }
-  qrReady=true;
-
-  // Load logo
+  // Load logo then render
   if(s.logo&&!isEst){
     var img=new Image();
     img.crossOrigin='anonymous';
-    img.onload=function(){logoImg=img;logoReady=true;if(qrReady)renderAndSend();};
-    img.onerror=function(){logoReady=true;if(qrReady)renderAndSend();};
+    img.onload=function(){renderFull(img);};
+    img.onerror=function(){renderFull(null);};
     img.src=s.logo;
   } else {
-    logoReady=true;
-    if(qrReady)renderAndSend();
+    renderFull(null);
   }
 }
 
 function _sendRawBTText(text,invId){
-  var ua=navigator.userAgent.toLowerCase();
-  var isAndroid=ua.indexOf('android')>-1;
-
-  if(isAndroid){
-    // ✅ CORRECT RawBT URL: intent scheme with encodeURI (NOT base64)
-    // Text goes directly in the URL, encoded with encodeURI
-    var encoded=encodeURI(text);
-    var intentUrl='intent:'+encoded+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-    window.location.href=intentUrl;
-  } else {
-    // Desktop: open browser print window
-    _thermalFallbackPrint(invId,text);
-  }
+  // Fallback only — main path now uses image
+  _thermalFallbackPrint(invId,text);
 }
 
 function _thermalFallbackPrint(invId,t){
@@ -9682,7 +10477,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='none';
     applyRBAC();
     updateSidebarUser();
-    navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':'dashboard');
+    navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':_currentUser&&_currentUser.role==='van_sales'?'sales-goal':'dashboard');
   }else{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='flex';
   }
