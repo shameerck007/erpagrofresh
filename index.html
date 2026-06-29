@@ -2127,6 +2127,15 @@ async function loadAppState(){
       if(m.settings){const logo=db.settings.logo;Object.assign(db.settings,m.settings);db.settings.logo=logo;}
       if(m.counters){const c=m.counters;['nextInvId','nextPoId','nextQuoId','nextDnId','nextSrId'].forEach(k=>{if(c[k])db[k]=c[k];});}
       if(m.stock)db.stock=m.stock;
+      // Load custom role permissions saved by admin
+      if(m.rolePermissions&&typeof m.rolePermissions==='object'){
+        const validPages=Object.keys(PERM_LABELS);
+        Object.keys(m.rolePermissions).forEach(function(role){
+          if(ROLE_PERMISSIONS[role]!==undefined&&Array.isArray(m.rolePermissions[role])){
+            ROLE_PERMISSIONS[role]=m.rolePermissions[role].filter(function(p){return validPages.includes(p);});
+          }
+        });
+      }
       _hideLoadingScreen();return true;
     }catch(e){
       console.warn('FB load failed, retrying in 3s:',e.message);
@@ -2248,9 +2257,9 @@ function renderRolePermsGrid(){
   // Group pages into categories for better readability
   const groups=[
     {label:'Core',pages:['dashboard','daily']},
-    {label:'Sales',pages:['sales','sales-returns','sales-report','quotations','delivery-notes']},
+    {label:'Sales',pages:['sales','sales-returns','sales-report','quotations','delivery-notes','sales-goal']},
     {label:'Customers',pages:['customers','customer-statement']},
-    {label:'Inventory',pages:['stock','warehouses','damages']},
+    {label:'Inventory',pages:['stock','warehouses','price-list','damages']},
     {label:'Purchasing',pages:['po','purchase-returns','suppliers','supplier-payments','supplier-statement']},
     {label:'Finance',pages:['expenses','reports','pl','vat','cash-book','partners']},
     {label:'Operations',pages:['fleet','assets']},
@@ -2279,12 +2288,12 @@ function _pageIcon(page){
   const icons={dashboard:'ti-layout-dashboard',daily:'ti-calendar-event',sales:'ti-receipt',
     'sales-returns':'ti-rotate-2','sales-report':'ti-chart-line',quotations:'ti-file-invoice',
     'delivery-notes':'ti-truck',customers:'ti-users','customer-statement':'ti-file-description',
-    stock:'ti-package',warehouses:'ti-building-warehouse',damages:'ti-alert-triangle',
-    po:'ti-clipboard-list','purchase-returns':'ti-arrow-back',suppliers:'ti-building-store',
-    'supplier-payments':'ti-cash-banknote','supplier-statement':'ti-file-analytics',
-    expenses:'ti-receipt-tax',reports:'ti-chart-bar',pl:'ti-chart-pie-2',
-    vat:'ti-receipt-tax','cash-book':'ti-cash',partners:'ti-users-group',fleet:'ti-steering-wheel',
-    assets:'ti-building-factory-2',settings:'ti-settings'};
+    stock:'ti-package',warehouses:'ti-building-warehouse','price-list':'ti-list-details',
+    damages:'ti-alert-triangle',po:'ti-file-invoice','purchase-returns':'ti-arrow-back',
+    suppliers:'ti-building-store','supplier-payments':'ti-cash','supplier-statement':'ti-file-text',
+    expenses:'ti-receipt-2',reports:'ti-chart-bar',pl:'ti-trending-up',vat:'ti-percentage',
+    'cash-book':'ti-book','sales-goal':'ti-target',partners:'ti-users-group',
+    fleet:'ti-car',assets:'ti-tools',settings:'ti-settings','owner-dashboard':'ti-star'};
   return icons[page]||'ti-circle';
 }
 function rolePermsOnChange(cb){
@@ -2303,33 +2312,16 @@ function rolePermsSelectAll(){
   if(_currentUser)applyRBAC();
 }
 function saveRolePermissions(){
-  try{localStorage.setItem('fastrack_perms',JSON.stringify(ROLE_PERMISSIONS));}catch(e){}
+  // Save to Firebase — single source of truth for all devices
+  if(_fsdb&&_fbReady){
+    try{_fsdb.collection('fastrack').doc('rolePermissions').set({data:JSON.stringify(ROLE_PERMISSIONS)});}catch(e){showToast('Failed to save permissions','red');return;}
+  }
   saveAppState();
   const msg=document.getElementById('role-perms-saved-msg');if(msg){msg.style.display='';setTimeout(()=>msg.style.display='none',3500);}
   showToast('Permissions saved');
 }
 function loadSavedPermissions(){
-  try{
-    // Version key — bump this whenever new pages/permissions are added to force cache refresh
-    const PERM_VERSION='v5';
-    const storedVersion=localStorage.getItem('fastrack_perms_version');
-    if(storedVersion!==PERM_VERSION){
-      // Stale cache — clear it and save the current hardcoded defaults
-      localStorage.removeItem('fastrack_perms');
-      localStorage.setItem('fastrack_perms_version',PERM_VERSION);
-      return;// use hardcoded defaults as-is
-    }
-    const r=localStorage.getItem('fastrack_perms');
-    if(!r)return;
-    const s=JSON.parse(r);
-    // Merge: always include pages from hardcoded defaults so new pages are never missing
-    Object.keys(s).forEach(role=>{
-      if(ROLE_PERMISSIONS[role]!==undefined){
-        const merged=[...new Set([...ROLE_PERMISSIONS[role],...s[role]])];
-        ROLE_PERMISSIONS[role]=merged;
-      }
-    });
-  }catch(e){}
+  // Permissions are loaded from Firebase in loadAppState — nothing to do here
 }
 function toggleUserForm(){
   const p=document.getElementById('user-form-panel');
