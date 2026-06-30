@@ -1965,6 +1965,8 @@ const ROLE_PERMISSIONS={
   van_sales:['dashboard','daily','sales','sales-returns','customers','customer-statement','stock','price-list','sales-goal','offers'],
   accountant:['dashboard','sales','sales-returns','sales-report','customers','customer-statement','expenses','reports','pl','vat','cash-book','partners','supplier-payments','supplier-statement','assets','price-list']
 };
+// Frozen snapshot of built-in defaults — used by "Reset to Defaults" even after Firebase overrides ROLE_PERMISSIONS at runtime
+const ROLE_PERMISSIONS_DEFAULTS=JSON.parse(JSON.stringify(ROLE_PERMISSIONS));
 const ROLE_LABELS={admin:'Administrator',owner:'Business Owner',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
 const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},owner:{bg:'rgba(93,202,165,.15)',color:'var(--teal)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
 const ROLE_ICONS={admin:'ti-crown',owner:'ti-star',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
@@ -2185,6 +2187,11 @@ async function loadAppState(){
             ROLE_PERMISSIONS[role]=m.rolePermissions[role].filter(function(p){return validPages.includes(p);});
           }
         });
+      }
+      // Surgical fix: ensure van_sales always retains price-list access (stock status feature)
+      // without altering any other role or any other page permission the admin has configured
+      if(ROLE_PERMISSIONS.van_sales&&!ROLE_PERMISSIONS.van_sales.includes('price-list')){
+        ROLE_PERMISSIONS.van_sales.push('price-list');
       }
       _hideLoadingScreen();return true;
     }catch(e){
@@ -2688,6 +2695,35 @@ function companyLogoHtml(maxHeight){
 }
 const addDays=(s,n)=>{const d=new Date(s);d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];};
 const getProduct=(id)=>db.products.find(p=>p.id===id)||{id,name:id,unit:'Cartoon',price:0,wh1:0,wh2:0,van1:0,van2:0,min:10};
+
+// ── PRODUCT STOCK STATUS ─────────────────────────────────────────────────────
+const STOCK_STATUS_DEFS={
+  available:    {label:'Available',     color:'#0f6e56', bg:'#e3f5ef', icon:'circle-check'},
+  low_stock:    {label:'Low Stock',     color:'#b45309', bg:'#fef3c7', icon:'alert-triangle'},
+  out_of_stock: {label:'Out of Stock',  color:'#dc2626', bg:'#fee2e2', icon:'circle-x'},
+  in_transit:   {label:'In Transit',    color:'#185fa5', bg:'#dbeafe', icon:'truck-delivery'},
+  reserved:     {label:'Reserved',      color:'#7c3aed', bg:'#ede9fe', icon:'lock'},
+};
+function getStockStatus(p){
+  return p.stockStatus&&STOCK_STATUS_DEFS[p.stockStatus]?p.stockStatus:'available';
+}
+function stockStatusBadge(p){
+  const key=getStockStatus(p);
+  const d=STOCK_STATUS_DEFS[key];
+  return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:'+d.bg+';color:'+d.color+'"><i class="ti ti-'+d.icon+'" style="font-size:13px"></i>'+d.label+'</span>';
+}
+function setProductStockStatus(pid,status){
+  const p=db.products.find(x=>x.id===pid);
+  if(!p)return;
+  if(!STOCK_STATUS_DEFS[status])return;
+  p.stockStatus=status;
+  p.stockStatusUpdatedBy=_currentUser?.name||'Unknown';
+  p.stockStatusUpdatedOn=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+  saveAppState();
+  if(document.getElementById('pl-page-root'))renderPriceListPage();
+  if(document.getElementById('stock-table-body'))renderStockPage();
+  showToast('Status updated to '+STOCK_STATUS_DEFS[status].label,'green');
+}
 const getCustomer=(id)=>db.customers.find(c=>c.id===id)||{id,name:'Walk-in',phone:'',area:'',van:'',outstanding:0};
 const getVatRate=()=>((db.settings&&db.settings.vatRate)||15)/100;
 const getTaxMode=()=>(db.settings&&db.settings.taxMode)||'exclusive'; // 'inclusive' or 'exclusive'
@@ -4496,6 +4532,10 @@ function getOfferForInvoiceLine(productId,customerId,qty,orderTotal){
       const daysSince=(new Date()-new Date(c.createdAt||today()))/(1000*60*60*24);
       if(daysSince>30)return false;
     }
+    if(o.customerType==='specific'){
+      const ids=o.customerIds||[];
+      if(!ids.includes(customerId))return false;
+    }
     if(o.minQty&&qty<o.minQty)return false;
     if(o.minOrderValue&&orderTotal<o.minOrderValue)return false;
     return true;
@@ -4603,7 +4643,9 @@ function renderOffersPage(){
       const daysLeft=Math.round((new Date(o.endDate+' 23:59:59')-new Date())/(1000*60*60*24));
       const daysLeftLabel=daysLeft<=0?'· Today':daysLeft===1?'· 1d left':'· '+daysLeft+'d left';
       const typeLabel={all:'All products',product:'Specific product',category:'Category'}[o.applyTo]||o.applyTo;
-      const customerLabel={all:'All customers',new:'New customers (≤30 days)'}[o.customerType]||'All';
+      const customerLabel=o.customerType==='specific'
+        ?((o.customerIds||[]).length+' specific customer'+((o.customerIds||[]).length!==1?'s':''))
+        :({all:'All customers',new:'New customers (≤30 days)'}[o.customerType]||'All');
       const discLabel=o.discountType==='percent'?o.discountValue+'% off':'SAR '+o.discountValue+' fixed price';
       const statusBadge=active
         ?('<span class="badge badge-green">Active'+daysLeftLabel+'</span>')
@@ -4653,6 +4695,7 @@ function deleteOffer(id){
 function openOfferModal(id){
   const o=id?db.offers.find(x=>x.id===id):null;
   const selectedIds=o?(o.productIds||(o.productId?[o.productId]:[])):[];
+  const selectedCustIds=o?(o.customerIds||[]):[];
 
   const existing=document.getElementById('offer-modal-overlay');
   if(existing)existing.remove();
@@ -4700,10 +4743,21 @@ function openOfferModal(id){
     +'</div>'
     +'<div style="margin-bottom:14px">'
     +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Who gets this offer</label>'
-    +'<select id="of-cust-type" style="width:100%;font-size:16px;padding:12px 14px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);-webkit-appearance:none">'
+    +'<select id="of-cust-type" onchange="offerCustTypeChange()" style="width:100%;font-size:16px;padding:12px 14px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);-webkit-appearance:none">'
     +'<option value="all"'+(o&&o.customerType==='all'?' selected':'')+'>All customers</option>'
     +'<option value="new"'+(o&&o.customerType==='new'?' selected':'')+'>New customers only (registered &le; 30 days)</option>'
+    +'<option value="specific"'+(o&&o.customerType==='specific'?' selected':'')+'>Specific customer(s)</option>'
     +'</select>'
+    +'</div>'
+    +'<div id="of-customer-section" style="margin-bottom:14px;'+(o&&o.customerType==='specific'?'':'display:none')+'">'
+    +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px">Search &amp; select customer(s) *</label>'
+    +'<div style="position:relative;margin-bottom:8px">'
+    +'<i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none"></i>'
+    +'<input id="of-cust-search" type="text" placeholder="Search customer name or code..." autocomplete="off" oninput="_ofCustSearch(this.value)" style="width:100%;font-size:16px;padding:12px 14px 12px 38px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);-webkit-appearance:none">'
+    +'</div>'
+    +'<div id="of-cust-pills" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;min-height:28px"></div>'
+    +'<div id="of-cust-list" style="border:1.5px solid var(--border2);border-radius:10px;max-height:'+(isMob?'220px':'180px')+';overflow-y:auto;background:var(--bg3);-webkit-overflow-scrolling:touch"></div>'
+    +'<div style="font-size:11px;color:var(--text3);margin-top:5px;text-align:center">Tap to select &middot; tap again to remove</div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'
     +'<div>'
@@ -4748,8 +4802,11 @@ function openOfferModal(id){
   document.body.style.overflow='hidden';
 
   window._ofSelectedIds=new Set(selectedIds);
+  window._ofSelectedCustIds=new Set(selectedCustIds);
   _ofRenderProdList('');
   _ofRenderPills();
+  _ofRenderCustList('');
+  _ofRenderCustPills();
 }
 
 function offerApplyToggle(val){
@@ -4831,11 +4888,80 @@ function _ofRenderPills(){
   }).join('');
 }
 
+function offerCustTypeChange(){
+  const v=document.getElementById('of-cust-type')?.value;
+  const sec=document.getElementById('of-customer-section');
+  if(sec)sec.style.display=v==='specific'?'':'none';
+  if(v==='specific'){
+    const si=document.getElementById('of-cust-search');
+    if(si)si.focus();
+  }
+}
+
+function _ofCustSearch(q){
+  _ofRenderCustList(q.toLowerCase().trim());
+}
+
+function _ofRenderCustList(q){
+  const list=document.getElementById('of-cust-list');
+  if(!list)return;
+  const custs=db.customers.filter(function(c){
+    if(!q)return true;
+    return c.name.toLowerCase().includes(q)||(c.customerCode&&c.customerCode.toLowerCase().includes(q))||(c.phone&&c.phone.includes(q));
+  });
+  if(!custs.length){
+    list.innerHTML='<div style="padding:20px;text-align:center;font-size:14px;color:var(--text3)">No customers found</div>';
+    return;
+  }
+  list.innerHTML=custs.map(function(c){
+    const sel=window._ofSelectedCustIds&&window._ofSelectedCustIds.has(c.id);
+    return '<div onclick="_ofToggleCust(\''+c.id+'\')" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(sel?'rgba(15,110,86,.09)':'transparent')+';-webkit-tap-highlight-color:transparent;min-height:56px">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+      +'<div style="width:24px;height:24px;border-radius:6px;border:2px solid '+(sel?'var(--green)':'var(--border2)')+';background:'+(sel?'var(--green)':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +(sel?'<i class="ti ti-check" style="font-size:13px;color:#fff"></i>':'')
+      +'</div>'
+      +'<div>'
+      +'<div style="font-size:14px;font-weight:600;color:var(--text)">'+c.name+'</div>'
+      +(c.customerCode?'<div style="font-size:11px;font-family:var(--mono);color:var(--teal);margin-top:1px">'+c.customerCode+'</div>':'')
+      +'</div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0;font-size:12px;color:var(--text3)">'+(c.phone||'')+(c.area?'<div>'+c.area+'</div>':'')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function _ofToggleCust(cid){
+  if(!window._ofSelectedCustIds)window._ofSelectedCustIds=new Set();
+  if(window._ofSelectedCustIds.has(cid))window._ofSelectedCustIds.delete(cid);
+  else window._ofSelectedCustIds.add(cid);
+  const searchVal=document.getElementById('of-cust-search')?.value.toLowerCase().trim()||'';
+  _ofRenderCustList(searchVal);
+  _ofRenderCustPills();
+}
+
+function _ofRenderCustPills(){
+  const pills=document.getElementById('of-cust-pills');
+  if(!pills)return;
+  if(!window._ofSelectedCustIds||window._ofSelectedCustIds.size===0){
+    pills.innerHTML='<span style="font-size:12px;color:var(--text3);padding:4px 0">No customers selected yet</span>';
+    return;
+  }
+  pills.innerHTML=Array.from(window._ofSelectedCustIds).map(function(cid){
+    const c=db.customers.find(function(x){return x.id===cid;});
+    if(!c)return'';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(15,110,86,.12);border:1px solid rgba(15,110,86,.3);color:var(--green);font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px">'
+      +c.name
+      +'<span onclick="_ofToggleCust(\''+cid+'\')" style="cursor:pointer;font-size:14px;opacity:.7;line-height:1">×</span>'
+      +'</span>';
+  }).join('');
+}
+
 function closeOfferModal(){
   const el=document.getElementById('offer-modal-overlay');
   if(el)el.remove();
   document.body.style.overflow='';
   window._ofSelectedIds=null;
+  window._ofSelectedCustIds=null;
 }
 
 function saveOffer(editId){
@@ -4848,6 +4974,9 @@ function saveOffer(editId){
   const applyTo=document.getElementById('of-apply')?.value||'all';
   const productIds=applyTo==='product'?Array.from(window._ofSelectedIds||[]):[];
   if(applyTo==='product'&&!productIds.length){showToast('Select at least one product','amber');return;}
+  const customerType=document.getElementById('of-cust-type')?.value||'all';
+  const customerIds=customerType==='specific'?Array.from(window._ofSelectedCustIds||[]):[];
+  if(customerType==='specific'&&!customerIds.length){showToast('Select at least one customer','amber');return;}
 
   const offer={
     id:editId||('off'+Date.now()),
@@ -4855,7 +4984,8 @@ function saveOffer(editId){
     slogan:document.getElementById('of-slogan')?.value.trim()||'',
     applyTo:applyTo,
     productIds:productIds,
-    customerType:document.getElementById('of-cust-type')?.value||'all',
+    customerType:customerType,
+    customerIds:customerIds,
     discountType:document.getElementById('of-dtype')?.value||'percent',
     discountValue:discVal,
     startDate:document.getElementById('of-start')?.value||today(),
@@ -4889,7 +5019,7 @@ function printOfferFlyer(){
 
   const offerItems=allActive.map(function(o){
     const discLabel=o.discountType==='percent'?o.discountValue+'% OFF':'SAR '+o.discountValue.toFixed(2)+' FIXED PRICE';
-    const custLabel=o.customerType==='new'?'New customers only':'All customers';
+    const custLabel=o.customerType==='new'?'New customers only':o.customerType==='specific'?'Selected customers only':'All customers';
     const ids=o.productIds||(o.productId?[o.productId]:[]);
     const applyLabel=o.applyTo==='product'?(ids.length+' product'+(ids.length!==1?'s':'')):'All products';
     const saving=o.discountType==='percent'?'Save '+o.discountValue+'% on every item':'Special fixed price deal';
@@ -4997,52 +5127,150 @@ function printOfferFlyer(){
 }
 // ── END OFFERS SYSTEM ────────────────────────────────────────────────────────
 
+function renderStatusSelector(pid,currentStatus,updatedBy,updatedOn){
+  const d=STOCK_STATUS_DEFS[currentStatus];
+  const opts=Object.keys(STOCK_STATUS_DEFS).map(function(k){
+    return '<option value="'+k+'"'+(k===currentStatus?' selected':'')+'>'+STOCK_STATUS_DEFS[k].label+'</option>';
+  }).join('');
+  const sub=updatedBy?'<div style="font-size:9px;color:var(--text3);margin-top:3px">by '+updatedBy+(updatedOn?' · '+updatedOn:'')+'</div>':'';
+  return '<div><select onchange="setProductStockStatus(\''+pid+'\',this.value)" style="font-size:11px;font-weight:700;padding:5px 8px;border-radius:20px;border:1.5px solid '+d.color+';background:'+d.bg+';color:'+d.color+';cursor:pointer;-webkit-appearance:none;text-align:center;min-width:130px">'
+    +opts+'</select>'+sub+'</div>';
+}
 function renderPriceListPage(){
   const root=document.getElementById('pl-page-root');if(!root)return;
   const prods=db.products.filter(p=>p.price>0).sort((a,b)=>a.name.localeCompare(b.name));
   const vatPct=Math.round(getVatRate()*100);
-  root.innerHTML=
+  const isMobile=window.innerWidth<700;
+  const canEditStatus=isAdmin()||(_currentUser&&_currentUser.role==='van_sales');
+  const q=(document.getElementById('pl-search')?.value||'').toLowerCase().trim();
+  const filtered=q?prods.filter(p=>p.name.toLowerCase().includes(q)||(p.itemCode&&p.itemCode.toLowerCase().includes(q))):prods;
+
+  let html=
     // Summary bar
     '<div class="kpi-grid" style="margin-bottom:18px">'
     +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-package" style="margin-right:5px"></i>Total Products</div><div class="kpi-value" style="color:var(--teal)">'+prods.length+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-coin" style="margin-right:5px"></i>Average Price</div><div class="kpi-value" style="color:var(--green)">SAR '+(prods.length?( prods.reduce((s,p)=>s+p.price,0)/prods.length).toFixed(2):'0.00')+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-percentage" style="margin-right:5px"></i>VAT Rate</div><div class="kpi-value" style="color:var(--amber)">'+vatPct+'%</div></div>'
-    +'</div>'
-    // Product table preview
-    +'<div class="card">'
-    +'<div class="card-hdr"><span class="card-title"><i class="ti ti-list-details" style="margin-right:6px;color:var(--teal)"></i>Current Price List</span>'
-    +'<div style="display:flex;gap:8px">'
-    +'<div class="sbox"><i class="ti ti-search"></i><input type="text" id="pl-search" placeholder="Search product..." oninput="renderPriceListPage()"></div>'
-    +'</div></div>'
-    +'<div class="tbl-wrap"><table><thead><tr>'
-    +'<th style="width:36px">#</th>'
-    +'<th style="width:80px">Code</th>'
-    +'<th>Product Name</th>'
-    +'<th style="width:60px;text-align:center">Unit</th>'
-    +'<th style="width:120px;text-align:right">Price (SAR)</th>'
-    +'</tr></thead><tbody>'
-    +(()=>{
-      const q=(document.getElementById('pl-search')?.value||'').toLowerCase().trim();
-      const filtered=q?prods.filter(p=>p.name.toLowerCase().includes(q)||(p.itemCode&&p.itemCode.toLowerCase().includes(q))):prods;
-      if(!filtered.length)return '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
-      return filtered.map((p,i)=>{
+    +'<div class="kpi-card"><div class="kpi-label"><i class="ti ti-circle-x" style="margin-right:5px"></i>Out of Stock</div><div class="kpi-value" style="color:var(--red)">'+prods.filter(p=>getStockStatus(p)==='out_of_stock').length+'</div></div>'
+    +'</div>';
+
+  if(isMobile){
+    // ── Mobile: card layout with large tap-friendly status buttons ──
+    html+='<div class="card" style="padding:14px">'
+      +'<div class="sbox" style="margin-bottom:14px;width:100%"><i class="ti ti-search"></i><input type="text" id="pl-search" placeholder="Search product..." oninput="renderPriceListPage()" style="width:100%"></div>'
+      +'</div>';
+
+    if(!filtered.length){
+      html+='<div class="card" style="padding:32px;text-align:center;color:var(--text3)">No products found</div>';
+    } else {
+      html+='<div style="display:flex;flex-direction:column;gap:10px">';
+      filtered.forEach(function(p,i){
         const excl=(db.settings?.vatMode==='inclusive'?p.price/(1+getVatRate()):p.price).toFixed(2);
-        const incl=(db.settings?.vatMode==='inclusive'?p.price:p.price*(1+getVatRate())).toFixed(2);
+        const stKey=getStockStatus(p);
+        const d=STOCK_STATUS_DEFS[stKey];
+        html+='<div class="card" style="padding:14px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+p.name+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(p.itemCode||'—')+' &middot; '+p.unit+'</div>'
+          +'</div>'
+          +'<div style="text-align:right;flex-shrink:0;margin-left:10px">'
+          +'<div style="font-size:16px;font-weight:800;color:var(--green);font-family:var(--mono)">SAR '+excl+'</div>'
+          +'</div>'
+          +'</div>'
+          +(canEditStatus
+            ?('<button onclick="openStatusPicker(\''+p.id+'\')" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:10px;border:1.5px solid '+d.color+';background:'+d.bg+';color:'+d.color+';font-size:13px;font-weight:700;-webkit-tap-highlight-color:transparent"><i class="ti ti-'+d.icon+'" style="font-size:16px"></i>'+d.label+'<i class="ti ti-chevron-down" style="font-size:14px;margin-left:auto;opacity:.6"></i></button>'
+              +(p.stockStatusUpdatedBy?'<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:5px">Updated by '+p.stockStatusUpdatedBy+(p.stockStatusUpdatedOn?' &middot; '+p.stockStatusUpdatedOn:'')+'</div>':''))
+            :('<div style="text-align:center">'+stockStatusBadge(p)+'</div>'))
+          +'</div>';
+      });
+      html+='</div>';
+    }
+  } else {
+    // ── Desktop: table layout ──
+    html+='<div class="card">'
+      +'<div class="card-hdr"><span class="card-title"><i class="ti ti-list-details" style="margin-right:6px;color:var(--teal)"></i>Current Price List</span>'
+      +'<div style="display:flex;gap:8px">'
+      +'<div class="sbox"><i class="ti ti-search"></i><input type="text" id="pl-search" placeholder="Search product..." oninput="renderPriceListPage()"></div>'
+      +'</div></div>'
+      +'<div class="tbl-wrap"><table><thead><tr>'
+      +'<th style="width:36px">#</th>'
+      +'<th style="width:80px">Code</th>'
+      +'<th>Product Name</th>'
+      +'<th style="width:60px;text-align:center">Unit</th>'
+      +'<th style="width:120px;text-align:right">Price (SAR)</th>'
+      +'<th style="width:170px;text-align:center">Status</th>'
+      +'</tr></thead><tbody>';
+
+    if(!filtered.length){
+      html+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
+    } else {
+      html+=filtered.map(function(p,i){
+        const excl=(db.settings?.vatMode==='inclusive'?p.price/(1+getVatRate()):p.price).toFixed(2);
+        const statusCell=canEditStatus
+          ?renderStatusSelector(p.id,getStockStatus(p),p.stockStatusUpdatedBy,p.stockStatusUpdatedOn)
+          :stockStatusBadge(p);
         return '<tr>'
           +'<td style="text-align:center;color:var(--text3);font-size:12px">'+(i+1)+'</td>'
           +'<td style="font-family:var(--mono);font-size:11px;color:var(--text2)">'+(p.itemCode||'—')+'</td>'
           +'<td style="font-weight:500">'+p.name+'</td>'
           +'<td style="text-align:center;font-size:12px;color:var(--text2)">'+p.unit+'</td>'
           +'<td style="text-align:right;font-family:var(--mono);color:var(--green);font-weight:700">'+excl+'</td>'
+          +'<td style="text-align:center">'+statusCell+'</td>'
           +'</tr>';
       }).join('');
-    })()
-    +'</tbody></table></div>'
-    +'<div style="padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;justify-content:space-between">'
-    +'<span>'+prods.length+' products · Prices in SAR</span>'
-    +'<span>Click <strong>Print / Save PDF</strong> to generate the official price list</span>'
+    }
+
+    html+='</tbody></table></div>'
+      +'<div style="padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:12px;color:var(--text3);display:flex;justify-content:space-between">'
+      +'<span>'+prods.length+' products · Prices in SAR</span>'
+      +'<span>Click <strong>Print / Save PDF</strong> to generate the official price list</span>'
+      +'</div>'
+      +'</div>';
+  }
+
+  root.innerHTML=html;
+}
+
+function openStatusPicker(pid){
+  const p=db.products.find(x=>x.id===pid);if(!p)return;
+  const current=getStockStatus(p);
+
+  const existing=document.getElementById('status-picker-overlay');
+  if(existing)existing.remove();
+
+  const overlay=document.createElement('div');
+  overlay.id='status-picker-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center';
+
+  const options=Object.keys(STOCK_STATUS_DEFS).map(function(key){
+    const d=STOCK_STATUS_DEFS[key];
+    const isCurrent=key===current;
+    return '<button onclick="setProductStockStatus(\''+pid+'\',\''+key+'\');closeStatusPicker()" style="width:100%;display:flex;align-items:center;gap:12px;padding:16px;border:none;border-radius:12px;background:'+(isCurrent?d.bg:'var(--bg3)')+';color:'+d.color+';font-size:15px;font-weight:700;margin-bottom:8px;-webkit-tap-highlight-color:transparent;text-align:left">'
+      +'<i class="ti ti-'+d.icon+'" style="font-size:20px;flex-shrink:0"></i>'
+      +'<span style="flex:1">'+d.label+'</span>'
+      +(isCurrent?'<i class="ti ti-check" style="font-size:18px"></i>':'')
+      +'</button>';
+  }).join('');
+
+  overlay.innerHTML='<div style="background:var(--card);border-radius:20px 20px 0 0;width:100%;max-width:480px;padding:8px 16px calc(20px + env(safe-area-inset-bottom));max-height:80vh;overflow-y:auto">'
+    +'<div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 16px;opacity:.6"></div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
+    +'<div><div style="font-size:16px;font-weight:700">'+p.name+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Set stock availability</div></div>'
+    +'<button onclick="closeStatusPicker()" style="background:var(--bg3);border:none;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer;color:var(--text2)">×</button>'
     +'</div>'
+    +options
     +'</div>';
+
+  document.body.appendChild(overlay);
+  document.body.style.overflow='hidden';
+  overlay.addEventListener('click',function(e){if(e.target===overlay)closeStatusPicker();});
+}
+
+function closeStatusPicker(){
+  const el=document.getElementById('status-picker-overlay');
+  if(el)el.remove();
+  document.body.style.overflow='';
 }
 function printPriceList(){
   const s=db.settings||{};
@@ -5056,12 +5284,16 @@ function printPriceList(){
     const excl=s.vatMode==='inclusive'?(p.price/(1+getVatRate())):p.price;
     const incl=s.vatMode==='inclusive'?p.price:(p.price*(1+getVatRate()));
     const bg=i%2===0?'#ffffff':'#f0faf6';
+    const stKey=getStockStatus(p);
+    const stDef=STOCK_STATUS_DEFS[stKey];
+    const statusPill='<span style="display:inline-block;font-size:8.5pt;font-weight:700;padding:3px 9px;border-radius:20px;background:'+stDef.bg+';color:'+stDef.color+'">'+stDef.label+'</span>';
     return '<tr style="background:'+bg+'">'
       +'<td style="padding:7px 10px;text-align:center;color:#64748b;font-size:10pt;border-bottom:1px solid #d1fae5">'+(i+1)+'</td>'
       +'<td style="padding:7px 10px;font-family:Courier New,monospace;font-size:9.5pt;color:#475569;border-bottom:1px solid #d1fae5">'+(p.itemCode||'—')+'</td>'
       +'<td style="padding:7px 10px;font-size:10.5pt;font-weight:500;color:#0f172a;border-bottom:1px solid #d1fae5">'+p.name+'</td>'
       +'<td style="padding:7px 10px;text-align:center;font-size:10pt;color:#64748b;border-bottom:1px solid #d1fae5">'+p.unit+'</td>'
       +'<td style="padding:7px 10px;text-align:right;font-family:Courier New,monospace;font-size:10.5pt;font-weight:700;color:#0f6e56;border-bottom:1px solid #d1fae5">'+excl.toFixed(2)+'</td>'
+      +'<td style="padding:7px 10px;text-align:center;border-bottom:1px solid #d1fae5">'+statusPill+'</td>'
       +'</tr>';
   }).join('');
 
@@ -5149,11 +5381,12 @@ function printPriceList(){
     +'<th>Product Name</th>'
     +'<th class="c" style="width:48px">Unit</th>'
     +'<th class="r" style="width:130px">Price (SAR)</th>'
+    +'<th class="c" style="width:110px">Status</th>'
     +'</tr></thead>'
     +'<tbody>'+rows+'</tbody>'
     +'<tfoot>'
     +'<tr>'
-    +'<td colspan="5" style="padding:12px 10px">'
+    +'<td colspan="6" style="padding:12px 10px">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
     +'<div style="font-size:10pt;color:#0f6e56;font-weight:700">🌿 Thank you for choosing AgroFresh</div>'
     +'<div style="font-size:9pt;color:#065f46;font-weight:600">Fresh Produce &bull; Fair Prices &bull; Trusted Service</div>'
