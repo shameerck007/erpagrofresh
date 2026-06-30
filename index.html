@@ -38,7 +38,8 @@
   --shb:0 4px 12px rgba(0,0,0,.09),0 2px 4px rgba(0,0,0,.04);
 }
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow-x:hidden}
+html{overflow-x:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;display:flex}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 @keyframes pulseRing{0%{box-shadow:0 0 0 0 rgba(93,202,165,.5)}70%{box-shadow:0 0 0 10px rgba(93,202,165,0)}100%{box-shadow:0 0 0 0 rgba(93,202,165,0)}}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -196,7 +197,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .access-denied h2{font-size:18px;font-weight:600;color:var(--text);margin-bottom:8px}
 .access-denied p{font-size:13px;color:var(--text2)}
 /* ── MOBILE HEADER (hidden on desktop) ── */
-#mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:calc(56px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);background:var(--bg2);align-items:center;justify-content:space-between;padding-left:12px;padding-right:12px;z-index:150;box-shadow:0 2px 10px rgba(0,0,0,.12)}
+#mobile-header{display:none;position:fixed;top:0;left:0;right:0;height:calc(56px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);background:var(--bg2);align-items:center;justify-content:space-between;padding-left:12px;padding-right:12px;z-index:150;box-shadow:0 2px 10px rgba(0,0,0,.12);-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform}
 #mobile-menu-btn{background:rgba(255,255,255,.08);border:none;width:38px;height:38px;border-radius:10px;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 #mobile-header-title{color:#fff;font-size:15px;font-weight:700;letter-spacing:-.3px;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 8px}
 #mobile-header-avatar{width:34px;height:34px;border-radius:9px;background:rgba(93,202,165,.25);color:#5dcaa5;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;overflow:hidden}
@@ -619,7 +620,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="nsec" id="nsec-overview">
     <div class="nsec-hdr" onclick="toggleNavSection('overview')"><span class="nsec-ico"><i class="ti ti-layout-dashboard"></i></span><span class="nsec-name">Overview</span><span class="nsec-chev"><i class="ti ti-chevron-right"></i></span></div>
     <div class="nsec-body">
-    <div class="ni" data-access="owner-dashboard" onclick="navigate('owner-dashboard')" style="background:linear-gradient(90deg,rgba(93,202,165,.12),transparent);border-left:3px solid #5dcaa5"><i class="ti ti-star" style="color:#5dcaa5"></i>Owner Dashboard</div>
+    <div class="ni" data-access="owner-dashboard" onclick="navigate('owner-dashboard')" style="background:linear-gradient(90deg,rgba(93,202,165,.12),transparent);border-left:3px solid #5dcaa5"><i class="ti ti-star" style="color:#5dcaa5"></i>Dashboard</div>
     <div class="ni active" onclick="navigate('dashboard')"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
     <div class="ni" onclick="navigate('daily')"><i class="ti ti-calendar-event"></i>Daily Operations</div>
     </div>
@@ -697,7 +698,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <main id="main">
 <!-- MOBILE BOTTOM TAB BAR -->
 <nav id="mobile-tabbar">
-  <button class="mtab active" data-page="owner-dashboard" onclick="navigate('owner-dashboard')" id="mtab-owner" style="display:none"><i class="ti ti-star"></i><span>Overview</span></button>
+  <button class="mtab active" data-page="owner-dashboard" onclick="navigate('owner-dashboard')" id="mtab-owner" style="display:none"><i class="ti ti-star"></i><span>Dashboard</span></button>
   <button class="mtab active" data-page="dashboard" onclick="navigate('dashboard')" id="mtab-dash"><i class="ti ti-layout-dashboard"></i><span>Home</span></button>
   <button class="mtab" data-page="sales-goal" onclick="navigate('sales-goal')" id="mtab-goal" style="display:none"><i class="ti ti-target"></i><span>My Goal</span></button>
   <button class="mtab" data-page="daily" onclick="navigate('daily')" id="mtab-daily"><i class="ti ti-calendar-event"></i><span>Daily</span></button>
@@ -2200,7 +2201,7 @@ const ROLE_PERMISSIONS_DEFAULTS=JSON.parse(JSON.stringify(ROLE_PERMISSIONS));
 const ROLE_LABELS={admin:'Administrator',owner:'Business Owner',warehouse:'Warehouse Manager',van_sales:'Van Sales Crew',accountant:'Accountant'};
 const ROLE_COLORS={admin:{bg:'rgba(24,95,165,.15)',color:'var(--green)'},owner:{bg:'rgba(93,202,165,.15)',color:'var(--teal)'},warehouse:{bg:'rgba(14,154,138,.15)',color:'var(--teal)'},van_sales:{bg:'rgba(46,125,209,.15)',color:'var(--blue)'},accountant:{bg:'rgba(232,144,10,.15)',color:'var(--amber)'}};
 const ROLE_ICONS={admin:'ti-crown',owner:'ti-star',warehouse:'ti-building-warehouse',van_sales:'ti-truck',accountant:'ti-calculator'};
-const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Owner Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock','price-list':'Price List','sales-goal':'My Sales Goal',offers:'Offers',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
+const PERM_LABELS={dashboard:'Dashboard','owner-dashboard':'Dashboard',daily:'Daily Operations',stock:'Products & Prices',warehouses:'Inventory & Stock','price-list':'Price List','sales-goal':'My Sales Goal',offers:'Offers',damages:'Damage Log',po:'Purchase Orders','purchase-returns':'Purchase Returns',suppliers:'Suppliers','supplier-payments':'Supplier Payments','supplier-statement':'Supplier Statement',expenses:'Expenses',sales:'Sales & Invoices','sales-returns':'Sales Returns','sales-report':'Sales Report',quotations:'Quotations','delivery-notes':'Delivery Notes',customers:'Customers','customer-statement':'Customer Statement',fleet:'Fleet & Reps',assets:'Asset Management',reports:'Reports',pl:'P&L Report',vat:'VAT Report','cash-book':'Cash Book',partners:'Partners Capital',settings:'Admin Settings'};
 let _currentUser=null;
 
 function doLogin(){
@@ -2371,6 +2372,12 @@ function doLogout(){
   document.getElementById('login-pass').value='';
   const e=document.getElementById('login-error');if(e)e.style.display='none';
   document.getElementById('login-screen').style.display='flex';
+  // Reset scroll position — on iOS Safari, a fixed-position header can render
+  // incorrectly (briefly appearing mid-page instead of pinned to the viewport
+  // top) if the next page loads while the document is still scrolled down from
+  // the previous session.
+  window.scrollTo(0,0);
+  const mainEl=document.getElementById('main');if(mainEl)mainEl.scrollTop=0;
 }
 // ── PERSISTENCE ──────────────────────────────────────────────────────────────
 // ── FIREBASE CONFIGURATION ───────────────────────────────────────────────────
@@ -11512,6 +11519,25 @@ function clearSavedData(){
 }
 // ── ANDROID NATIVE BLUETOOTH PRINT BRIDGE ────────────────────────────────────
 function isNativeAndroidApp(){return typeof AndroidBT!=='undefined'&&AndroidBT.isNativeApp();}
+
+// ── Send data to the RawBT print app on Android ──────────────────────────────
+// IMPORTANT: modern Chrome for Android silently ignores bare custom-scheme
+// navigation via window.location.href='rawbt:...' for security reasons — no
+// error, no prompt, nothing happens. RawBT's own documentation (rawbt.ru) gives
+// the *intent:* wrapper as the reliable method, since intent:// URLs are an
+// Android/Chrome-sanctioned mechanism for launching another app from a web page.
+// uri should be the part after "rawbt:", e.g. "data:image/png;base64,AAAA..."
+function _sendToRawBT(uri){
+  var intentUrl='intent:'+uri+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+  try{
+    window.location.href=intentUrl;
+  }catch(e){
+    // Extremely old WebView fallback — bare scheme, last resort
+    try{window.location.href='rawbt:'+uri;}catch(e2){
+      showToast('Could not open RawBT — is it installed?','red');
+    }
+  }
+}
 function _buildPlainReceipt(inv){
   const s=db.settings||{}, c=getCustomer(inv.customer);
   const bal=inv.total-inv.paid, isPaid=bal<=0, isEst=inv.isEstimate===true;
@@ -12455,7 +12481,7 @@ function printThermalInvoice(inv){
         var b64=dataUrl.split(',')[1];
         var ua=navigator.userAgent.toLowerCase();
         if(ua.indexOf('android')>-1){
-          window.location.href='rawbt:data:image/png;base64,'+b64;
+          _sendToRawBT('data:image/png;base64,'+b64);
           showToast('Sending to printer...','amber');
         } else {
           _printThermalImageDesktop(dataUrl,inv.id);
