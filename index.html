@@ -1700,6 +1700,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         <button class="btn btn-sm btn-outline" onclick="toggleUserForm()"><i class="ti ti-x"></i></button>
       </div>
       <input type="hidden" id="uf-id">
+      <input type="hidden" id="uf-photo">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div id="uf-photo-preview-box" style="width:72px;height:72px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+          <img id="uf-photo-preview-img" src="" style="width:100%;height:100%;object-fit:cover;display:none">
+          <i class="ti ti-user" id="uf-photo-preview-placeholder" style="font-size:28px;color:var(--text3)"></i>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">Profile Picture</div>
+          <input type="file" id="uf-photo-input" accept="image/*" onchange="onUserPhotoSelected(event)" style="display:none">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('uf-photo-input').click()"><i class="ti ti-upload"></i> Upload Photo</button>
+            <button type="button" class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="removeUserPhoto()"><i class="ti ti-trash"></i> Remove</button>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:5px">Shown in sidebar, user list and Sales Goal page. Square photo works best.</div>
+        </div>
+      </div>
       <div class="fgrid">
         <div class="fg"><label>Full Name *</label><input type="text" id="uf-name" placeholder="e.g. Ahmed Al-Rashid"></div>
         <div class="fg"><label>Username *</label><input type="text" id="uf-username" placeholder="e.g. ahmed.rashid"></div>
@@ -1863,9 +1879,25 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- NEW SALE MODAL -->
 <div class="modal-overlay" id="modal-new-sale">
   <div class="modal" style="width:min(680px,96vw)">
-    <div class="modal-title"><div>New Invoice <span id="ns-inv-number" style="font-size:13px;font-family:var(--mono);color:var(--green);background:rgba(24,95,165,.1);padding:3px 10px;border-radius:6px;margin-left:6px"></span></div><button class="btn btn-sm btn-outline" onclick="closeModal('modal-new-sale')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-title"><div>New Invoice <span id="ns-inv-number" style="font-size:13px;font-family:var(--mono);color:var(--green);background:rgba(24,95,165,.1);padding:3px 10px;border-radius:6px;margin-left:6px"></span></div><button class="btn btn-sm btn-outline" onclick="closeNewInvoiceModal()"><i class="ti ti-x"></i></button></div>
 
     <div class="fgrid" style="margin-bottom:14px"><div class="fg"><label>Date</label><input type="date" id="ns-date"></div><div class="fg"><label>Due Date</label><input type="date" id="ns-due"></div><div class="fg" style="position:relative"><label>Customer</label><input type="text" id="ns-customer-search" placeholder="Search by name or code..." autocomplete="off" style="width:100%;font-size:16px;padding:10px 12px;border:2px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);outline:none" oninput="_nsSearchCustomer(this)" onfocus="_nsSearchCustomer(this)" onblur="_nsHideCustomerDrop(200)"><input type="hidden" id="ns-customer"><div id="ns-customer-dropdown" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 2px);z-index:9999;background:var(--card);border:2px solid var(--border2);border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.18);max-height:240px;overflow-y:auto"></div></div><div class="fg" id="ns-van-row"><label>Van (for delivery tracking)</label><select id="ns-van"></select></div></div>
+    <div style="margin-bottom:14px">
+      <div id="ns-coupon-toggle-row" style="display:flex;justify-content:flex-end">
+        <button type="button" onclick="nsToggleCouponField()" id="ns-coupon-toggle-btn" style="display:inline-flex;align-items:center;gap:5px;background:none;border:none;color:var(--green);font-size:12px;font-weight:600;cursor:pointer;padding:4px 2px;-webkit-tap-highlight-color:transparent">
+          <i class="ti ti-ticket" style="font-size:14px"></i> Have a coupon code?
+        </button>
+      </div>
+      <div id="ns-coupon-field-wrap" style="display:none;margin-top:6px">
+        <div id="ns-coupon-hint" style="display:none;font-size:11px;color:var(--green);background:rgba(15,110,86,.08);border:1px solid rgba(15,110,86,.25);border-radius:7px;padding:6px 10px;margin-bottom:6px"></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="text" id="ns-coupon-code" placeholder="Enter code" autocomplete="off" maxlength="20" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'');document.getElementById('ns-coupon-status').innerHTML=''" style="flex:1;font-size:14px;font-weight:700;letter-spacing:.8px;padding:8px 10px;border:2px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--green);text-transform:uppercase;font-family:var(--mono)">
+          <button type="button" class="btn btn-outline btn-sm" onclick="nsApplyCoupon()" style="white-space:nowrap;flex-shrink:0"><i class="ti ti-check"></i> Apply</button>
+          <button type="button" onclick="nsClearOrCollapseCoupon()" title="Clear coupon" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;flex-shrink:0;padding:0 4px;-webkit-tap-highlight-color:transparent">×</button>
+        </div>
+        <div id="ns-coupon-status" style="margin-top:5px;font-size:11px"></div>
+      </div>
+    </div>
     <div style="background:rgba(24,95,165,.06);border:1px solid rgba(24,95,165,.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap"><i class="ti ti-building-warehouse" style="font-size:20px;color:var(--green);flex-shrink:0"></i><div style="flex:1;min-width:160px"><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--green);margin-bottom:4px">Deduct Stock From *</div><select id="ns-location" onchange="nsOnLocationChange()" style="font-size:13px;padding:7px 10px;border:1px solid rgba(24,95,165,.3);border-radius:8px;background:#fff;color:var(--text);font-family:var(--font);width:100%"><option value="">— Select location —</option></select></div><div id="ns-loc-summary" style="font-size:12px;color:var(--text2);font-style:italic">Select a location to see available stock</div><div id="ns-tax-mode-badge" style="font-size:11px;margin-top:4px"></div></div>
     <div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span style="font-size:13px;font-weight:600">Invoice Items</span><div style="display:flex;gap:8px"><button class="btn btn-sm btn-outline" onclick="openBarcodeScanner('__invoice_item__')" style="color:var(--blue);border-color:var(--blue)"><i class="ti ti-scan"></i> Scan Product</button><button class="btn btn-sm btn-outline" onclick="addInvoiceItem()" style="color:var(--green);border-color:var(--green)"><i class="ti ti-plus"></i> Add Item</button></div></div><div id="invoice-items-list"></div></div>
     <div id="ns-stock-errors" style="display:none;background:rgba(220,53,69,.07);border:1px solid rgba(220,53,69,.3);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)"></div>
@@ -1883,7 +1915,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
       </label>
       <span id="ns-tax-badge" style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:6px;background:#d1fae5;color:#065f46;flex-shrink:0">TAX INVOICE</span>
     </div>
-    <div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-new-sale')">Cancel</button><button class="btn btn-primary" onclick="saveInvoice()" id="ns-save-btn"><i class="ti ti-receipt"></i> Create Invoice</button></div>
+    <div class="factions"><button class="btn btn-outline" onclick="closeNewInvoiceModal()">Cancel</button><button class="btn btn-primary" onclick="saveInvoice()" id="ns-save-btn"><i class="ti ti-receipt"></i> Create Invoice</button></div>
   </div>
 </div>
 <!-- RECORD PAYMENT -->
@@ -2292,15 +2324,27 @@ function getUserLocationOpts(placeholder){
 function updateSidebarUser(){
   if(!_currentUser)return;
   const initials=_currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  const av=document.getElementById('sidebar-avatar');if(av)av.textContent=initials;
+  const av=document.getElementById('sidebar-avatar');
+  if(av){
+    if(_currentUser.photo){av.innerHTML='';av.style.background='transparent';av.style.padding='0';av.style.overflow='hidden';av.innerHTML='<img src="'+_currentUser.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:8px">';}
+    else{av.style.background='rgba(24,95,165,.3)';av.style.padding='';av.style.overflow='';av.textContent=initials;}
+  }
   const un=document.getElementById('sidebar-uname');if(un)un.textContent=_currentUser.name;
   const ur=document.getElementById('sidebar-urole');if(ur)ur.textContent=ROLE_LABELS[_currentUser.role]||_currentUser.role;
-  const mav=document.getElementById('mobile-header-avatar');if(mav)mav.textContent=initials;
+  const mav=document.getElementById('mobile-header-avatar');
+  if(mav){
+    if(_currentUser.photo){mav.innerHTML='<img src="'+_currentUser.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';}
+    else{mav.textContent=initials;}
+  }
 }
 function showUserMenu(){
   if(!_currentUser)return;
   const initials=_currentUser.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-  const av=document.getElementById('um-avatar');if(av)av.textContent=initials;
+  const av=document.getElementById('um-avatar');
+  if(av){
+    if(_currentUser.photo){av.style.background='transparent';av.style.padding='0';av.style.overflow='hidden';av.innerHTML='<img src="'+_currentUser.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:14px">';}
+    else{av.style.background='rgba(24,95,165,.15)';av.style.padding='';av.style.overflow='';av.textContent=initials;}
+  }
   const nm=document.getElementById('um-name');if(nm)nm.textContent=_currentUser.name;
   const rb=document.getElementById('um-role-badge');
   if(rb){const rc=ROLE_COLORS[_currentUser.role]||{bg:'#e8edf2',color:'var(--text2)'};rb.innerHTML=`<span style="background:${rc.bg};color:${rc.color};font-size:11px;padding:3px 10px;border-radius:6px;font-family:var(--mono)">${ROLE_LABELS[_currentUser.role]||_currentUser.role}</span>`;}
@@ -2332,7 +2376,7 @@ function renderUsersTable(){
     const isMe=_currentUser&&u.id===_currentUser.id;
     const locs=u.assignedLocations&&u.assignedLocations.length?u.assignedLocations:null;
     const locBadges=locs?locs.map(l=>{const isVan=db.vans.some(v=>v.name===l);return'<span style="font-size:10px;background:'+(isVan?'rgba(46,125,209,.1)':'rgba(14,154,138,.1)')+';color:'+(isVan?'var(--blue)':'var(--teal)')+';padding:2px 8px;border-radius:4px;font-family:var(--mono);display:inline-flex;align-items:center;gap:4px;margin:1px"><i class="ti '+(isVan?'ti-truck':'ti-building-warehouse')+'" style="font-size:11px"></i>'+l+'</span>';}).join(' '):'<span style="font-size:11px;color:var(--text3)">'+(u.role==='admin'?'All locations':'—')+'</span>';
-    return`<tr><td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:${rc.bg};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${rc.color}">${initials}</div><div><div style="font-weight:500;font-size:13px">${u.name}${isMe?'<span style="font-size:10px;background:#d4f5e3;color:#156b3a;padding:1px 6px;border-radius:4px;margin-left:6px;font-family:var(--mono)">you</span>':''}</div><div style="font-size:11px;color:var(--text3)">${u.notes||'—'}</div></div></div></td><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${u.username}</td><td><span style="background:${rc.bg};color:${rc.color};font-size:11px;padding:3px 9px;border-radius:5px;font-family:var(--mono)">${ROLE_LABELS[u.role]||u.role}</span></td><td style="font-size:12px">${locBadges}</td><td><span class="badge ${u.status==='active'?'badge-green':'badge-gray'}">${u.status}</span></td><td style="font-size:11px;color:var(--text3)">${u.lastLogin||'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editUser('${u.id}')"><i class="ti ti-edit"></i></button>${!isMe?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
+    return`<tr><td><div style="display:flex;align-items:center;gap:10px">${userAvatarHTML(u,32,12)}<div><div style="font-weight:500;font-size:13px">${u.name}${isMe?'<span style="font-size:10px;background:#d4f5e3;color:#156b3a;padding:1px 6px;border-radius:4px;margin-left:6px;font-family:var(--mono)">you</span>':''}</div><div style="font-size:11px;color:var(--text3)">${u.notes||'—'}</div></div></div></td><td style="font-family:var(--mono);font-size:12px;color:var(--text2)">${u.username}</td><td><span style="background:${rc.bg};color:${rc.color};font-size:11px;padding:3px 9px;border-radius:5px;font-family:var(--mono)">${ROLE_LABELS[u.role]||u.role}</span></td><td style="font-size:12px">${locBadges}</td><td><span class="badge ${u.status==='active'?'badge-green':'badge-gray'}">${u.status}</span></td><td style="font-size:11px;color:var(--text3)">${u.lastLogin||'Never'}</td><td style="display:flex;gap:5px"><button class="btn btn-sm btn-outline" onclick="editUser('${u.id}')"><i class="ti ti-edit"></i></button>${!isMe?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}</td></tr>`;
   }).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:24px">No users</td></tr>';
 }
 function renderRolePermsGrid(){
@@ -2419,6 +2463,9 @@ function toggleUserForm(){
   document.getElementById('uf-role').value='warehouse';
   document.getElementById('uf-status').value='active';
   document.getElementById('uf-notes').value='';
+  document.getElementById('uf-photo').value='';
+  document.getElementById('uf-photo-input').value='';
+  _updateUserPhotoPreview('');
   document.getElementById('user-form-title').textContent='New User';
   p.style.display='';
   ufRoleChange();
@@ -2526,6 +2573,56 @@ function _getSelectedLocs(){
   });
   return selected;
 }
+// ── USER PROFILE PHOTO ────────────────────────────────────────────────────────
+function onUserPhotoSelected(e){
+  const file=e.target.files&&e.target.files[0];
+  if(!file)return;
+  if(!file.type.startsWith('image/')){showToast('Please select an image file','red');return;}
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    const img=new Image();
+    img.onload=function(){
+      // Resize to max 200x200 (cropped to square) so many user photos don't bloat Firebase
+      const SIZE=200;
+      const canvas=document.createElement('canvas');
+      canvas.width=SIZE;canvas.height=SIZE;
+      const ctx=canvas.getContext('2d');
+      const minSide=Math.min(img.naturalWidth,img.naturalHeight);
+      const sx=(img.naturalWidth-minSide)/2;
+      const sy=(img.naturalHeight-minSide)/2;
+      ctx.drawImage(img,sx,sy,minSide,minSide,0,0,SIZE,SIZE);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+      document.getElementById('uf-photo').value=dataUrl;
+      _updateUserPhotoPreview(dataUrl);
+      showToast('Photo ready — click Save User to apply','green');
+    };
+    img.onerror=function(){showToast('Could not read that image','red');};
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeUserPhoto(){
+  document.getElementById('uf-photo').value='';
+  _updateUserPhotoPreview('');
+  const fi=document.getElementById('uf-photo-input');if(fi)fi.value='';
+}
+function _updateUserPhotoPreview(dataUrl){
+  const img=document.getElementById('uf-photo-preview-img');
+  const ph=document.getElementById('uf-photo-preview-placeholder');
+  if(!img||!ph)return;
+  if(dataUrl){img.src=dataUrl;img.style.display='';ph.style.display='none';}
+  else{img.src='';img.style.display='none';ph.style.display='';}
+}
+// Returns the avatar HTML — photo if the user has one, otherwise colored initials circle (unchanged fallback)
+function userAvatarHTML(u,sizePx,fontPx){
+  sizePx=sizePx||32;fontPx=fontPx||12;
+  const rc=ROLE_COLORS[u.role]||{bg:'#e8edf2',color:'var(--text2)'};
+  const initials=u.name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  if(u.photo){
+    return '<img src="'+u.photo+'" style="width:'+sizePx+'px;height:'+sizePx+'px;border-radius:50%;object-fit:cover;flex-shrink:0;display:block">';
+  }
+  return '<div style="width:'+sizePx+'px;height:'+sizePx+'px;border-radius:50%;background:'+rc.bg+';display:flex;align-items:center;justify-content:center;font-size:'+fontPx+'px;font-weight:700;color:'+rc.color+';flex-shrink:0">'+initials+'</div>';
+}
 function saveUser(){
   const id=document.getElementById('uf-id').value;
   const name=document.getElementById('uf-name').value.trim();
@@ -2539,7 +2636,7 @@ function saveUser(){
   const assignedLocations=role==='admin'?[]:_getSelectedLocs();
   const rolesNeedingLocation=['warehouse','van_sales'];
   if(rolesNeedingLocation.includes(role)&&assignedLocations.length===0)return showToast('Assign at least one location for this role','red');
-  const data={name,username:uname,role,assignedLocations,status:document.getElementById('uf-status').value,notes:document.getElementById('uf-notes').value};
+  const data={name,username:uname,role,assignedLocations,status:document.getElementById('uf-status').value,notes:document.getElementById('uf-notes').value,photo:document.getElementById('uf-photo')?.value||''};
   if(id){const u=db.systemUsers.find(x=>x.id===id);if(u){Object.assign(u,data);if(pass)u.password=pass;}saveAppState();showToast('User updated');}
   else{if(!pass)return showToast('Password required','red');db.systemUsers.push({id:uid(),...data,password:pass,lastLogin:null});}
   document.getElementById('user-form-panel').style.display='none';
@@ -2554,6 +2651,8 @@ function editUser(id){
   document.getElementById('uf-role').value=u.role;
   document.getElementById('uf-status').value=u.status;
   document.getElementById('uf-notes').value=u.notes||'';
+  document.getElementById('uf-photo').value=u.photo||'';
+  _updateUserPhotoPreview(u.photo||'');
   document.getElementById('user-form-title').textContent='Edit — '+u.name;
   document.getElementById('user-form-panel').style.display='';
   // render location cards then apply saved selections
@@ -2696,6 +2795,15 @@ const uid=()=>'_'+Math.random().toString(36).substr(2,9);
 const fmt=(n)=>'SAR '+Number(n).toLocaleString('en-SA',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtShort=(n)=>'SAR '+Number(n).toLocaleString('en-SA',{minimumFractionDigits:0,maximumFractionDigits:0});
 const fmtDate=(d)=>d?new Date(d+'T12:00:00').toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}):'-';
+// DD-MMM-YY format (e.g. 29-Jun-26) — used in Offers pages and flyer PDF for compact, easy-to-read dates
+const fmtDateShort=(d)=>{
+  if(!d)return '-';
+  const dt=new Date(d+'T12:00:00');
+  const dd=String(dt.getDate()).padStart(2,'0');
+  const mmm=dt.toLocaleDateString('en-GB',{month:'short'});
+  const yy=String(dt.getFullYear()).slice(-2);
+  return dd+'-'+mmm+'-'+yy;
+};
 // Returns an <img> tag for the company logo (for print/document headers), or '' if no logo set
 // Returns a human-readable label + badge class for where an invoice's stock was actually deducted from
 // (a specific warehouse, a van, or "Customer Collected" walk-in pickup with no delivery vehicle)
@@ -3050,6 +3158,28 @@ function openModal(id){
     // reset customer search field
     _nsResetCustomerSearch();
     initInvItems();
+    // reset coupon code field — auto-expanded with a hint if there's an active coupon offer
+    // right now (so Kasim doesn't miss it), otherwise collapsed behind the small toggle link
+    window._nsActiveCoupon=null;
+    const couponInp=document.getElementById('ns-coupon-code');if(couponInp)couponInp.value='';
+    const couponStatus=document.getElementById('ns-coupon-status');if(couponStatus)couponStatus.innerHTML='';
+    const couponWrap=document.getElementById('ns-coupon-field-wrap');
+    const couponToggleRow=document.getElementById('ns-coupon-toggle-row');
+    const couponHint=document.getElementById('ns-coupon-hint');
+    const activeCouponOffers=(typeof getActiveOffers==='function')?getActiveOffers().filter(function(o){return o.requiresCoupon;}):[];
+    if(activeCouponOffers.length){
+      if(couponWrap)couponWrap.style.display='';
+      if(couponToggleRow)couponToggleRow.style.display='none';
+      if(couponHint){
+        const names=activeCouponOffers.map(function(o){return o.name;}).join(', ');
+        couponHint.style.display='';
+        couponHint.innerHTML='<i class="ti ti-sparkles" style="margin-right:4px"></i>'+activeCouponOffers.length+' active coupon offer'+(activeCouponOffers.length>1?'s':'')+' available — '+names;
+      }
+    } else {
+      if(couponWrap)couponWrap.style.display='none';
+      if(couponToggleRow)couponToggleRow.style.display='flex';
+      if(couponHint)couponHint.style.display='none';
+    }
     // reset tax invoice checkbox to checked (default = tax invoice)
     const nsTaxCb=document.getElementById('ns-is-tax-invoice');
     if(nsTaxCb){nsTaxCb.checked=true;nsToggleTaxInvoice();}
@@ -4326,7 +4456,7 @@ function renderSalesGoalPage(){
     if(isAdminView){
       html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
         +'<div style="display:flex;align-items:center;gap:10px">'
-        +'<div style="width:38px;height:38px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">'+su.name.slice(0,1).toUpperCase()+'</div>'
+        +(su.photo?'<img src="'+su.photo+'" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">':'<div style="width:38px;height:38px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0">'+su.name.slice(0,1).toUpperCase()+'</div>')
         +'<div><div style="font-weight:600;color:var(--text)">'+su.name+'</div><div style="font-size:12px;color:var(--text3)">'+su.username+'</div></div>'
         +'</div>'
         +'<button class="btn btn-outline btn-sm" onclick="openGoalSetModal(\''+su.id+'\',\''+mkey+'\')"><i class="ti ti-settings"></i> Set Goal</button>'
@@ -4550,6 +4680,7 @@ function getActiveOffers(){
 function getOfferForInvoiceLine(productId,customerId,qty,orderTotal){
   const active=getActiveOffers();
   const matches=active.filter(function(o){
+    if(o.requiresCoupon)return false; // coupon offers never auto-apply — must be entered manually
     if(o.applyTo==='product'){
       const ids=o.productIds||(o.productId?[o.productId]:[]);
       if(!ids.includes(productId))return false;
@@ -4581,6 +4712,46 @@ function applyOfferToPrice(price,offer){
   if(offer.discountType==='percent')return Math.round(price*(1-offer.discountValue/100)*100)/100;
   if(offer.discountType==='fixed')return Math.max(0,offer.discountValue);
   return price;
+}
+
+// ── COUPON VALIDATION ──────────────────────────────────────────────────────
+// Returns {ok:true, offer} on success, or {ok:false, reason} on failure
+function validateCoupon(code,customerId){
+  code=(code||'').trim().toUpperCase();
+  if(!code)return{ok:false,reason:'Enter a coupon code'};
+  const offer=(db.offers||[]).find(function(o){return o.requiresCoupon&&o.couponCode===code;});
+  if(!offer)return{ok:false,reason:'Invalid coupon code'};
+  if(!isOfferActive(offer))return{ok:false,reason:'This coupon has expired or is no longer active'};
+  // Customer eligibility (new/specific rules still apply on top of the coupon)
+  if(offer.customerType==='new'){
+    const c=db.customers.find(x=>x.id===customerId);
+    if(!c)return{ok:false,reason:'Customer not found'};
+    const daysSince=(new Date()-new Date(c.createdAt||today()))/(1000*60*60*24);
+    if(daysSince>30)return{ok:false,reason:'This coupon is only for new customers'};
+  }
+  if(offer.customerType==='specific'){
+    const ids=offer.customerIds||[];
+    if(!ids.includes(customerId))return{ok:false,reason:'This coupon is not valid for this customer'};
+  }
+  // Total redemption limit
+  const redemptions=offer.couponRedemptions||[];
+  if(offer.couponMaxUses>0&&redemptions.length>=offer.couponMaxUses){
+    return{ok:false,reason:'This coupon has reached its usage limit'};
+  }
+  // Per-customer limit (default: once only, unless couponPerCustomer===0 meaning unlimited)
+  if(offer.couponPerCustomer!==0){
+    const usedByThisCustomer=redemptions.filter(function(r){return r.customerId===customerId;}).length;
+    if(usedByThisCustomer>=1)return{ok:false,reason:'This customer has already used this coupon'};
+  }
+  return{ok:true,offer:offer};
+}
+// Records a redemption against the coupon — call this once the invoice is actually saved
+function redeemCoupon(offerId,customerId,invoiceId){
+  const offer=(db.offers||[]).find(function(o){return o.id===offerId;});
+  if(!offer)return;
+  if(!offer.couponRedemptions)offer.couponRedemptions=[];
+  offer.couponRedemptions.push({customerId:customerId,invoiceId:invoiceId,date:today()});
+  offer.usedCount=(offer.usedCount||0)+1;
 }
 
 function renderOffersPage(){
@@ -4635,26 +4806,30 @@ function renderOffersPage(){
       const statusBadge=active
         ?'<span class="badge badge-green">Active'+daysLeftLabel+'</span>'
         :(o.status==='active'?'<span class="badge badge-gray">Expired</span>':'<span class="badge badge-gray">Paused</span>');
-      const applyLabel=o.applyTo==='product'?((o.productIds||[]).length+' product'+((o.productIds||[]).length!==1?'s':'')):'All products';
+      const offerProdIds=o.productIds||[];
+      const offerProdNames=offerProdIds.map(function(pid){const p=db.products.find(function(x){return x.id===pid;});return p?p.name:null;}).filter(Boolean);
+      const applyLabel=o.applyTo==='product'?(offerProdNames.length+' product'+(offerProdNames.length!==1?'s':'')):'All products';
 
       html+='<div class="card" style="padding:16px">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
         +'<div style="flex:1;min-width:0;margin-right:10px">'
         +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+o.name+'</div>'
         +(o.slogan?'<div style="font-size:12px;color:var(--text3);font-style:italic;margin-top:2px">'+o.slogan+'</div>':'')
+        +(o.requiresCoupon?'<div style="margin-top:6px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;letter-spacing:1px;padding:3px 9px;border-radius:6px;background:rgba(15,110,86,.12);color:var(--green);font-family:var(--mono)"><i class="ti ti-ticket" style="font-size:13px"></i>'+o.couponCode+'</span></div>':'')
         +'</div>'
         +statusBadge
         +'</div>'
+        +(offerProdNames.length?'<div style="font-size:11px;color:var(--text2);background:var(--bg3);border-radius:8px;padding:7px 10px;margin-bottom:10px"><i class="ti ti-package" style="margin-right:5px;color:var(--teal)"></i>'+offerProdNames.join(', ')+'</div>':'')
         +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
-        +'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Discount</div><div style="font-size:15px;font-weight:700;color:var(--green);margin-top:2px">'+discLabel+'</div></div>'
+        +'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Discount</div><div style="font-size:15px;font-weight:700;color:var(--green);margin-top:2px">'+discLabel+'</div>'+(o.minOrderValue>0||o.minQty>0?'<div style="font-size:10px;color:var(--amber);margin-top:2px">'+[o.minOrderValue>0?'Min SAR '+o.minOrderValue.toFixed(2):'',o.minQty>0?'Min qty '+o.minQty:''].filter(Boolean).join(' · ')+'</div>':'')+'</div>'
         +'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Applies to</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+applyLabel+'</div></div>'
-        +'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Valid until</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+o.endDate+'</div></div>'
+        +'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Valid until</div><div style="font-size:13px;font-weight:600;margin-top:2px">'+fmtDateShort(o.endDate)+'</div></div>'
         +(adminView?'<div style="background:var(--bg3);border-radius:8px;padding:8px 10px"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Used</div><div style="font-size:15px;font-weight:700;color:var(--teal);margin-top:2px">'+(o.usedCount||0)+'×</div></div>':'')
         +'</div>'
         +(adminView?'<div style="display:flex;gap:8px">'
           +'<button onclick="openOfferModal(\''+o.id+'\')" class="btn btn-outline btn-sm" style="flex:1;justify-content:center"><i class="ti ti-pencil"></i> Edit</button>'
-          +'<button onclick="toggleOfferStatus(\''+o.id+'\')" class="btn btn-outline btn-sm" style="flex:1;justify-content:center;color:'+(o.status==='active'?'var(--amber)':'var(--green)')+'">'
-          +'<i class="ti ti-'+(o.status==='active'?'pause':'player-play')+'"></i> '+(o.status==='active'?'Pause':'Activate')+'</button>'
+          +'<button onclick="toggleOfferStatus(\''+o.id+'\')" class="btn btn-sm" style="flex:1;justify-content:center;background:'+(o.status==='active'?'rgba(232,144,10,.1)':'rgba(15,110,86,.1)')+';color:'+(o.status==='active'?'var(--amber)':'var(--green)')+';border:1.5px solid '+(o.status==='active'?'rgba(232,144,10,.4)':'rgba(15,110,86,.4)')+'">'
+          +'<i class="ti ti-'+(o.status==='active'?'player-pause-filled':'player-play-filled')+'"></i> '+(o.status==='active'?'Pause':'Activate')+'</button>'
           +'<button onclick="deleteOffer(\''+o.id+'\')" class="btn btn-sm btn-danger"><i class="ti ti-trash"></i></button>'
           +'</div>':'')
         +'</div>';
@@ -4670,7 +4845,10 @@ function renderOffersPage(){
       const active=isOfferActive(o);
       const daysLeft=Math.round((new Date(o.endDate+' 23:59:59')-new Date())/(1000*60*60*24));
       const daysLeftLabel=daysLeft<=0?'· Today':daysLeft===1?'· 1d left':'· '+daysLeft+'d left';
-      const typeLabel={all:'All products',product:'Specific product',category:'Category'}[o.applyTo]||o.applyTo;
+      const offerProdNamesD=(o.productIds||[]).map(function(pid){const p=db.products.find(function(x){return x.id===pid;});return p?p.name:null;}).filter(Boolean);
+      const typeLabel=o.applyTo==='product'
+        ?(offerProdNamesD.length?offerProdNamesD.join(', '):'Specific product')
+        :({all:'All products',category:'Category'}[o.applyTo]||o.applyTo);
       const customerLabel=o.customerType==='specific'
         ?((o.customerIds||[]).length+' specific customer'+((o.customerIds||[]).length!==1?'s':''))
         :({all:'All customers',new:'New customers (≤30 days)'}[o.customerType]||'All');
@@ -4682,17 +4860,20 @@ function renderOffersPage(){
       html+='<tr>'
         +'<td><div style="font-weight:600">'+o.name+'</div>'
         +(o.slogan?'<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">'+o.slogan+'</div>':'')
+        +(o.requiresCoupon?'<div style="margin-top:5px"><span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;letter-spacing:1px;padding:2px 8px;border-radius:5px;background:rgba(15,110,86,.12);color:var(--green);font-family:var(--mono)"><i class="ti ti-ticket" style="font-size:12px"></i>'+o.couponCode+'</span></div>':'')
         +'</td>'
-        +'<td style="font-size:12px"><div>'+typeLabel+'</div><div style="color:var(--text3)">'+customerLabel+'</div></td>'
-        +'<td style="font-family:var(--mono);font-weight:700;color:var(--green)">'+discLabel+'</td>'
-        +'<td style="font-size:12px"><div>'+o.startDate+'</div><div style="color:var(--text3)">to '+o.endDate+'</div></td>'
+        +'<td style="font-size:12px;max-width:200px"><div style="word-break:break-word">'+typeLabel+'</div><div style="color:var(--text3);margin-top:2px">'+customerLabel+'</div></td>'
+        +'<td style="font-family:var(--mono);font-weight:700;color:var(--green)">'+discLabel
+        +(o.minOrderValue>0||o.minQty>0?'<div style="font-size:10px;font-weight:500;color:var(--amber);font-family:var(--font);margin-top:2px">'+[o.minOrderValue>0?'Min SAR '+o.minOrderValue.toFixed(2):'',o.minQty>0?'Min qty '+o.minQty:''].filter(Boolean).join(' · ')+'</div>':'')
+        +'</td>'
+        +'<td style="font-size:12px"><div>'+fmtDateShort(o.startDate)+'</div><div style="color:var(--text3)">to '+fmtDateShort(o.endDate)+'</div></td>'
         +'<td>'+statusBadge+'</td>';
       if(adminView){
         html+='<td style="font-family:var(--mono);text-align:center">'+(o.usedCount||0)+'×</td>'
           +'<td style="display:flex;gap:5px">'
           +'<button class="btn btn-sm btn-outline" onclick="openOfferModal(\''+o.id+'\')" title="Edit"><i class="ti ti-pencil"></i></button>'
-          +'<button class="btn btn-sm btn-outline" onclick="toggleOfferStatus(\''+o.id+'\')" title="'+(o.status==='active'?'Pause':'Activate')+'" style="color:'+(o.status==='active'?'var(--amber)':'var(--green)')+'">'
-          +'<i class="ti ti-'+(o.status==='active'?'pause':'player-play')+'"></i></button>'
+          +'<button class="btn btn-sm" onclick="toggleOfferStatus(\''+o.id+'\')" title="'+(o.status==='active'?'Pause this offer':'Activate this offer')+'" style="background:'+(o.status==='active'?'rgba(232,144,10,.1)':'rgba(15,110,86,.1)')+';color:'+(o.status==='active'?'var(--amber)':'var(--green)')+';border:1.5px solid '+(o.status==='active'?'rgba(232,144,10,.4)':'rgba(15,110,86,.4)')+'">'
+          +'<i class="ti ti-'+(o.status==='active'?'player-pause-filled':'player-play-filled')+'"></i> '+(o.status==='active'?'Pause':'Activate')+'</button>'
           +'<button class="btn btn-sm btn-danger" onclick="deleteOffer(\''+o.id+'\')" title="Delete"><i class="ti ti-trash"></i></button>'
           +'</td>';
       }
@@ -4751,6 +4932,29 @@ function openOfferModal(id){
     +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Slogan for flyer <span style="font-weight:400;text-transform:none;color:var(--text3)">(optional)</span></label>'
     +'<input id="of-slogan" type="text" value="'+(o?o.slogan||'':'')+'" placeholder="e.g. Fresh savings for new friends!" autocomplete="off" style="width:100%;font-size:16px;padding:12px 14px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);-webkit-appearance:none">'
     +'</div>'
+    +'<div style="margin-bottom:14px;background:rgba(15,110,86,.06);border:1.5px solid rgba(15,110,86,.25);border-radius:10px;padding:14px">'
+    +'<label style="display:flex;align-items:center;gap:10px;cursor:pointer;-webkit-tap-highlight-color:transparent">'
+    +'<input type="checkbox" id="of-requires-coupon" onchange="offerCouponToggle()" '+(o&&o.requiresCoupon?'checked':'')+' style="width:20px;height:20px;accent-color:var(--green);flex-shrink:0">'
+    +'<div><div style="font-size:13px;font-weight:700;color:var(--text)"><i class="ti ti-ticket" style="margin-right:5px;color:var(--green)"></i>Requires coupon code</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-top:2px">Must enter this code to unlock the discount</div></div>'
+    +'</label>'
+    +'<div id="of-coupon-section" style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(15,110,86,.2);'+(o&&o.requiresCoupon?'':'display:none')+'">'
+    +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Coupon code *</label>'
+    +'<div style="display:flex;gap:8px;margin-bottom:10px">'
+    +'<input id="of-coupon-code" type="text" value="'+(o?o.couponCode||'':'')+'" placeholder="e.g. WELCOME10" autocomplete="off" maxlength="20" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,\'\')" style="flex:1;font-size:18px;font-weight:800;letter-spacing:1.5px;padding:12px 14px;border:2px solid var(--green);border-radius:10px;background:#fff;color:var(--green);text-transform:uppercase;-webkit-appearance:none;text-align:center;font-family:var(--mono)">'
+    +'<button type="button" onclick="document.getElementById(\'of-coupon-code\').value=_ofGenCouponCode();" style="padding:0 16px;border-radius:10px;border:1.5px solid var(--border2);background:#fff;color:var(--text2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">🎲 Generate</button>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div><label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Max total uses <span style="font-weight:400;text-transform:none;color:var(--text3)">(opt.)</span></label>'
+    +'<input id="of-coupon-max-uses" type="number" value="'+(o&&o.couponMaxUses?o.couponMaxUses:'')+'" placeholder="Unlimited" min="0" inputmode="numeric" style="width:100%;font-size:14px;padding:10px;border:2px solid var(--border2);border-radius:10px;background:#fff;color:var(--text);text-align:center;-webkit-appearance:none"></div>'
+    +'<div><label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Per customer</label>'
+    +'<select id="of-coupon-per-cust" style="width:100%;font-size:13px;padding:10px;border:2px solid var(--border2);border-radius:10px;background:#fff;color:var(--text);-webkit-appearance:none">'
+    +'<option value="1"'+(o&&o.couponPerCustomer===1?' selected':'')+'>Once only</option>'
+    +'<option value="0"'+(o&&o.couponPerCustomer===0?' selected':'')+'>Unlimited</option>'
+    +'</select></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
     +'<div style="margin-bottom:14px">'
     +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px">Applies to</label>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
@@ -4769,13 +4973,14 @@ function openOfferModal(id){
     +'<div id="of-prod-list" style="border:1.5px solid var(--border2);border-radius:10px;max-height:'+(isMob?'240px':'200px')+';overflow-y:auto;background:var(--bg3);-webkit-overflow-scrolling:touch"></div>'
     +'<div style="font-size:11px;color:var(--text3);margin-top:5px;text-align:center">Tap to select · tap again to remove</div>'
     +'</div>'
-    +'<div style="margin-bottom:14px">'
-    +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px">Who gets this offer</label>'
-    +'<select id="of-cust-type" onchange="offerCustTypeChange()" style="width:100%;font-size:16px;padding:12px 14px;border:2px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);-webkit-appearance:none">'
+    +'<div style="margin-bottom:14px;background:rgba(24,95,165,.05);border:1.5px solid rgba(24,95,165,.2);border-radius:10px;padding:12px 14px">'
+    +'<label style="font-size:11px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:5px;margin-bottom:8px"><i class="ti ti-users"></i>Who gets this offer — double-check this!</label>'
+    +'<select id="of-cust-type" onchange="offerCustTypeChange()" style="width:100%;font-size:16px;padding:12px 14px;border:2px solid var(--blue);border-radius:10px;background:#fff;color:var(--text);-webkit-appearance:none;font-weight:600">'
     +'<option value="all"'+(o&&o.customerType==='all'?' selected':'')+'>All customers</option>'
     +'<option value="new"'+(o&&o.customerType==='new'?' selected':'')+'>New customers only (registered &le; 30 days)</option>'
     +'<option value="specific"'+(o&&o.customerType==='specific'?' selected':'')+'>Specific customer(s)</option>'
     +'</select>'
+    +'<div id="of-cust-type-preview" style="margin-top:8px;font-size:11px;color:var(--text2)"><i class="ti ti-eye" style="margin-right:4px"></i>Flyer will show: <strong id="of-cust-type-preview-text">'+(o?({all:'All customers',new:'New customers only',specific:'Selected customers only'}[o.customerType]||'All customers'):'All customers')+'</strong></div>'
     +'</div>'
     +'<div id="of-customer-section" style="margin-bottom:14px;'+(o&&o.customerType==='specific'?'':'display:none')+'">'
     +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:8px">Search &amp; select customer(s) *</label>'
@@ -4837,6 +5042,17 @@ function openOfferModal(id){
   _ofRenderCustPills();
 }
 
+function offerCouponToggle(){
+  const checked=document.getElementById('of-requires-coupon')?.checked;
+  const sec=document.getElementById('of-coupon-section');
+  if(sec)sec.style.display=checked?'':'none';
+}
+function _ofGenCouponCode(){
+  const adjectives=['SAVE','DEAL','FRESH','SPECIAL','WELCOME','BONUS'];
+  const adj=adjectives[Math.floor(Math.random()*adjectives.length)];
+  const num=Math.floor(10+Math.random()*90);
+  return adj+num;
+}
 function offerApplyToggle(val){
   document.getElementById('of-apply').value=val;
   const sec=document.getElementById('of-product-section');
@@ -4924,6 +5140,8 @@ function offerCustTypeChange(){
     const si=document.getElementById('of-cust-search');
     if(si)si.focus();
   }
+  const preview=document.getElementById('of-cust-type-preview-text');
+  if(preview)preview.textContent={all:'All customers',new:'New customers only',specific:'Selected customers only'}[v]||'All customers';
 }
 
 function _ofCustSearch(q){
@@ -5005,6 +5223,15 @@ function saveOffer(editId){
   const customerType=document.getElementById('of-cust-type')?.value||'all';
   const customerIds=customerType==='specific'?Array.from(window._ofSelectedCustIds||[]):[];
   if(customerType==='specific'&&!customerIds.length){showToast('Select at least one customer','amber');return;}
+  const requiresCoupon=document.getElementById('of-requires-coupon')?.checked||false;
+  const couponCode=requiresCoupon?(document.getElementById('of-coupon-code')?.value.trim().toUpperCase()||''):'';
+  if(requiresCoupon&&!couponCode){showToast('Enter a coupon code','amber');return;}
+  if(requiresCoupon){
+    const dupe=db.offers.find(function(x){return x.id!==editId&&x.couponCode===couponCode&&x.requiresCoupon;});
+    if(dupe){showToast('Coupon code "'+couponCode+'" is already used by another offer','red');return;}
+  }
+  const couponMaxUses=requiresCoupon?(parseInt(document.getElementById('of-coupon-max-uses')?.value)||0):0;
+  const couponPerCustomer=requiresCoupon?(parseInt(document.getElementById('of-coupon-per-cust')?.value)||0):0;
 
   const offer={
     id:editId||('off'+Date.now()),
@@ -5014,6 +5241,11 @@ function saveOffer(editId){
     productIds:productIds,
     customerType:customerType,
     customerIds:customerIds,
+    requiresCoupon:requiresCoupon,
+    couponCode:couponCode,
+    couponMaxUses:couponMaxUses,
+    couponPerCustomer:couponPerCustomer,
+    couponRedemptions:editId?(db.offers.find(function(x){return x.id===editId;})?.couponRedemptions||[]):[],
     discountType:document.getElementById('of-dtype')?.value||'percent',
     discountValue:discVal,
     startDate:document.getElementById('of-start')?.value||today(),
@@ -5042,26 +5274,65 @@ function saveOffer(editId){
 function printOfferFlyer(){
   const s=db.settings||{};
   const allActive=(db.offers||[]).filter(isOfferActive);
-  const dateStr=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
+  const dateStr=fmtDateShort(new Date().toISOString().slice(0,10));
   const logoHtml=s.logo?'<img src="'+s.logo+'" style="max-height:55px;max-width:130px;object-fit:contain;display:block">':'';
 
   const offerItems=allActive.map(function(o){
     const discLabel=o.discountType==='percent'?o.discountValue+'% OFF':'SAR '+o.discountValue.toFixed(2)+' FIXED PRICE';
     const custLabel=o.customerType==='new'?'New customers only':o.customerType==='specific'?'Selected customers only':'All customers';
     const ids=o.productIds||(o.productId?[o.productId]:[]);
-    const applyLabel=o.applyTo==='product'?(ids.length+' product'+(ids.length!==1?'s':'')):'All products';
-    const saving=o.discountType==='percent'?'Save '+o.discountValue+'% on every item':'Special fixed price deal';
-    return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:14px 16px;margin-bottom:10px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff">'
-      +'<div style="flex:1">'
-      +'<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:3px">'+o.name+'</div>'
-      +(o.slogan?'<div style="font-size:12px;color:#0f6e56;font-style:italic;margin-bottom:5px">'+o.slogan+'</div>':'')
-      +'<div style="font-size:11px;color:#6b7280">'+applyLabel+' &middot; '+custLabel+'</div>'
-      +'<div style="font-size:11px;color:#6b7280">Valid until '+o.endDate+'</div>'
-      +'<div style="margin-top:6px;display:inline-block;background:#dcfce7;color:#166534;font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600">'+saving+'</div>'
+    const productNames=ids.map(function(pid){const p=db.products.find(function(x){return x.id===pid;});return p?p.name:null;}).filter(Boolean);
+    const applyLabel=o.applyTo==='product'
+      ?(productNames.length?productNames.join(', '):(ids.length+' product'+(ids.length!==1?'s':'')))
+      :'All products';
+    const saving=o.discountType==='percent'
+      ?('Save '+o.discountValue+'% on '+(o.applyTo==='product'?'selected items':'every item'))
+      :'Special fixed price deal';
+
+    const conditions=[];
+    if(o.minOrderValue>0)conditions.push('Minimum order: SAR '+o.minOrderValue.toFixed(2));
+    if(o.minQty>0)conditions.push('Minimum quantity: '+o.minQty);
+
+    // Each fact about the offer gets its own clean row — avoids wrapped, jumbled inline pills
+    const metaRows=[
+      {icon:'package',text:applyLabel},
+      {icon:'users',text:custLabel},
+      {icon:'calendar',text:'Valid until '+fmtDateShort(o.endDate)}
+    ];
+
+    const metaRowsHtml=metaRows.map(function(r){
+      return '<div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#4b5563;margin-bottom:4px">'
+        +'<i class="ti ti-'+r.icon+'" style="font-size:13px;color:#9ca3af;flex-shrink:0"></i>'
+        +'<span>'+r.text+'</span>'
+        +'</div>';
+    }).join('');
+
+    const conditionsRowHtml=conditions.length
+      ? '<div style="display:flex;align-items:flex-start;gap:7px;font-size:12px;color:#92400e;margin-top:6px;padding-top:6px;border-top:1px dashed #e5e7eb">'
+        +'<i class="ti ti-alert-circle" style="font-size:13px;color:#d97706;flex-shrink:0;margin-top:1px"></i>'
+        +'<span><strong>Conditions apply:</strong> '+conditions.join(' &nbsp;&middot;&nbsp; ')+'</span>'
+        +'</div>'
+      : '';
+
+    const couponHtml=o.requiresCoupon
+      ?'<div style="margin-top:10px;display:inline-flex;align-items:center;gap:8px;background:#0f6e56;color:#fff;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:800;letter-spacing:2px;font-family:monospace">'
+        +'<span style="opacity:.8;font-weight:600;letter-spacing:normal;font-size:10px">CODE:</span>'+o.couponCode+'</div>'
+      :'';
+
+    return '<div style="padding:14px 16px;margin-bottom:10px;border-radius:10px;border:1.5px solid '+(o.requiresCoupon?'#0f6e56':'#e5e7eb')+';background:#fff">'
+      +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:2px">'+o.name+'</div>'
+      +(o.slogan?'<div style="font-size:12px;color:#0f6e56;font-style:italic">'+o.slogan+'</div>':'')
       +'</div>'
-      +'<div style="text-align:right;flex-shrink:0;margin-left:16px">'
-      +'<div style="font-size:24px;font-weight:800;color:#0f6e56">'+discLabel+'</div>'
+      +'<div style="text-align:right;flex-shrink:0">'
+      +'<div style="font-size:22px;font-weight:800;color:#0f6e56;line-height:1.1">'+discLabel+'</div>'
       +'</div>'
+      +'</div>'
+      +'<div style="display:inline-block;background:#dcfce7;color:#166534;font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;margin-bottom:8px">'+saving+'</div>'
+      +metaRowsHtml
+      +conditionsRowHtml
+      +couponHtml
       +'</div>';
   }).join('');
 
@@ -5135,7 +5406,7 @@ function printOfferFlyer(){
     +(allActive.length?offerItems:noOffersHtml)
     +'<div class="cta-box">'
     +'<div class="cta-title">How to get these prices?</div>'
-    +'<div class="cta-sub">Simply place your order with our sales representative.<br>Discounts apply automatically &mdash; no coupon needed.</div>'
+    +'<div class="cta-sub">'+(allActive.some(function(o){return o.requiresCoupon;})?'Place your order with our sales representative and mention the code shown above for coupon offers.<br>Other discounts apply automatically.':'Simply place your order with our sales representative.<br>Discounts apply automatically &mdash; no coupon needed.')+'</div>'
     +'</div>'
     +'</div>'
     +'<div class="footer">'
@@ -5641,6 +5912,21 @@ function deleteInvoice(id){
 }
 // New invoice modal
 function initInvItems(){const body=document.getElementById('invoice-items-list');if(body)body.innerHTML='';addInvoiceItem();}
+function closeNewInvoiceModal(){
+  // Detect if the user has actually entered anything worth protecting
+  const hasCustomer=!!(document.getElementById('ns-customer')?.value);
+  const hasCoupon=!!(document.getElementById('ns-coupon-code')?.value.trim());
+  const hasItems=Array.from(document.querySelectorAll('#invoice-items-list .inv-item-row')).some(function(row){
+    return !!(row.querySelector('.inv-prod-sel')?.value);
+  });
+  if(hasCustomer||hasCoupon||hasItems){
+    showConfirm('Discard this invoice?','You have unsaved details on this invoice. Closing now will lose everything you entered.',null,false).then(function(ok){
+      if(ok)closeModal('modal-new-sale');
+    });
+  } else {
+    closeModal('modal-new-sale');
+  }
+}
 function addInvoiceItem(){
   const body=document.getElementById('invoice-items-list');if(!body)return;
   const row=document.createElement('div');
@@ -5763,6 +6049,8 @@ function _invSearchProduct(inp){
         _ofBadge.remove();
       }
       _invShowAvail(row,pid,unit);
+      // If a coupon is already active for this invoice, apply it to the newly added product too
+      if(window._nsActiveCoupon)nsReapplyCouponToRows();
       setTimeout(function(){const q=row.querySelector('.inv-qty-inp');if(q){q.focus();q.select();}},150);
       calcInvoiceTotal();
     });
@@ -5916,6 +6204,100 @@ function nsToggleTaxInvoice(){
   if(saveBtn){saveBtn.innerHTML=isTax?'<i class="ti ti-receipt"></i> Create Invoice':'<i class="ti ti-file-description"></i> Create Estimate';}
   calcInvoiceTotal();
 }
+// ── Apply coupon code in New Invoice form ──────────────────────────────────
+window._nsActiveCoupon=null;
+// Toggle the compact coupon field open/closed; clears any applied coupon when collapsing it away
+function nsToggleCouponField(){
+  const wrap=document.getElementById('ns-coupon-field-wrap');
+  const toggleRow=document.getElementById('ns-coupon-toggle-row');
+  if(!wrap)return;
+  const isOpen=wrap.style.display!=='none';
+  if(isOpen){
+    nsClearCoupon();
+    wrap.style.display='none';
+    if(toggleRow)toggleRow.style.display='flex';
+  } else {
+    wrap.style.display='';
+    if(toggleRow)toggleRow.style.display='none';
+    setTimeout(function(){document.getElementById('ns-coupon-code')?.focus();},50);
+  }
+}
+// Clears the coupon input/applied discount without hiding the field — used by the × button,
+// so when an active coupon offer exists the field stays visible (you can type a different code)
+function nsClearCoupon(){
+  const inp=document.getElementById('ns-coupon-code');if(inp)inp.value='';
+  const status=document.getElementById('ns-coupon-status');if(status)status.innerHTML='';
+  if(window._nsActiveCoupon){window._nsActiveCoupon=null;nsReapplyCouponToRows();calcInvoiceTotal();}
+}
+// X button handler: if there's an active coupon offer right now, just clear the typed code
+// (keep the field visible since one is available); otherwise fully collapse it back to the toggle link
+function nsClearOrCollapseCoupon(){
+  const activeCouponOffers=(typeof getActiveOffers==='function')?getActiveOffers().filter(function(o){return o.requiresCoupon;}):[];
+  if(activeCouponOffers.length){
+    nsClearCoupon();
+  } else {
+    nsToggleCouponField();
+  }
+}
+function nsApplyCoupon(){
+  const code=document.getElementById('ns-coupon-code')?.value.trim();
+  const statusEl=document.getElementById('ns-coupon-status');
+  const cid=document.getElementById('ns-customer')?.value||'';
+  if(!cid){
+    if(statusEl)statusEl.innerHTML='<span style="color:var(--amber)"><i class="ti ti-alert-triangle"></i> Select a customer first</span>';
+    return;
+  }
+  const result=validateCoupon(code,cid);
+  if(!result.ok){
+    window._nsActiveCoupon=null;
+    if(statusEl)statusEl.innerHTML='<span style="color:var(--red)"><i class="ti ti-x"></i> '+result.reason+'</span>';
+    nsReapplyCouponToRows();
+    calcInvoiceTotal();
+    return;
+  }
+  window._nsActiveCoupon=result.offer;
+  const discLabel=result.offer.discountType==='percent'?result.offer.discountValue+'% off':'SAR '+result.offer.discountValue.toFixed(2)+' fixed price';
+  if(statusEl)statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-circle-check"></i> "'+result.offer.name+'" applied — '+discLabel+'</span>';
+  nsReapplyCouponToRows();
+  calcInvoiceTotal();
+}
+// Re-applies (or removes) the active coupon's price across every product row currently in the invoice
+function nsReapplyCouponToRows(){
+  const coupon=window._nsActiveCoupon;
+  document.querySelectorAll('#invoice-items-list .inv-item-row').forEach(function(row){
+    const pid=row.querySelector('.inv-prod-sel')?.value;
+    if(!pid)return;
+    const priceInp=row.querySelector('.inv-price-inp');
+    if(!priceInp)return;
+    const product=getProduct(pid);
+    const regularPrice=product.price;
+    let badge=row.querySelector('.inv-offer-badge');
+    // Check coupon eligibility for this specific product
+    const couponApplies=coupon&&(coupon.applyTo==='all'||(coupon.productIds||[]).includes(pid));
+    if(couponApplies){
+      const newPrice=applyOfferToPrice(regularPrice,coupon);
+      priceInp.value=newPrice.toFixed(2);
+      priceInp.style.borderColor='var(--green)';
+      if(!badge){
+        badge=document.createElement('div');
+        badge.className='inv-offer-badge';
+        badge.style.cssText='font-size:11px;color:var(--green);font-weight:600;margin-top:3px';
+        if(priceInp.parentElement)priceInp.parentElement.appendChild(badge);
+      }
+      badge.dataset.offerId=coupon.id;
+      const savingTxt=coupon.discountType==='percent'?coupon.discountValue+'% off':'SAR '+(regularPrice-newPrice).toFixed(2)+' off';
+      badge.innerHTML='<i class="ti ti-ticket"></i> '+coupon.name+' ('+savingTxt+')';
+    } else if(badge&&badge.dataset.offerId){
+      // Was showing a coupon-applied badge but coupon no longer applies — revert price
+      const matchedOffer=db.offers.find(function(o){return o.id===badge.dataset.offerId;});
+      if(matchedOffer&&matchedOffer.requiresCoupon){
+        priceInp.value=regularPrice.toFixed(2);
+        priceInp.style.borderColor='';
+        badge.remove();
+      }
+    }
+  });
+}
 function calcInvoiceTotal(){
   const isEstimate=document.getElementById('ns-is-tax-invoice')?.checked===false;
   let lineSum=0;
@@ -6000,13 +6382,20 @@ function saveInvoice(){
   const invId='INV-'+db.nextInvId++;
   const newInv={id:invId,date,customer:cid,van,warehouse:loc,items,subtotal:+taxRes.sub.toFixed(2),vatAmount:+taxRes.vat.toFixed(2),total,paid,due,notes,taxMode:isEstimate?'none':getTaxMode(),isEstimate:isEstimate||false,payments:[],createdBy:_currentUser?.name||'Unknown'};
   db.invoices.push(newInv);
-  // Increment usage count for any offers applied on this invoice
+  // Increment usage count for any offers applied on this invoice, and record coupon redemptions
   if(_appliedOfferIds.size&&db.offers){
     _appliedOfferIds.forEach(function(oid){
       const off=db.offers.find(o=>o.id===oid);
-      if(off)off.usedCount=(off.usedCount||0)+1;
+      if(!off)return;
+      if(off.requiresCoupon){
+        redeemCoupon(off.id,cid,invId); // also increments usedCount internally
+      } else {
+        off.usedCount=(off.usedCount||0)+1;
+      }
     });
   }
+  // Reset the coupon field for the next invoice
+  window._nsActiveCoupon=null;
   // if an initial payment was collected at the time of sale, create a receipt voucher for it
   if(paid>0){
     const receiptNo='RCP-'+Date.now();
@@ -11735,9 +12124,12 @@ document.addEventListener('DOMContentLoaded',async ()=>{
   }else{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='flex';
   }
-  // close modals on overlay click
-  document.querySelectorAll('.modal-overlay').forEach(overlay=>{overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal(overlay.id);});});
-  // close on Escape
+  // close modals on overlay click — except data-entry-heavy forms where an accidental tap
+  // on the backdrop (very common on mobile, also easy to mis-click on desktop) would silently
+  // wipe out everything the user just typed. Those require an explicit Cancel/X tap instead.
+  const NO_BACKDROP_CLOSE=new Set(['modal-new-sale','modal-po-form','modal-add-customer','modal-add-product']);
+  document.querySelectorAll('.modal-overlay').forEach(overlay=>{overlay.addEventListener('click',e=>{if(e.target===overlay&&!NO_BACKDROP_CLOSE.has(overlay.id))closeModal(overlay.id);});});
+  // close on Escape — still allowed everywhere (intentional, deliberate key press)
   document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-overlay.open').forEach(m=>closeModal(m.id));});
   // init customer statement
   renderCustomerStatement();
