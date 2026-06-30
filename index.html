@@ -81,7 +81,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .user-badge:hover{background:rgba(255,255,255,.12)}
 .user-badge .ub-name{font-size:13px;font-weight:500;color:#fff}
 .user-badge .ub-role{font-size:10px;color:rgba(255,255,255,.45);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;margin-top:2px}
-#main{margin-left:220px;flex:1;padding:28px 32px;min-height:100vh}
+#main{margin-left:220px;flex:1;min-width:0;padding:28px 32px;min-height:100vh}
 .page{display:none}.page.active{display:block}
 .pgtitle{font-size:22px;font-weight:700;letter-spacing:-.5px;color:#0f1f2e}
 .pgsub{font-size:13px;color:var(--text2);margin-top:3px}
@@ -107,6 +107,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .card-title{font-size:14px;font-weight:600}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
 .tbl-wrap{overflow-x:auto}
+#cs-inv-body tr:hover{background:var(--bg3)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 14px;font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);border-bottom:2px solid var(--border);background:var(--bg3)}
 td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
@@ -239,6 +240,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   #page-pl [style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important}
   /* Sales goal page */
   #sg-root .kpi-grid{grid-template-columns:1fr 1fr}
+  /* Cash Book — date filter row stacks full width, dropdown filters full width */
+  #page-cash-book .fg{min-width:0!important;width:100%}
+  #page-cash-book .card-hdr > div[style*="margin-left:auto"]{width:100%;margin-left:0!important}
+  #cb-type-filter{width:100%}
+  /* Customer Statement — filter grid stacks, banner wraps, KPI strip shrinks */
+  .cs-filter-grid{grid-template-columns:1fr!important}
+  .cs-banner{padding:18px!important}
+  .cs-banner > div{width:100%;justify-content:flex-start!important}
+  .cs-banner > div:last-child{text-align:left!important}
+  .cs-kpi-strip{grid-template-columns:1fr 1fr!important}
 }
 @media(max-width:480px){
   .kpi-grid{grid-template-columns:1fr 1fr}
@@ -427,8 +438,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 
 <!-- SIDEBAR -->
 <nav id="sidebar">
-  <div class="slogo"><div class="slogo-icon"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 38 L26 38 L30 28 L36 44 L40 34 L50 34" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="34" r="4.5" fill="#5dcaa5"/></svg></div><div><div class="slogo-text">FasTrack</div><div class="slogo-sub">Distribution ERP</div></div></div>
-  <div class="nsec open" id="nsec-overview">
+  <div class="slogo" onclick="navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':'dashboard')" style="cursor:pointer" title="Go to Dashboard"><div class="slogo-icon"><svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true"><path d="M14 38 L26 38 L30 28 L36 44 L40 34 L50 34" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="50" cy="34" r="4.5" fill="#5dcaa5"/></svg></div><div><div class="slogo-text">FasTrack</div><div class="slogo-sub">Distribution ERP</div></div></div>
+  <div class="nsec" id="nsec-overview">
     <div class="nsec-hdr" onclick="toggleNavSection('overview')"><span class="nsec-ico"><i class="ti ti-layout-dashboard"></i></span><span class="nsec-name">Overview</span><span class="nsec-chev"><i class="ti ti-chevron-right"></i></span></div>
     <div class="nsec-body">
     <div class="ni" data-access="owner-dashboard" onclick="navigate('owner-dashboard')" style="background:linear-gradient(90deg,rgba(93,202,165,.12),transparent);border-left:3px solid #5dcaa5"><i class="ti ti-star" style="color:#5dcaa5"></i>Owner Dashboard</div>
@@ -845,12 +856,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <div class="pghdr"><div><div class="pgtitle">Customer Statement</div><div class="pgsub">Select a customer and period to generate a full transaction statement</div></div><button class="btn btn-outline" id="cs-print-btn" onclick="printCustomerStatement()" style="display:none"><i class="ti ti-printer"></i> Print Statement</button></div>
   <div class="card" style="margin-bottom:20px">
     <div class="card-hdr"><span class="card-title"><i class="ti ti-filter" style="color:var(--green);margin-right:6px"></i>Statement Filters</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end">
-      <div class="fg"><label>Customer *</label><select id="cs-customer" onchange="csOnCustomerChange()" style="font-size:13px;padding:9px 12px;border:1px solid #d0d9e4;border-radius:8px;font-family:var(--font);background:#fff;color:var(--text)"><option value="">— Select a customer —</option></select></div>
+    <div class="cs-filter-grid" style="display:grid;grid-template-columns:1fr 1fr auto;gap:14px;align-items:end">
+      <div class="fg" style="position:relative">
+        <label>Customer *</label>
+        <input type="hidden" id="cs-customer" onchange="csOnCustomerChange()">
+        <input type="text" id="cs-customer-search" placeholder="Search customer name or code…" autocomplete="off" oninput="csSearchCustomer(this.value)" onfocus="csSearchCustomer(this.value)" onblur="csHideCustomerDrop(200)" style="width:100%;font-size:13px;padding:9px 12px;border:1px solid #d0d9e4;border-radius:8px;font-family:var(--font);background:#fff;color:var(--text)">
+        <div id="cs-customer-dropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--green);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:500;max-height:260px;overflow-y:auto"></div>
+      </div>
       <div class="fg" style="position:relative">
         <label>Period — select one or more months</label>
         <div id="cs-month-trigger" onclick="csToggleDropdown()" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #d0d9e4;border-radius:8px;padding:9px 12px;cursor:pointer;font-size:13px;font-family:var(--font);color:var(--text);min-height:40px;user-select:none"><span id="cs-month-trigger-label" style="color:var(--text3)">Select months…</span><i id="cs-month-chevron" class="ti ti-chevron-down" style="font-size:16px;color:var(--text3);transition:transform .2s;flex-shrink:0"></i></div>
         <div id="cs-month-picker" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid var(--green);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:500;overflow:hidden">
+          <div style="padding:8px 10px;border-bottom:1px solid var(--border)"><div style="position:relative"><i class="ti ti-search" style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--text3)"></i><input type="text" id="cs-month-search" placeholder="Search month…" autocomplete="off" oninput="csFilterMonthList(this.value)" style="width:100%;font-size:12px;padding:7px 10px 7px 30px;border:1px solid var(--border2);border-radius:6px;background:var(--bg3);color:var(--text)"></div></div>
           <div style="display:flex;gap:0;border-bottom:1px solid var(--border)"><button onclick="csPickAll()" style="flex:1;padding:8px 12px;font-size:11px;font-family:var(--mono);background:none;border:none;cursor:pointer;color:var(--green);font-weight:600;text-transform:uppercase;letter-spacing:.6px;border-right:1px solid var(--border)"><i class="ti ti-checks" style="margin-right:4px"></i>Select All</button><button onclick="csPickNone()" style="flex:1;padding:8px 12px;font-size:11px;font-family:var(--mono);background:none;border:none;cursor:pointer;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.6px"><i class="ti ti-x" style="margin-right:4px"></i>Clear</button></div>
           <div id="cs-month-list" style="max-height:220px;overflow-y:auto;padding:4px 0"></div>
           <div style="border-top:1px solid var(--border);padding:8px 12px"><button onclick="csToggleDropdown()" class="btn btn-primary btn-sm" style="width:100%;justify-content:center"><i class="ti ti-check"></i> Done</button></div>
@@ -869,16 +886,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
     </div>
   </div>
   <div id="cs-output" style="display:none">
-    <div id="cs-customer-banner" style="background:linear-gradient(135deg,#042c53,#0c447c,#185fa5);border-radius:var(--r2);padding:22px 28px;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;align-items:center;gap:16px"><div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-user" style="font-size:26px"></i></div><div><div id="cs-banner-name" style="font-size:18px;font-weight:700"></div><div id="cs-banner-meta" style="font-size:12px;opacity:.75;margin-top:3px"></div><div id="cs-banner-period" style="font-size:11px;opacity:.6;margin-top:2px;font-family:var(--mono)"></div></div></div><div style="text-align:right"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)">Statement Date</div><div id="cs-banner-date" style="font-size:14px;font-weight:600;margin-top:3px"></div></div></div>
-    <div id="cs-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px"></div>
+    <div id="cs-customer-banner" class="cs-banner" style="background:linear-gradient(135deg,#042c53,#0c447c,#185fa5);border-radius:var(--r2);padding:22px 28px;color:#fff;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px"><div style="display:flex;align-items:center;gap:16px;min-width:0"><div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0"><i class="ti ti-user" style="font-size:26px"></i></div><div style="min-width:0"><div id="cs-banner-name" style="font-size:18px;font-weight:700;word-break:break-word"></div><div id="cs-banner-meta" style="font-size:12px;opacity:.75;margin-top:3px"></div><div id="cs-banner-period" style="font-size:11px;opacity:.6;margin-top:2px;font-family:var(--mono)"></div></div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:11px;opacity:.6;text-transform:uppercase;letter-spacing:1px;font-family:var(--mono)">Statement Date</div><div id="cs-banner-date" style="font-size:14px;font-weight:600;margin-top:3px"></div></div></div>
+    <div id="cs-kpi-strip" class="cs-kpi-strip" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px"></div>
     <div id="cs-timeline-wrap" style="margin-bottom:20px;display:none"><div class="sec-lbl" style="margin-bottom:12px"><i class="ti ti-chart-line" style="font-size:13px"></i>Month-by-month breakdown</div><div id="cs-timeline" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"></div></div>
     <div class="sec-lbl" style="margin-bottom:12px"><i class="ti ti-receipt" style="font-size:13px"></i>Invoices in period</div>
-    <div class="card" style="margin-bottom:20px"><div class="tbl-wrap"><table><thead><tr><th>Invoice #</th><th>Date</th><th>Van</th><th>Subtotal</th><th>VAT</th><th>Total (incl. VAT)</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody id="cs-inv-body"></tbody></table></div><div id="cs-inv-footer" style="display:flex;justify-content:flex-end;gap:28px;padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:13px"></div></div>
+    <div class="card" style="margin-bottom:20px"><div class="tbl-wrap" id="cs-inv-table-wrap"><table><thead><tr><th>Invoice #</th><th>Date</th><th>Van</th><th>Subtotal</th><th>VAT</th><th>Total (incl. VAT)</th><th>Paid</th><th>Balance</th><th>Due Date</th><th>Status</th></tr></thead><tbody id="cs-inv-body"></tbody></table></div><div id="cs-inv-cards" style="display:none"></div><div id="cs-inv-footer" style="display:flex;justify-content:flex-end;gap:28px;padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:13px;flex-wrap:wrap"></div></div>
     <div class="sec-lbl" style="margin-bottom:12px"><i class="ti ti-cash" style="font-size:13px"></i>Payments received in period</div>
-    <div class="card" style="margin-bottom:20px"><div class="tbl-wrap"><table><thead><tr><th>Invoice #</th><th>Date</th><th>Amount Paid</th><th>Balance After</th><th>Method</th></tr></thead><tbody id="cs-pay-body"></tbody></table></div></div>
+    <div class="card" style="margin-bottom:20px"><div class="tbl-wrap" id="cs-pay-table-wrap"><table><thead><tr><th>Invoice #</th><th>Date</th><th>Amount Paid</th><th>Balance After</th><th>Method</th></tr></thead><tbody id="cs-pay-body"></tbody></table></div><div id="cs-pay-cards" style="display:none"></div></div>
     <div id="cs-ageing-wrap" style="margin-bottom:20px"><div class="sec-lbl" style="margin-bottom:12px"><i class="ti ti-clock" style="font-size:13px"></i>Ageing summary</div><div id="cs-ageing" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px"></div></div>
     <div class="sec-lbl" style="margin-bottom:12px"><i class="ti ti-list-details" style="font-size:13px"></i>Running balance ledger</div>
-    <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Debit (Charged)</th><th>Credit (Paid)</th><th>Running Balance</th></tr></thead><tbody id="cs-ledger-body"></tbody></table></div><div id="cs-ledger-footer" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:13px"></div></div>
+    <div class="card"><div class="tbl-wrap" id="cs-ledger-table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Debit (Charged)</th><th>Credit (Paid)</th><th>Running Balance</th></tr></thead><tbody id="cs-ledger-body"></tbody></table></div><div id="cs-ledger-cards" style="display:none"></div><div id="cs-ledger-footer" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--bg3);border-top:1px solid var(--border);font-size:13px;flex-wrap:wrap;gap:8px"></div></div>
   </div>
   <div id="cs-empty-state" style="text-align:center;padding:60px 20px;color:var(--text3)"><i class="ti ti-file-description" style="font-size:48px;display:block;margin-bottom:14px;opacity:.25"></i><div style="font-size:15px;font-weight:500;margin-bottom:6px">Select a customer and period</div><div style="font-size:13px">Then click Generate Statement to view all transactions</div></div>
 </div>
@@ -1184,8 +1201,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- CASH BOOK -->
 <div class="page" id="page-cash-book">
   <div class="pghdr" style="flex-wrap:wrap;gap:12px">
-    <button class="btn btn-outline" onclick="exportCashBookCSV()"><i class="ti ti-download"></i> Export CSV</button>
-    <button class="btn btn-primary" onclick="printCashBookReport()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
+    <div><div class="pgtitle">Cash Book</div><div class="pgsub">Cash inflows, outflows, and running balance</div></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="exportCashBookCSV()"><i class="ti ti-download"></i> Export CSV</button>
+      <button class="btn btn-primary" onclick="printCashBookReport()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
+    </div>
   </div>
 
   <div class="card" style="margin-bottom:18px">
@@ -1216,7 +1236,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
         </select>
       </div>
     </div>
-    <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Description</th><th>Cash In</th><th>Cash Out</th><th>Balance</th></tr></thead><tbody id="cb-ledger-body"></tbody></table></div>
+    <div class="tbl-wrap" id="cb-table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Description</th><th>Cash In</th><th>Cash Out</th><th>Balance</th></tr></thead><tbody id="cb-ledger-body"></tbody></table></div>
+    <div id="cb-mobile-cards" style="display:none"></div>
   </div>
 </div>
 <!-- SUPPLIER PAYMENTS -->
@@ -1989,7 +2010,7 @@ function doLogin(){
   saveAppState();
   // Owner goes to their dedicated dashboard
   const landingPage=_currentUser.role==='owner'?'owner-dashboard':_currentUser.role==='van_sales'?'sales-goal':'dashboard';
-  navigate(landingPage);
+  navigate(landingPage,true);
 }
 function showLoginError(msg){const el=document.getElementById('login-error');if(el){el.textContent=msg;el.style.display='';}document.getElementById('login-pass').value='';}
 function toggleLoginPassVis(){const inp=document.getElementById('login-pass');const ico=document.getElementById('login-eye-icon');if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}else{inp.type='password';ico.className='ti ti-eye';}}
@@ -2881,7 +2902,7 @@ function seedBulkCustomers(){
   }
 }
 
-function navigate(page){
+function navigate(page,skipExpand){
   if(page!=='dashboard'&&!hasAccess(page)){
     document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
     document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
@@ -2895,12 +2916,20 @@ function navigate(page){
   let activeNi=null;
   document.querySelectorAll('.ni').forEach(n=>{if((n.getAttribute('onclick')||'').includes("'"+page+"'")){n.classList.add('active');activeNi=n;}});
   // Auto-expand the accordion section containing the active page, collapse the rest
-  if(activeNi){
+  // Skipped on initial login/session-restore so the sidebar starts fully collapsed
+  if(activeNi&&!skipExpand){
     const parentSec=activeNi.closest('.nsec');
     document.querySelectorAll('.nsec').forEach(function(sec){
       const isMatch=sec===parentSec;
       sec.classList.toggle('open',isMatch);
       sec.classList.toggle('has-active',isMatch);
+    });
+  } else if(activeNi&&skipExpand){
+    // Still mark which section contains the active item (for the green icon highlight),
+    // just don't force it open
+    const parentSec=activeNi.closest('.nsec');
+    document.querySelectorAll('.nsec').forEach(function(sec){
+      sec.classList.toggle('has-active',sec===parentSec);
     });
   }
   const renders={dashboard:renderDashboard,daily:renderDaily,stock:renderStockPage,warehouses:renderWarehouses,'price-list':renderPriceListPage,'sales-goal':renderSalesGoalPage,offers:renderOffersPage,sales:renderSalesPage,'sales-returns':renderSalesReturnsPage,'sales-report':renderSalesReportPage,quotations:renderQuotationsPage,'delivery-notes':renderDeliveryNotesPage,customers:renderCustomers,damages:renderDamagePage,reports:renderReports,expenses:renderExpPage,po:renderPOPage,'customer-statement':renderCustomerStatement,'purchase-returns':renderPRPage,suppliers:renderSupplierPage,'supplier-payments':renderSupplierPaymentsPage,'supplier-statement':renderSupplierStatement,fleet:renderFleetPage,assets:renderAssetsPage,pl:()=>{renderPL();},vat:()=>{renderVatReport();},'cash-book':renderCashBookPage,partners:renderPartnersPage,'owner-dashboard':renderOwnerDashboard,settings:renderSettingsPage};
@@ -4071,7 +4100,6 @@ function printBulkBarcodes(){
   const labelHtml=prods.map(function(p){
     return '<div class="label" id="label-'+p.id+'">'
       +'<div class="pname">'+p.name+'</div>'
-      +(p.itemCode?'<div class="code-label">'+p.itemCode+'</div>':'')
       +'<svg class="barcode" data-code="'+p.barcode+'" data-name="'+p.name+'"></svg>'
       +'<div class="barcode-num">'+p.barcode+'</div>'
       +'<div class="co-name">'+coName+'</div>'
@@ -6458,15 +6486,56 @@ function deleteCustomer(cid){
   });
 }
 // ── CUSTOMER STATEMENT ────────────────────────────────────────────────────────
-let _csSelectedMonths=[];let _csCustomer='';let _csDropdownOpen=false;
+let _csSelectedMonths=[];let _csCustomer='';let _csDropdownOpen=false;let _csAllMonths=[];
 function renderCustomerStatement(){
-  const sel=document.getElementById('cs-customer');if(sel){sel.innerHTML='<option value="">— Select a customer —</option>'+db.customers.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');}
   _buildCsMonthList();
 }
 function _buildCsMonthList(){
   const list=document.getElementById('cs-month-list');if(!list)return;
-  const months=getMonths().reverse();
-  list.innerHTML=months.map(m=>`<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:13px;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${m.key}" onchange="_csMthChange()" style="accent-color:var(--green);width:16px;height:16px"> ${m.label}</label>`).join('');
+  _csAllMonths=getMonths().reverse();
+  _csRenderMonthList(_csAllMonths);
+}
+function _csRenderMonthList(months){
+  const list=document.getElementById('cs-month-list');if(!list)return;
+  if(!months.length){list.innerHTML='<div style="padding:14px;text-align:center;font-size:12px;color:var(--text3)">No months match</div>';return;}
+  list.innerHTML=months.map(m=>{
+    const checked=_csSelectedMonths.includes(m.key)?'checked':'';
+    return`<label style="display:flex;align-items:center;gap:10px;padding:8px 14px;cursor:pointer;font-size:13px;transition:background .1s" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''"><input type="checkbox" value="${m.key}" ${checked} onchange="_csMthChange()" style="accent-color:var(--green);width:16px;height:16px"> ${m.label}</label>`;
+  }).join('');
+}
+function csFilterMonthList(q){
+  q=(q||'').toLowerCase().trim();
+  const filtered=q?_csAllMonths.filter(m=>m.label.toLowerCase().includes(q)):_csAllMonths;
+  _csRenderMonthList(filtered);
+}
+// ── Searchable customer picker ──
+function csSearchCustomer(q){
+  const dd=document.getElementById('cs-customer-dropdown');if(!dd)return;
+  q=(q||'').toLowerCase().trim();
+  const matches=q
+    ?db.customers.filter(c=>c.name.toLowerCase().includes(q)||(c.customerCode&&c.customerCode.toLowerCase().includes(q))||(c.phone&&c.phone.includes(q)))
+    :db.customers;
+  if(!matches.length){
+    dd.innerHTML='<div style="padding:12px 16px;font-size:13px;color:var(--text3)">No customers found</div>';
+  } else {
+    dd.innerHTML=matches.slice(0,50).map(c=>{
+      const balInfo=(function(){const invs=db.invoices.filter(i=>i.customer===c.id);const bal=invs.reduce((s,i)=>s+(i.total-i.paid),0);return bal>0.01?'<span style="color:var(--red);font-size:11px;font-family:var(--mono)">SAR '+bal.toFixed(2)+' due</span>':'<span style="color:var(--green);font-size:11px">Clear</span>';})();
+      return '<div onclick="csPickCustomer(\''+c.id+'\',\''+c.name.replace(/'/g,"\\'")+'\')" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background=\'var(--bg3)\'" onmouseout="this.style.background=\'\'">'
+        +'<div><div style="font-size:13px;font-weight:600;color:var(--text)">'+c.name+'</div>'
+        +(c.customerCode?'<div style="font-size:11px;font-family:var(--mono);color:var(--teal)">'+c.customerCode+'</div>':'')
+        +'</div>'+balInfo+'</div>';
+    }).join('');
+  }
+  dd.style.display='';
+}
+function csPickCustomer(cid,name){
+  const hid=document.getElementById('cs-customer');if(hid)hid.value=cid;
+  const si=document.getElementById('cs-customer-search');if(si)si.value=name;
+  const dd=document.getElementById('cs-customer-dropdown');if(dd)dd.style.display='none';
+  csOnCustomerChange();
+}
+function csHideCustomerDrop(delay){
+  setTimeout(function(){const dd=document.getElementById('cs-customer-dropdown');if(dd)dd.style.display='none';},delay||0);
 }
 function csOnCustomerChange(){_csCustomer=document.getElementById('cs-customer')?.value||'';}
 function csToggleDropdown(){
@@ -6527,14 +6596,158 @@ function generateCustomerStatement(){
   const bp=document.getElementById('cs-banner-period');if(bp)bp.textContent=months.length?months.join(', '):'All time';
   const bd=document.getElementById('cs-banner-date');if(bd)bd.textContent=fmtDate(today());
   const ks=document.getElementById('cs-kpi-strip');if(ks)ks.innerHTML=[{lbl:'Total Invoiced',val:'SAR '+fmtShort(totalCharged),clr:'var(--green)'},{lbl:'Total Paid',val:'SAR '+fmtShort(totalPaid),clr:'var(--blue)'},{lbl:'Total Returned',val:'SAR '+fmtShort(totalReturned),clr:'var(--red)'},{lbl:'Balance Due',val:'SAR '+fmtShort(balance),clr:balance>0?'var(--red)':'var(--green)'},{lbl:'Invoices',val:invs.length,clr:'var(--teal)'},{lbl:'Payments',val:pmts.length,clr:'var(--amber)'}].map(k=>`<div class="kpi-card" style="--kpi-c:${k.clr}"><div class="kpi-label">${k.lbl}</div><div class="kpi-value" style="font-size:18px">${k.val}</div></div>`).join('');
-  const ib=document.getElementById('cs-inv-body');if(ib)ib.innerHTML=invs.length?invs.map(inv=>{const bal2=inv.total-inv.paid;const s=bal2<=0?'paid':daysDiff(inv.due)<0?'overdue':'pending';return`<tr><td style="font-size:12px;font-family:var(--mono)">${inv.id}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><span class="badge ${inv.van==='Van 1'?'badge-green':'badge-blue'}">${inv.van||'—'}</span></td><td style="font-family:var(--mono)">${inv.subtotal?.toFixed(2)||'—'}</td><td style="font-family:var(--mono)">${inv.vatAmount?.toFixed(2)||'—'}</td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal2>0?'var(--red)':'var(--text3)'}">${bal2>0?'SAR '+bal2.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${s==='paid'?'badge-green':s==='overdue'?'badge-red':'badge-amber'}">${s}</span></td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3)">No invoices in period</td></tr>`;
-  const pb2=document.getElementById('cs-pay-body');if(pb2)pb2.innerHTML=pmts.length?pmts.map(p=>`<tr><td style="font-size:12px;font-family:var(--mono)">${p.invoice||'—'}</td><td style="font-size:12px">${fmtDate(p.date)}</td><td style="font-family:var(--mono);font-weight:600;color:var(--green)">SAR ${p.amount.toFixed(2)}</td><td style="font-family:var(--mono)">—</td><td style="font-size:12px">${p.method||'Cash'}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No payments in period</td></tr>`;
-  const lb=document.getElementById('cs-ledger-body');if(lb)lb.innerHTML=ledger.length?ledger.map(r=>`<tr><td style="font-size:12px">${fmtDate(r.date)}</td><td><span class="badge ${r.type==='Invoice'?'badge-blue':r.type==='Return'?'badge-red':'badge-green'}">${r.type}</span></td><td style="font-family:var(--mono);font-size:12px">${r.ref}</td><td style="font-family:var(--mono);color:${r.debit>0?'var(--red)':'var(--text3)'}">${r.debit>0?'SAR '+r.debit.toFixed(2):'—'}</td><td style="font-family:var(--mono);color:${r.credit>0?'var(--green)':'var(--text3)'}">${r.credit>0?'SAR '+r.credit.toFixed(2):'—'}</td><td style="font-family:var(--mono);font-weight:700;color:${r.balance>0?'var(--red)':'var(--green)'}">SAR ${r.balance.toFixed(2)}</td></tr>`).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No transactions</td></tr>`;
+
+  // ── Ageing summary — only counts invoices with an outstanding balance ──
+  const ageingWrap=document.getElementById('cs-ageing-wrap');
+  const unpaidInvs=invs.filter(inv=>(inv.total-inv.paid)>0.01);
+  if(ageingWrap){
+    if(!unpaidInvs.length){
+      ageingWrap.style.display='none';
+    } else {
+      ageingWrap.style.display='';
+      const buckets={current:0,d1_30:0,d31_60:0,d61_90:0,d90plus:0};
+      unpaidInvs.forEach(function(inv){
+        const bal2=inv.total-inv.paid;
+        const days=-daysDiff(inv.due); // positive = overdue, negative/0 = not yet due
+        if(days<=0)buckets.current+=bal2;
+        else if(days<=30)buckets.d1_30+=bal2;
+        else if(days<=60)buckets.d31_60+=bal2;
+        else if(days<=90)buckets.d61_90+=bal2;
+        else buckets.d90plus+=bal2;
+      });
+      const ag=document.getElementById('cs-ageing');
+      if(ag)ag.innerHTML=[
+        {lbl:'Current (not due)',val:buckets.current,clr:'var(--green)'},
+        {lbl:'1–30 days overdue',val:buckets.d1_30,clr:'var(--amber)'},
+        {lbl:'31–60 days overdue',val:buckets.d31_60,clr:'#e8730a'},
+        {lbl:'61–90 days overdue',val:buckets.d61_90,clr:'var(--red)'},
+        {lbl:'90+ days overdue',val:buckets.d90plus,clr:'#7c1d1d'},
+      ].map(function(b){
+        return '<div class="card" style="padding:12px 14px;border-left:3px solid '+b.clr+'">'
+          +'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+b.lbl+'</div>'
+          +'<div style="font-family:var(--mono);font-weight:700;font-size:15px;color:'+(b.val>0?b.clr:'var(--text3)')+'">SAR '+b.val.toFixed(2)+'</div>'
+          +'</div>';
+      }).join('');
+    }
+  }
+
+  // ── Month-by-month timeline — only shown when 2+ months are selected ──
+  const timelineWrap=document.getElementById('cs-timeline-wrap');
+  if(timelineWrap){
+    if(months.length<2){
+      timelineWrap.style.display='none';
+    } else {
+      timelineWrap.style.display='';
+      const sortedMonths=months.slice().sort();
+      const tl=document.getElementById('cs-timeline');
+      if(tl)tl.innerHTML=sortedMonths.map(function(mKey){
+        const mInvs=invs.filter(inv=>inv.date.startsWith(mKey));
+        const mPmts=pmts.filter(p=>p.date.startsWith(mKey));
+        const mCharged=mInvs.reduce((s,i)=>s+(i.originalTotal!==undefined?i.originalTotal:i.total),0);
+        const mPaid=mPmts.reduce((s,p)=>s+p.amount,0);
+        const parts=mKey.split('-');
+        const monthNames=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const label=monthNames[parseInt(parts[1])-1]+' '+parts[0];
+        return '<div class="card" style="padding:12px 14px">'
+          +'<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:8px;font-family:var(--mono)">'+label+'</div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text3)">Invoiced</span><span style="font-family:var(--mono);color:var(--green);font-weight:600">SAR '+fmtShort(mCharged)+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:var(--text3)">Paid</span><span style="font-family:var(--mono);color:var(--blue);font-weight:600">SAR '+fmtShort(mPaid)+'</span></div>'
+          +'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:6px;border-top:1px solid var(--border);padding-top:6px"><span>'+mInvs.length+' inv</span><span>'+mPmts.length+' pmt</span></div>'
+          +'</div>';
+      }).join('');
+    }
+  }
+
+  const isMobile=window.innerWidth<700;
+  // Toggle table vs card containers for each section
+  [['cs-inv-table-wrap','cs-inv-cards'],['cs-pay-table-wrap','cs-pay-cards'],['cs-ledger-table-wrap','cs-ledger-cards']].forEach(function(pair){
+    const tbl=document.getElementById(pair[0]);const crd=document.getElementById(pair[1]);
+    if(tbl)tbl.style.display=isMobile?'none':'';
+    if(crd)crd.style.display=isMobile?'':'none';
+  });
+
+  if(!isMobile){
+    const ib=document.getElementById('cs-inv-body');if(ib)ib.innerHTML=invs.length?invs.map(inv=>{const bal2=inv.total-inv.paid;const s=bal2<=0?'paid':daysDiff(inv.due)<0?'overdue':'pending';return`<tr onclick="viewInvoice('${inv.id}')" style="cursor:pointer" title="Click to view invoice"><td style="font-size:12px;font-family:var(--mono);color:var(--blue)">${inv.id}</td><td style="font-size:12px">${fmtDate(inv.date)}</td><td><span class="badge ${inv.van==='Van 1'?'badge-green':'badge-blue'}">${inv.van||'—'}</span></td><td style="font-family:var(--mono)">${inv.subtotal?.toFixed(2)||'—'}</td><td style="font-family:var(--mono)">${inv.vatAmount?.toFixed(2)||'—'}</td><td style="font-family:var(--mono);font-weight:600">SAR ${inv.total.toFixed(2)}</td><td style="font-family:var(--mono);color:var(--green)">${inv.paid.toFixed(2)}</td><td style="font-family:var(--mono);color:${bal2>0?'var(--red)':'var(--text3)'}">${bal2>0?'SAR '+bal2.toFixed(2):'—'}</td><td style="font-size:12px">${fmtDate(inv.due)}</td><td><span class="badge ${s==='paid'?'badge-green':s==='overdue'?'badge-red':'badge-amber'}">${s}</span></td></tr>`;}).join(''):`<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--text3)">No invoices in period</td></tr>`;
+    const invFoot=document.getElementById('cs-inv-footer');
+    if(invFoot){
+      if(invs.length){
+        invFoot.innerHTML='<span style="font-size:12px;color:var(--text2)">Subtotal: <strong style="font-family:var(--mono)">SAR '+invs.reduce((s,i)=>s+(i.subtotal||0),0).toFixed(2)+'</strong></span>'
+          +'<span style="font-size:12px;color:var(--text2)">VAT: <strong style="font-family:var(--mono)">SAR '+invs.reduce((s,i)=>s+(i.vatAmount||0),0).toFixed(2)+'</strong></span>'
+          +'<span style="font-size:13px;font-weight:700;color:var(--green)">Total: SAR '+totalCharged.toFixed(2)+'</span>';
+      } else {
+        invFoot.innerHTML='';
+      }
+    }
+    const pb2=document.getElementById('cs-pay-body');if(pb2)pb2.innerHTML=pmts.length?pmts.map(p=>`<tr><td style="font-size:12px;font-family:var(--mono)">${p.invoice||'—'}</td><td style="font-size:12px">${fmtDate(p.date)}</td><td style="font-family:var(--mono);font-weight:600;color:var(--green)">SAR ${p.amount.toFixed(2)}</td><td style="font-family:var(--mono)">—</td><td style="font-size:12px">${p.method||'Cash'}</td></tr>`).join(''):`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3)">No payments in period</td></tr>`;
+    const lb=document.getElementById('cs-ledger-body');if(lb)lb.innerHTML=ledger.length?ledger.map(r=>`<tr><td style="font-size:12px">${fmtDate(r.date)}</td><td><span class="badge ${r.type==='Invoice'?'badge-blue':r.type==='Return'?'badge-red':'badge-green'}">${r.type}</span></td><td style="font-family:var(--mono);font-size:12px">${r.ref}</td><td style="font-family:var(--mono);color:${r.debit>0?'var(--red)':'var(--text3)'}">${r.debit>0?'SAR '+r.debit.toFixed(2):'—'}</td><td style="font-family:var(--mono);color:${r.credit>0?'var(--green)':'var(--text3)'}">${r.credit>0?'SAR '+r.credit.toFixed(2):'—'}</td><td style="font-family:var(--mono);font-weight:700;color:${r.balance>0?'var(--red)':'var(--green)'}">SAR ${r.balance.toFixed(2)}</td></tr>`).join(''):`<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text3)">No transactions</td></tr>`;
+  } else {
+    // ── Mobile card layouts ──
+    const ic=document.getElementById('cs-inv-cards');
+    if(ic){
+      ic.innerHTML=invs.length?invs.map(function(inv){
+        const bal2=inv.total-inv.paid;const st=bal2<=0?'paid':daysDiff(inv.due)<0?'overdue':'pending';
+        const stCls=st==='paid'?'badge-green':st==='overdue'?'badge-red':'badge-amber';
+        return '<div class="card" onclick="viewInvoice(\''+inv.id+'\')" style="padding:14px;margin-bottom:10px;cursor:pointer;-webkit-tap-highlight-color:transparent">'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+          +'<div><div style="font-family:var(--mono);font-size:13px;font-weight:700">'+inv.id+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+fmtDate(inv.date)+'</div></div>'
+          +'<span class="badge '+stCls+'">'+st+'</span>'
+          +'</div>'
+          +'<div style="display:flex;gap:6px;margin-bottom:10px"><span class="badge '+(inv.van==='Van 1'?'badge-green':'badge-blue')+'">'+(inv.van||'—')+'</span></div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:10px;font-size:12px">'
+          +'<div><div style="color:var(--text3);font-size:10px;text-transform:uppercase">Total</div><div style="font-family:var(--mono);font-weight:700">SAR '+inv.total.toFixed(2)+'</div></div>'
+          +'<div><div style="color:var(--text3);font-size:10px;text-transform:uppercase">Paid</div><div style="font-family:var(--mono);color:var(--green)">SAR '+inv.paid.toFixed(2)+'</div></div>'
+          +'<div><div style="color:var(--text3);font-size:10px;text-transform:uppercase">Balance</div><div style="font-family:var(--mono);color:'+(bal2>0?'var(--red)':'var(--text3)')+'">'+(bal2>0?'SAR '+bal2.toFixed(2):'—')+'</div></div>'
+          +'<div><div style="color:var(--text3);font-size:10px;text-transform:uppercase">Due</div><div style="font-size:12px">'+fmtDate(inv.due)+'</div></div>'
+          +'</div>'
+          +'</div>';
+      }).join(''):'<div class="card" style="padding:28px;text-align:center;color:var(--text3)">No invoices in period</div>';
+    }
+    const pc=document.getElementById('cs-pay-cards');
+    if(pc){
+      pc.innerHTML=pmts.length?pmts.map(function(p){
+        return '<div class="card" style="padding:14px;margin-bottom:10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center">'
+          +'<div><div style="font-family:var(--mono);font-size:13px;font-weight:700">'+(p.invoice||'—')+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+fmtDate(p.date)+' · '+(p.method||'Cash')+'</div></div>'
+          +'<div style="font-family:var(--mono);font-weight:700;color:var(--green);font-size:15px">SAR '+p.amount.toFixed(2)+'</div>'
+          +'</div>'
+          +'</div>';
+      }).join(''):'<div class="card" style="padding:28px;text-align:center;color:var(--text3)">No payments in period</div>';
+    }
+    const lc=document.getElementById('cs-ledger-cards');
+    if(lc){
+      lc.innerHTML=ledger.length?ledger.map(function(r){
+        const typeCls=r.type==='Invoice'?'badge-blue':r.type==='Return'?'badge-red':'badge-green';
+        return '<div class="card" style="padding:14px;margin-bottom:10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+          +'<span class="badge '+typeCls+'">'+r.type+'</span>'
+          +'<span style="font-size:11px;color:var(--text3)">'+fmtDate(r.date)+'</span>'
+          +'</div>'
+          +'<div style="font-family:var(--mono);font-size:12px;color:var(--blue);margin-bottom:10px">'+r.ref+'</div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:10px">'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Debit</div><div style="font-family:var(--mono);color:'+(r.debit>0?'var(--red)':'var(--text3)')+';font-size:13px">'+(r.debit>0?r.debit.toFixed(2):'—')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Credit</div><div style="font-family:var(--mono);color:'+(r.credit>0?'var(--green)':'var(--text3)')+';font-size:13px">'+(r.credit>0?r.credit.toFixed(2):'—')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase">Balance</div><div style="font-family:var(--mono);font-weight:700;color:'+(r.balance>0?'var(--red)':'var(--green)')+';font-size:13px">'+r.balance.toFixed(2)+'</div></div>'
+          +'</div>'
+          +'</div>';
+      }).join(''):'<div class="card" style="padding:28px;text-align:center;color:var(--text3)">No transactions</div>';
+    }
+  }
+
   const lf=document.getElementById('cs-ledger-footer');if(lf)lf.innerHTML=`<span style="font-size:12px;color:var(--text2)">Opening balance: SAR 0.00</span><span style="font-size:14px;font-weight:700;color:${balance>0?'var(--red)':'var(--green)'}">Closing balance: SAR ${balance.toFixed(2)}</span>`;
   // cache for print
   _csLastData={c,months,invs,pmts,rets,ledger,totalCharged,totalPaid,totalReturned,balance};
 }
-function openStatementForCustomer(cid){navigate('customer-statement');setTimeout(()=>{const sel=document.getElementById('cs-customer');if(sel){sel.value=cid;csOnCustomerChange();}csPickAll();generateCustomerStatement();},100);}
+function openStatementForCustomer(cid){
+  navigate('customer-statement');
+  setTimeout(function(){
+    const c=getCustomer(cid);
+    const hid=document.getElementById('cs-customer');if(hid)hid.value=cid;
+    const si=document.getElementById('cs-customer-search');if(si)si.value=c.name||'';
+    csOnCustomerChange();
+    csPickAll();
+    generateCustomerStatement();
+  },100);
+}
 function printCustomerStatement(){
   if(!_csLastData){showToast('Generate the statement first','red');return;}
   var d=_csLastData;
@@ -9572,8 +9785,15 @@ function renderCashBookPage(){
   if(searchQ)filtered=filtered.filter(en=>en.desc.toLowerCase().includes(searchQ)||en.ref.toLowerCase().includes(searchQ)||en.type.toLowerCase().includes(searchQ));
   if(typeFilter)filtered=filtered.filter(en=>en.type===typeFilter);
   const badge=document.getElementById('cb-count-badge');if(badge)badge.textContent=filtered.length+' entr'+(filtered.length===1?'y':'ies')+(searchQ||typeFilter?' (filtered)':'');
+
+  const isMobile=window.innerWidth<700;
+  const tableWrap=document.getElementById('cb-table-wrap');
+  const mobileWrap=document.getElementById('cb-mobile-cards');
+  if(tableWrap)tableWrap.style.display=isMobile?'none':'';
+  if(mobileWrap)mobileWrap.style.display=isMobile?'':'none';
+
   const body=document.getElementById('cb-ledger-body');
-  if(body){
+  if(body&&!isMobile){
     let rowsHtml='';
     rowsHtml+=`<tr style="background:var(--bg3)"><td style="font-size:12px;font-style:italic" colspan="6">Opening Balance (as of ${fmtDate(fromDate)})</td><td style="font-family:var(--mono);font-weight:700">SAR ${openingBalance.toFixed(2)}</td></tr>`;
     if(filtered.length){
@@ -9583,6 +9803,38 @@ function renderCashBookPage(){
     }
     rowsHtml+=`<tr style="background:var(--bg3)"><td style="font-size:12px;font-weight:700" colspan="6">Closing Balance (as of ${fmtDate(toDate)})</td><td style="font-family:var(--mono);font-weight:800;color:var(--teal)">SAR ${closingBalance.toFixed(2)}</td></tr>`;
     body.innerHTML=rowsHtml;
+  }
+
+  if(mobileWrap&&isMobile){
+    let mh='';
+    mh+='<div class="card" style="padding:12px 14px;margin-bottom:10px;background:var(--bg3)">'
+      +'<div style="font-size:11px;font-style:italic;color:var(--text3);margin-bottom:4px">Opening Balance (as of '+fmtDate(fromDate)+')</div>'
+      +'<div style="font-family:var(--mono);font-weight:700;font-size:15px">SAR '+openingBalance.toFixed(2)+'</div>'
+      +'</div>';
+    if(filtered.length){
+      filtered.forEach(function(en){
+        mh+='<div class="card" style="padding:14px;margin-bottom:10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+          +'<span class="badge '+en.typeCls+'">'+en.type+'</span>'
+          +'<span style="font-size:11px;color:var(--text3)">'+fmtDate(en.date)+'</span>'
+          +'</div>'
+          +'<div style="font-size:13px;color:var(--text2);margin-bottom:10px;line-height:1.4">'+en.desc+'</div>'
+          +'<div style="font-size:11px;font-family:var(--mono);color:var(--blue);margin-bottom:10px">Ref: '+en.ref+'</div>'
+          +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:10px">'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Cash In</div><div style="font-family:var(--mono);color:var(--green);font-weight:700;font-size:13px">'+(en.in>0?en.in.toFixed(2):'—')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Cash Out</div><div style="font-family:var(--mono);color:var(--red);font-weight:700;font-size:13px">'+(en.out>0?en.out.toFixed(2):'—')+'</div></div>'
+          +'<div><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px">Balance</div><div style="font-family:var(--mono);font-weight:700;font-size:13px">'+en.balance.toFixed(2)+'</div></div>'
+          +'</div>'
+          +'</div>';
+      });
+    } else {
+      mh+='<div class="card" style="padding:28px;text-align:center;color:var(--text3)">'+(searchQ||typeFilter?'No entries match your search':'No cash transactions in this period')+'</div>';
+    }
+    mh+='<div class="card" style="padding:12px 14px;background:var(--bg3)">'
+      +'<div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px">Closing Balance (as of '+fmtDate(toDate)+')</div>'
+      +'<div style="font-family:var(--mono);font-weight:800;font-size:17px;color:var(--teal)">SAR '+closingBalance.toFixed(2)+'</div>'
+      +'</div>';
+    mobileWrap.innerHTML=mh;
   }
 
   _cbLastReport={fromDate,toDate,openingBalance,entries,totalIn,totalOut,closingBalance};
@@ -9604,13 +9856,13 @@ function printCashBookReport(){
       const typeColor=en.type==='Cash In'?'#065f46':en.type==='Capital In'?'#1e4d8c':en.type==='Supplier Payment'?'#92400e':en.type==='Profit Out'?'#92400e':'#991b1b';
       const typeBg=en.type==='Cash In'?'#d1fae5':en.type==='Capital In'?'#dbeafe':en.type==='Supplier Payment'?'#fef3c7':en.type==='Profit Out'?'#fef3c7':'#fee2e2';
       rowsHtml+='<tr style="border-bottom:1px solid #f3f4f6">'
-        +'<td style="padding:8px 10px;font-size:12px">'+fmtDate(en.date)+'</td>'
-        +'<td style="padding:8px 10px"><span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:'+typeBg+';color:'+typeColor+'">'+en.type+'</span></td>'
-        +'<td style="padding:8px 10px;font-size:11px;font-family:monospace;color:#185fa5">'+en.ref+'</td>'
+        +'<td style="padding:8px 10px;font-size:12px;white-space:nowrap">'+fmtDate(en.date)+'</td>'
+        +'<td style="padding:8px 10px;white-space:nowrap"><span style="display:inline-block;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:5px;background:'+typeBg+';color:'+typeColor+';white-space:nowrap">'+en.type+'</span></td>'
+        +'<td style="padding:8px 10px;font-size:11px;font-family:monospace;color:#185fa5;white-space:nowrap">'+en.ref+'</td>'
         +'<td style="padding:8px 10px;font-size:12px;color:#374151">'+en.desc+'</td>'
-        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;color:#065f46">'+(en.in>0?'SAR '+en.in.toFixed(2):'—')+'</td>'
-        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;color:#991b1b">'+(en.out>0?'SAR '+en.out.toFixed(2):'—')+'</td>'
-        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:600">SAR '+en.balance.toFixed(2)+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;color:#065f46;white-space:nowrap">'+(en.in>0?'SAR '+en.in.toFixed(2):'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;color:#991b1b;white-space:nowrap">'+(en.out>0?'SAR '+en.out.toFixed(2):'—')+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;font-family:monospace;font-weight:600;white-space:nowrap">SAR '+en.balance.toFixed(2)+'</td>'
         +'</tr>';
     });
   }else{
@@ -9642,13 +9894,13 @@ function printCashBookReport(){
     +kpiCard('Closing Balance','SAR '+closingBalance.toFixed(2),'#0f6e56')
     +'</div>'
     +'<table><thead><tr style="background:#f3f4f6">'
-    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Date</th>'
-    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Type</th>'
-    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Reference</th>'
+    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Date</th>'
+    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Type</th>'
+    +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Reference</th>'
     +'<th style="padding:9px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Description</th>'
-    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Cash In</th>'
-    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Cash Out</th>'
-    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb">Balance</th>'
+    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Cash In</th>'
+    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Cash Out</th>'
+    +'<th style="padding:9px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;border-bottom:2px solid #e5e7eb;white-space:nowrap;width:1%">Balance</th>'
     +'</tr></thead><tbody>'+rowsHtml+'</tbody></table>'
     +'<div style="margin-top:28px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center;color:#9ca3af;font-size:11px">This Cash Book report reflects cash-method transactions only (excludes bank transfers, cheques, and online payments) &middot; '+(s.nameEn||'FasTrack')+'</div>'
     +'</body></html>';
@@ -11479,7 +11731,7 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='none';
     applyRBAC();
     updateSidebarUser();
-    navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':_currentUser&&_currentUser.role==='van_sales'?'sales-goal':'dashboard');
+    navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':_currentUser&&_currentUser.role==='van_sales'?'sales-goal':'dashboard',true);
   }else{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='flex';
   }
