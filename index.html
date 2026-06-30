@@ -2657,12 +2657,13 @@ function toggleUserForm(){
 }
 function ufRoleChange(){
   const role=document.getElementById('uf-role')?.value;
-  // Show/hide location selector — admin sees all, no picker needed
+  // Show/hide location selector — admin and owner roles don't need one (full or dashboard-only access)
   const lg=document.getElementById('uf-location-group');
-  if(lg)lg.style.display=role==='admin'?'none':'';
-  if(role!=='admin')_renderLocationCards();
+  const noLocationRoles=['admin','owner'];
+  if(lg)lg.style.display=noLocationRoles.includes(role)?'none':'';
+  if(!noLocationRoles.includes(role))_renderLocationCards();
   // permissions preview
-  const perms=ROLE_PERMISSIONS[role]||[];
+  const perms=role==='owner'?['owner-dashboard']:(ROLE_PERMISSIONS[role]||[]);
   const pl=document.getElementById('uf-perm-list');
   if(pl)pl.innerHTML=perms.map(p=>`<span style="background:rgba(24,95,165,.1);color:var(--green);font-size:10px;padding:2px 8px;border-radius:4px;font-family:var(--mono)">${PERM_LABELS[p]||p}</span>`).join('');
 }
