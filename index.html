@@ -11528,15 +11528,82 @@ function isNativeAndroidApp(){return typeof AndroidBT!=='undefined'&&AndroidBT.i
 // Android/Chrome-sanctioned mechanism for launching another app from a web page.
 // uri should be the part after "rawbt:", e.g. "data:image/png;base64,AAAA..."
 function _sendToRawBT(uri){
-  var intentUrl='intent:'+uri+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
-  try{
-    window.location.href=intentUrl;
-  }catch(e){
-    // Extremely old WebView fallback — bare scheme, last resort
-    try{window.location.href='rawbt:'+uri;}catch(e2){
-      showToast('Could not open RawBT — is it installed?','red');
-    }
+  // CRITICAL: base64 payloads contain +, /, = characters that are reserved/
+  // special in URLs. Passing them raw into an intent:// URI causes Android's
+  // intent resolver to fail to match RawBT's registered intent filter — which
+  // is exactly when Android falls back to "no app found, open Play Store"
+  // (the bug you were hitting). encodeURIComponent() escapes those characters
+  // so the full data survives intact and the intent resolves to the installed app.
+  var encodedUri=encodeURIComponent(uri);
+  var intentUrl='intent:'+encodedUri+'#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;';
+  window.location.href=intentUrl;
+}
+
+// Sends the receipt image to RawBT on Android using two independent strategies:
+//   1) intent:// URL — fastest, no extra tap, but depends on correct Android/
+//      Chrome intent resolution (can be fragile across OEM Chrome builds).
+//   2) Web Share API — opens Android's native share sheet so the user picks
+//      RawBT directly. This bypasses custom-URL-scheme parsing entirely and is
+//      the most reliable method across different phones/Chrome versions.
+// If neither is available, the image downloads to the device with instructions
+// so the user can open it with RawBT manually as a guaranteed last resort.
+function _sendAndroidReceiptToPrinter(blob,invId){
+  var file=new File([blob],'receipt-'+invId+'.png',{type:'image/png'});
+
+  function tryIntentUrl(){
+    var reader=new FileReader();
+    reader.onload=function(){
+      var dataUrl=reader.result;
+      _sendToRawBT(dataUrl);
+      showToast('Sending to printer...','amber');
+      // If RawBT doesn't actually open (e.g. intent silently fails on this
+      // device), offer the share-sheet as a one-tap manual alternative.
+      setTimeout(function(){
+        if(document.visibilityState==='visible'){
+          _offerShareReceiptFallback(file,invId);
+        }
+      },2500);
+    };
+    reader.readAsDataURL(blob);
   }
+
+  tryIntentUrl();
+}
+
+// Shown if the automatic intent launch doesn't appear to have worked — gives a
+// one-tap button to open Android's native share sheet and pick RawBT directly.
+function _offerShareReceiptFallback(file,invId){
+  if(document.getElementById('rawbt-fallback-bar'))return; // already showing
+  var bar=document.createElement('div');
+  bar.id='rawbt-fallback-bar';
+  bar.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(80px + env(safe-area-inset-bottom));z-index:99999;background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.18);display:flex;align-items:center;gap:12px';
+  bar.innerHTML='<i class="ti ti-printer" style="font-size:22px;color:var(--blue);flex-shrink:0"></i>'
+    +'<div style="flex:1;font-size:12.5px;color:var(--text2);line-height:1.4">Didn\'t print? Tap to open the share menu and choose RawBT.</div>'
+    +'<button id="rawbt-fallback-btn" style="background:var(--blue);color:#fff;border:none;border-radius:9px;padding:9px 14px;font-size:13px;font-weight:700;white-space:nowrap;cursor:pointer">Share</button>'
+    +'<button id="rawbt-fallback-close" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:0 4px">×</button>';
+  document.body.appendChild(bar);
+
+  document.getElementById('rawbt-fallback-close').onclick=function(){bar.remove();};
+  document.getElementById('rawbt-fallback-btn').onclick=async function(){
+    try{
+      if(navigator.canShare&&navigator.canShare({files:[file]})){
+        await navigator.share({files:[file],title:'Receipt '+invId});
+        bar.remove();
+      }else{
+        // Web Share API for files unsupported — fall back to a direct download
+        var url=URL.createObjectURL(file);
+        var a=document.createElement('a');
+        a.href=url;a.download=file.name;document.body.appendChild(a);a.click();
+        setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+        showToast('Receipt saved — open it with RawBT from your downloads or gallery','amber');
+        bar.remove();
+      }
+    }catch(e){
+      if(e.name!=='AbortError')showToast('Could not open share menu','red');
+    }
+  };
+  // Auto-dismiss after 12 seconds so it doesn't linger forever
+  setTimeout(function(){if(document.body.contains(bar))bar.remove();},12000);
 }
 function _buildPlainReceipt(inv){
   const s=db.settings||{}, c=getCustomer(inv.customer);
@@ -12475,19 +12542,14 @@ function printThermalInvoice(inv){
     //    Android (RawBT), and is shown true-to-80mm-size on desktop print ──
     cv.toBlob(function(blob){
       if(!blob){showToast('Print failed','red');return;}
-      var reader=new FileReader();
-      reader.onload=function(){
-        var dataUrl=reader.result;
-        var b64=dataUrl.split(',')[1];
-        var ua=navigator.userAgent.toLowerCase();
-        if(ua.indexOf('android')>-1){
-          _sendToRawBT('data:image/png;base64,'+b64);
-          showToast('Sending to printer...','amber');
-        } else {
-          _printThermalImageDesktop(dataUrl,inv.id);
-        }
-      };
-      reader.readAsDataURL(blob);
+      var ua=navigator.userAgent.toLowerCase();
+      if(ua.indexOf('android')>-1){
+        _sendAndroidReceiptToPrinter(blob,inv.id);
+      } else {
+        var reader=new FileReader();
+        reader.onload=function(){_printThermalImageDesktop(reader.result,inv.id);};
+        reader.readAsDataURL(blob);
+      }
     },'image/png',1.0);
   }
 
