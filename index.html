@@ -225,7 +225,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   .ni{padding:11px 18px 11px 34px;font-size:14px;min-height:44px;-webkit-tap-highlight-color:transparent}
   .ni:active{background:rgba(255,255,255,.1)}
   .nsec.open .nsec-body{max-height:700px}
-  #main{margin-left:0!important;padding:64px 14px calc(74px + env(safe-area-inset-bottom))!important;width:100%}
+  #main{margin-left:0!important;padding:calc(64px + env(safe-area-inset-top)) 14px calc(74px + env(safe-area-inset-bottom))!important;width:100%}
   .pghdr{flex-wrap:wrap;gap:10px;margin-bottom:18px;padding-bottom:14px}
   .pgtitle{font-size:18px}
   .two-col,.fgrid{grid-template-columns:1fr}
@@ -308,7 +308,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   #role-summary-cards{grid-template-columns:1fr 1fr!important}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .pgtitle{font-size:16px}
-  #main{padding:60px 10px calc(70px + env(safe-area-inset-bottom))!important}
+  #main{padding:calc(60px + env(safe-area-inset-top)) 10px calc(70px + env(safe-area-inset-bottom))!important}
   .kpi-card .kpi-label{font-size:10px}
   td .btn.btn-sm{min-width:34px;min-height:34px;padding:0 6px!important}
   #mobile-print-bar{padding:14px 12px!important}
@@ -2212,6 +2212,10 @@ function doLogin(){
   _currentUser=user;
   user.lastLogin=new Date().toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
   document.getElementById('login-screen').style.display='none';
+  // Briefly mask the transition so the dashboard build/reflow never flashes
+  // unstyled content (most visible on mobile where the fixed header can
+  // momentarily appear mid-page before its layout settles).
+  _showLoadingScreen('Loading your dashboard...');
   applyRBAC();
   updateSidebarUser();
   _initDesktopSidebarPref();
@@ -2221,6 +2225,9 @@ function doLogin(){
   // Owner goes to their dedicated dashboard
   const landingPage=_currentUser.role==='owner'?'owner-dashboard':_currentUser.role==='van_sales'?'sales-goal':'dashboard';
   navigate(landingPage,true);
+  // Hide the mask on the next animation frame, after the browser has had a
+  // chance to fully paint the new page layout
+  requestAnimationFrame(function(){requestAnimationFrame(_hideLoadingScreen);});
 }
 function showLoginError(msg){const el=document.getElementById('login-error');if(el){el.textContent=msg;el.style.display='';}document.getElementById('login-pass').value='';}
 function toggleLoginPassVis(){const inp=document.getElementById('login-pass');const ico=document.getElementById('login-eye-icon');if(inp.type==='password'){inp.type='text';ico.className='ti ti-eye-off';}else{inp.type='password';ico.className='ti ti-eye';}}
@@ -12253,13 +12260,15 @@ function printThermalInvoice(inv){
   }
 
   // ── Build QR canvas first (so we know its size) — high-res for reliable scanning ──
+  // Uses _makeQRCanvas, which generates a real, spec-compliant QR code via the
+  // qrcode-generator library (with full Reed-Solomon error correction). The raw
+  // _drawQR() encoder was previously used here by mistake — it has no error
+  // correction at all and produces an invalid/unscannable QR matrix.
   var qrSize=420; // fixed high-res source, drawn down to physical size for sharp edges
   var qrCv=null;
   if(!isEst){
     try{
-      qrCv=document.createElement('canvas');
-      qrCv.width=qrSize;qrCv.height=qrSize;
-      _drawQR(qrCv,buildZatcaTLV(inv),qrSize);
+      qrCv=_makeQRCanvas(buildZatcaTLV(inv),qrSize);
     }catch(e){qrCv=null;}
   }
 
