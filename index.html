@@ -11539,30 +11539,27 @@ function _sendToRawBT(uri){
   window.location.href=intentUrl;
 }
 
-// Sends the receipt image to RawBT on Android using two independent strategies:
-//   1) Web Share API (PRIMARY) — opens Android's native share sheet so the user
-//      picks RawBT directly, passing the actual binary file. No URL-length limit,
-//      so it works regardless of receipt image size (logo + high-res QR).
-//   2) intent:// URL (fallback only) — encodes the image as base64 inside a URL.
-//      Only used when Web Share isn't available, since large receipt images can
-//      exceed Android's intent:// URL size limit and get corrupted in transit —
-//      this was the cause of receipts printing as a wall of garbled characters
-//      instead of the actual receipt image.
+// Sends the receipt image to RawBT on Android using two strategies:
+//   1) intent:// URL (PRIMARY) — targets the RawBT package by name, so Android
+//      launches it directly with no picker/popup at all (true one-tap print).
+//      This needs the image encoded as base64 inside a URL, which has a size
+//      limit — exceeding it used to corrupt the print into a wall of garbled
+//      characters. Now that receipts render at the printer's native 576-dot
+//      resolution instead of 3x oversized, the payload is small enough that
+//      this is reliable again, so it's safe to use as the fast default.
+//   2) Web Share API (fallback) — opens Android's share sheet so the user picks
+//      RawBT manually. Slower (extra tap) but has no size limit, so it's used
+//      automatically if the image is unusually large (e.g. very long item
+//      list) or if the intent:// launch doesn't appear to have worked.
 // If neither works, the image downloads to the device with instructions so the
 // user can open it with RawBT manually as a guaranteed last resort.
 function _sendAndroidReceiptToPrinter(blob,invId){
   var file=new File([blob],'receipt-'+invId+'.png',{type:'image/png'});
+  // Conservative safety margin for intent:// URL size. Beyond this, base64 +
+  // URL-encoding overhead risks exceeding Android's intent URI limit and
+  // corrupting the print, so we route straight to the share sheet instead.
+  var INTENT_SAFE_BYTES=60000;
 
-  // PRIMARY METHOD: Web Share API with the actual binary file.
-  // The intent:// custom-scheme method (tryIntentUrl below) has to encode the
-  // whole image as a base64 string inside a URL. Android's intent:// URLs have
-  // a hard practical size limit, and our receipt images (logo + high-res QR)
-  // routinely exceed it. When that happens the intent gets corrupted in transit
-  // and RawBT ends up printing the raw decoded image bytes as literal text
-  // instead of rendering them as a picture — that's the garbled wall of
-  // characters bug. Sharing the file directly via navigator.share has no such
-  // size limit because the binary is passed as a real file, not a URL string,
-  // so it's the reliable path and we try it first.
   function tryShareApi(){
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
       showToast('Opening share menu — choose RawBT','amber');
@@ -11594,7 +11591,11 @@ function _sendAndroidReceiptToPrinter(blob,invId){
     reader.readAsDataURL(blob);
   }
 
-  if(!tryShareApi())tryIntentUrl();
+  if(blob.size<=INTENT_SAFE_BYTES){
+    tryIntentUrl();
+  }else if(!tryShareApi()){
+    tryIntentUrl();
+  }
 }
 
 // Shown if the automatic intent launch doesn't appear to have worked — gives a
@@ -12401,11 +12402,15 @@ function printThermalInvoice(inv){
   const sub=inv.subtotal||(inv.total/(1+getVatRate()));
   const vat=inv.vatAmount||(inv.total-sub);
 
-  // Render at 3x resolution then output at 80mm physical size — crisp text AND a QR
-  // that scanners can read reliably, while staying pixel-identical between screen preview,
-  // the Android RawBT print, and the desktop/laptop print.
-  const SCALE=3;
-  const CW=576*SCALE;        // 80mm @ 203dpi = 576px base, scaled up for sharpness
+  // Render at the printer's native resolution (576 dots = 80mm @ 203dpi).
+  // Previously rendered at 3x this size for sharpness and let the printer/RawBT
+  // downscale it — but now that text is thresholded to pure black/white below,
+  // there's no quality benefit to oversampling, and the larger file was the
+  // root cause of the intent:// one-tap print method corrupting into garbled
+  // text on larger receipts. Native resolution keeps the same crispness while
+  // cutting the file size roughly 9x, making one-tap printing reliable again.
+  const SCALE=1;
+  const CW=576*SCALE;        // 80mm @ 203dpi = 576px base
   const FONT='monospace';
   const FS=22*SCALE;
   const LH=30*SCALE;
@@ -12476,12 +12481,18 @@ function printThermalInvoice(inv){
         var qty=String(it.qty);
         var prc=it.price.toFixed(2);
         var tot=(it.qty*it.price).toFixed(2);
+        // NOTE: padding uses Math.max(1, ...) — not Math.max(0, ...) — for every
+        // column so each field is guaranteed at least one separating space from
+        // the one before it. With Math.max(0,...), a Total value that happened to
+        // exactly fill its column width (e.g. "2400.00" = 7 chars) got zero
+        // leading space and printed jammed against Price with no gap at all
+        // (e.g. "240.002400.00"), which is what made some receipts hard to read.
         if(nm.length<=22){
-          var row=nm+' '.repeat(Math.max(1,22-nm.length))+(' '.repeat(Math.max(0,5-qty.length))+qty)+(' '.repeat(Math.max(0,8-prc.length))+prc)+(' '.repeat(Math.max(0,7-tot.length))+tot);
+          var row=nm+' '.repeat(Math.max(1,22-nm.length))+(' '.repeat(Math.max(1,5-qty.length))+qty)+(' '.repeat(Math.max(1,8-prc.length))+prc)+(' '.repeat(Math.max(1,7-tot.length))+tot);
           add(row,false);
         }else{
           add(nm.slice(0,34),false);
-          var row2=' '.repeat(22)+(' '.repeat(Math.max(0,5-qty.length))+qty)+(' '.repeat(Math.max(0,8-prc.length))+prc)+(' '.repeat(Math.max(0,7-tot.length))+tot);
+          var row2=' '.repeat(22)+(' '.repeat(Math.max(1,5-qty.length))+qty)+(' '.repeat(Math.max(1,8-prc.length))+prc)+(' '.repeat(Math.max(1,7-tot.length))+tot);
           add(row2,false);
         }
         if(it.offerName){
@@ -12564,6 +12575,29 @@ function printThermalInvoice(inv){
 
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,y,CW,PAD*4);
+
+    // ── Force every pixel to pure black or pure white before printing. ──
+    // Text and lines above are drawn with anti-aliasing (soft gray edge pixels),
+    // which is great on screen but bad on a 1-bit thermal printer: when the
+    // printer/RawBT converts those soft grays to black-or-white dots, the
+    // rounding can land differently letter-to-letter, making some words look
+    // faded or broken (e.g. "for your" looking lighter than "Thank you" in the
+    // same line) even though nothing is actually wrong with the printer.
+    // Thresholding here ourselves guarantees crisp, consistent, fully-black
+    // text and lines everywhere, regardless of how the printer/app handles
+    // grayscale conversion downstream.
+    (function thresholdToBW(){
+      var THRESH=170; // 0-255; lower = more pixels turn black (bolder/darker print)
+      var imgData=ctx.getImageData(0,0,cv.width,cv.height);
+      var d=imgData.data;
+      for(var i=0;i<d.length;i+=4){
+        var lum=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
+        var v=lum<THRESH?0:255;
+        d[i]=d[i+1]=d[i+2]=v;
+        // keep alpha as-is
+      }
+      ctx.putImageData(imgData,0,0);
+    })();
 
     // ── This canvas IS the single source of truth — same image goes to
     //    Android (RawBT), and is shown true-to-80mm-size on desktop print ──
