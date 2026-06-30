@@ -51,17 +51,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .gauge-ring{transition:stroke-dashoffset 1s cubic-bezier(.4,0,.2,1)}
 .spark-bar{transition:height .6s cubic-bezier(.4,0,.2,1),background .3s}
 #sidebar{width:220px;min-height:100vh;background:var(--bg2);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 20px rgba(0,0,0,.15);transition:transform .28s cubic-bezier(.4,0,.2,1)}
-/* ── Desktop: sidebar hidden by default, slides out via the edge tab ── */
+/* ── Desktop: sidebar hidden-by-default + edge tab — Business Owner role ONLY.
+     Admin / Warehouse / Van Sales / Accountant keep the sidebar always visible, as before. ── */
 @media(min-width:900px){
-  #sidebar{transform:translateX(-220px)}
-  #sidebar.desktop-open{transform:translateX(0)}
-  #main{margin-left:0!important;transition:margin-left .28s cubic-bezier(.4,0,.2,1)}
-  body.sidebar-pinned-open #main{margin-left:220px!important}
-  #sidebar-edge-tab{display:flex}
+  body.owner-role-active #sidebar{transform:translateX(-220px)}
+  body.owner-role-active #sidebar.desktop-open{transform:translateX(0)}
+  body.owner-role-active #main{margin-left:0!important;transition:margin-left .28s cubic-bezier(.4,0,.2,1)}
+  body.owner-role-active.sidebar-pinned-open #main{margin-left:220px!important}
+  body.owner-role-active #sidebar-edge-tab{display:flex}
   #sidebar-edge-tab.tab-hidden{opacity:0;pointer-events:none;transform:translate(-8px,-50%)}
-  #sidebar-desktop-backdrop{display:none;position:fixed;inset:0;background:rgba(4,16,28,.18);z-index:99;backdrop-filter:blur(1px)}
-  #sidebar-desktop-backdrop.show{display:block}
+  body.owner-role-active #sidebar-desktop-backdrop{display:none;position:fixed;inset:0;background:rgba(4,16,28,.18);z-index:99;backdrop-filter:blur(1px)}
+  body.owner-role-active #sidebar-desktop-backdrop.show{display:block}
+  /* Hover trigger zone: a thin strip along the left edge — hovering it auto-opens the sidebar */
+  body.owner-role-active #sidebar-hover-zone{display:block;position:fixed;left:0;top:0;bottom:0;width:14px;z-index:98}
+  body.owner-role-active.sidebar-pinned-open #sidebar-hover-zone{display:none}
 }
+#sidebar-hover-zone{display:none}
 #sidebar-edge-tab{
   display:none;position:fixed;left:0;top:50%;transform:translateY(-50%);z-index:101;
   width:22px;height:64px;background:linear-gradient(135deg,#185fa5,#0f6e56);
@@ -75,9 +80,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 #sidebar-pin-btn:hover{background:rgba(255,255,255,.16)}
 #sidebar-pin-btn i{color:rgba(255,255,255,.6);font-size:14px;transition:color .15s}
 #sidebar-pin-btn.pinned i{color:#5dcaa5}
+/* Pin button is only relevant/visible for the owner's collapsible sidebar */
+body:not(.owner-role-active) #sidebar-pin-btn{display:none}
 #desktop-user-btn{display:none}
 @media(min-width:900px){
-  #desktop-user-btn{
+  body.owner-role-active #desktop-user-btn{
     display:flex;align-items:center;justify-content:center;
     position:fixed;top:18px;right:22px;z-index:102;
     width:42px;height:42px;border-radius:50%;cursor:pointer;
@@ -86,7 +93,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
     transition:transform .15s,box-shadow .15s;
   }
   #desktop-user-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(15,40,70,.2)}
-  body.sidebar-pinned-open #desktop-user-btn{display:none} /* sidebar's own user badge is visible when pinned open */
+  body.owner-role-active.sidebar-pinned-open #desktop-user-btn{display:none} /* sidebar's own user badge is visible when pinned open */
+  /* Reserve space so page header buttons (e.g. "New Invoice") never sit under the floating avatar */
+  body.owner-role-active:not(.sidebar-pinned-open) .pghdr{padding-right:64px;position:relative}
 }
 #desktop-user-avatar{width:100%;height:100%;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;
   font-size:15px;font-weight:700;color:var(--green);background:rgba(24,95,165,.1)}
@@ -594,6 +603,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <!-- SIDEBAR -->
 <!-- Desktop sidebar edge tab (click to pop sidebar out) -->
 <div id="sidebar-edge-tab" onclick="toggleDesktopSidebar()" title="Open menu"><i class="ti ti-chevron-right"></i></div>
+<div id="sidebar-hover-zone"></div>
 <div id="sidebar-desktop-backdrop" onclick="closeDesktopSidebar()"></div>
 
 <!-- Desktop: always-visible top-right user avatar (profile / logout) — independent of sidebar state -->
@@ -2204,6 +2214,7 @@ function doLogin(){
   document.getElementById('login-screen').style.display='none';
   applyRBAC();
   updateSidebarUser();
+  _initDesktopSidebarPref();
   // persist session
   try{localStorage.setItem('fastrack_session',JSON.stringify({id:user.id,username:user.username}));}catch(e){}
   saveAppState();
@@ -2435,6 +2446,8 @@ function applyRBAC(){
   const isAdmin=_currentUser.role==='admin';
   const isOwner=_currentUser.role==='owner';
   const isVanSalesUser=_currentUser.role==='van_sales';
+  // Auto-hide / hover-reveal sidebar (desktop) applies to every logged-in role
+  document.body.classList.add('owner-role-active');
   const allowed=isAdmin?Object.keys(PERM_LABELS):ROLE_PERMISSIONS[_currentUser.role]||[];
   // Hide Print All Barcodes from van_sales
   const barcodesBtn=document.getElementById('btn-print-barcodes');
@@ -3283,6 +3296,43 @@ function _initDesktopSidebarPref(){
     const pinBtn=document.getElementById('sidebar-pin-btn');if(pinBtn)pinBtn.classList.add('pinned');
     openDesktopSidebar();
   }
+  _initSidebarHoverBehavior();
+}
+
+// ── Hover-to-reveal: moving the mouse to the left edge auto-opens the sidebar,
+//    moving it away auto-closes it again (unless pinned). Click/tap still works too. ──
+let _sidebarHoverCloseTimer=null;
+function _initSidebarHoverBehavior(){
+  const zone=document.getElementById('sidebar-hover-zone');
+  const sb=document.getElementById('sidebar');
+  if(!zone||!sb||zone.dataset.wired)return;
+  zone.dataset.wired='1';
+
+  function isPinned(){return document.body.classList.contains('sidebar-pinned-open');}
+
+  zone.addEventListener('mouseenter',function(){
+    if(isPinned())return;
+    if(_sidebarHoverCloseTimer){clearTimeout(_sidebarHoverCloseTimer);_sidebarHoverCloseTimer=null;}
+    openDesktopSidebar();
+  });
+  sb.addEventListener('mouseenter',function(){
+    if(isPinned())return;
+    if(_sidebarHoverCloseTimer){clearTimeout(_sidebarHoverCloseTimer);_sidebarHoverCloseTimer=null;}
+  });
+  sb.addEventListener('mouseleave',function(){
+    if(isPinned())return;
+    if(_sidebarHoverCloseTimer)clearTimeout(_sidebarHoverCloseTimer);
+    _sidebarHoverCloseTimer=setTimeout(function(){closeDesktopSidebar();},250);
+  });
+  // Also start the close timer if the user leaves the hover zone without ever
+  // entering the sidebar itself (e.g. a quick accidental brush of the edge)
+  zone.addEventListener('mouseleave',function(e){
+    if(isPinned())return;
+    // If the mouse is moving INTO the sidebar, let the sidebar's own listeners take over
+    if(e.relatedTarget&&sb.contains(e.relatedTarget))return;
+    if(_sidebarHoverCloseTimer)clearTimeout(_sidebarHoverCloseTimer);
+    _sidebarHoverCloseTimer=setTimeout(function(){closeDesktopSidebar();},250);
+  });
 }
 // ── Invoice customer searchable dropdown ─────────────────────────────────────
 function _nsSearchCustomer(inp){
@@ -4662,7 +4712,6 @@ function printBulkBarcodes(){
     return '<div class="label" id="label-'+p.id+'">'
       +'<div class="pname">'+p.name+'</div>'
       +'<svg class="barcode" data-code="'+p.barcode+'" data-name="'+p.name+'"></svg>'
-      +'<div class="barcode-num">'+p.barcode+'</div>'
       +'<div class="co-name">'+coName+'</div>'
       +'</div>';
   }).join('');
@@ -4676,18 +4725,16 @@ function printBulkBarcodes(){
     +'.print-bar .info{font-size:14px;font-weight:700}'
     +'.print-bar .sub{font-size:12px;opacity:.85;margin-top:3px}'
     +'.print-bar button{background:#fff;color:#185fa5;border:none;border-radius:7px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}'
-    +'.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}'
-    +'.label{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;text-align:center;page-break-inside:avoid;break-inside:avoid}'
-    +'.pname{font-size:12px;font-weight:700;color:#111827;margin-bottom:3px;line-height:1.3;word-break:break-word}'
-    +'.code-label{font-size:10px;color:#6b7280;font-family:monospace;margin-bottom:4px}'
-    +'.barcode{width:100%;height:auto;display:block;margin:6px 0}'
-    +'.barcode-num{font-family:monospace;font-size:11px;letter-spacing:1.5px;color:#374151;margin-top:2px}'
-    +'.co-name{font-size:9px;color:#9ca3af;margin-top:4px}'
+    +'.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}'
+    +'.label{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 16px;text-align:center;page-break-inside:avoid;break-inside:avoid}'
+    +'.pname{font-size:13px;font-weight:700;color:#111827;margin-bottom:6px;line-height:1.3;word-break:break-word;min-height:17px}'
+    +'.barcode{width:100%;height:auto;display:block;margin:4px 0;shape-rendering:crispEdges}'
+    +'.co-name{font-size:10px;color:#9ca3af;margin-top:6px;letter-spacing:.3px}'
     +'@media print{'
     +'body{background:#fff;padding:0}'
     +'.print-bar{display:none!important}'
-    +'.grid{gap:6px;padding:4mm}'
-    +'.label{border:0.5px solid #ddd}'
+    +'.grid{grid-template-columns:repeat(auto-fill,minmax(48mm,1fr));gap:5mm;padding:6mm}'
+    +'.label{border:0.5px solid #ccc;padding:4mm 3mm;break-inside:avoid;page-break-inside:avoid}'
     +'@page{margin:8mm;size:A4}'
     +'}'
     +'</style>'
@@ -4696,7 +4743,19 @@ function printBulkBarcodes(){
     +'window.onload=function(){'
     +'document.querySelectorAll(".barcode").forEach(function(svg){'
     +'var code=svg.getAttribute("data-code");'
-    +'try{JsBarcode(svg,code,{format:"CODE128",displayValue:false,height:50,margin:2,lineColor:"#000",background:"#fff"});}'
+    +'try{JsBarcode(svg,code,{'
+    +'format:"CODE128",'
+    +'displayValue:true,'          // human-readable number rendered by JsBarcode itself — correctly sized/centered under the bars
+    +'fontSize:18,'
+    +'font:"monospace",'
+    +'textMargin:4,'
+    +'fontOptions:"bold",'
+    +'width:2.4,'                  // wider individual bars — far less blur/merge risk on real printers
+    +'height:80,'                  // taller bars — much more reliable for barcode scanners
+    +'margin:10,'                  // proper quiet zone on both sides — required for scanners to lock on
+    +'lineColor:"#000000",'
+    +'background:"#ffffff"'
+    +'});}'
     +'catch(e){svg.parentElement.style.opacity="0.3";}'
     +'});'
     +'}'
@@ -4705,7 +4764,7 @@ function printBulkBarcodes(){
     +'<div class="print-bar" style="display:flex;align-items:center;justify-content:space-between;gap:12px">'
     +'<button onclick="window.close()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:7px 16px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">&#8592; Back</button>'
     +'<div style="text-align:center"><div class="info"><i style="margin-right:6px">🏷️</i>Barcode Labels — '+coName+'</div>'
-    +'<div class="sub">'+prods.length+' product'+( prods.length===1?'':'s')+' with barcodes · Ready to print</div></div>'
+    +'<div class="sub">'+prods.length+' product'+( prods.length===1?'':'s')+' with barcodes · High-quality print · Ready to scan</div></div>'
     +'<button onclick="window.print()">🖨️ Print / Save PDF</button>'
     +'</div>'
     +'<div class="grid">'+labelHtml+'</div>'
@@ -4726,23 +4785,21 @@ function printProductBarcode(pid){
   const scriptTag='<'+'script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"'+'>'+'<'+'/script'+'>';
   const initScript='<'+'script'+'>'
     +'try{var svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.id="bc";document.getElementById("barcode-svg").appendChild(svg);'
-    +'JsBarcode("#bc","'+p.barcode+'",{format:"CODE128",displayValue:false,height:60,margin:4});'
+    +'JsBarcode("#bc","'+p.barcode+'",{format:"CODE128",displayValue:true,fontSize:20,font:"monospace",textMargin:5,fontOptions:"bold",width:3,height:100,margin:14,lineColor:"#000000",background:"#ffffff"});'
     +'}catch(e){document.getElementById("barcode-svg").innerHTML="Could not render barcode image.";}'
     +'<'+'/script'+'>';
   const html='<!DOCTYPE html><html><head><title>Barcode — '+p.name+'</title>'
     +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f3f4f6}'
-    +'.label{background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:18px 24px;text-align:center;width:280px}'
-    +'.label .pname{font-size:14px;font-weight:700;color:#111827;margin-bottom:2px}'
-    +'.label .co{font-size:10px;color:#9ca3af;margin-bottom:10px}'
-    +'.label svg{width:100%;height:auto}'
-    +'.label .code{font-family:monospace;font-size:13px;letter-spacing:2px;color:#111827;margin-top:6px}'
-    +'.label .price{font-size:15px;font-weight:800;color:#185fa5;margin-top:6px}'
-    +'@media print{body{background:#fff}.label{border:none}@page{margin:8mm}}'
+    +'.label{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:22px 28px;text-align:center;width:340px}'
+    +'.label .pname{font-size:15px;font-weight:700;color:#111827;margin-bottom:2px}'
+    +'.label .co{font-size:10px;color:#9ca3af;margin-bottom:12px}'
+    +'.label svg{width:100%;height:auto;shape-rendering:crispEdges}'
+    +'.label .price{font-size:16px;font-weight:800;color:#185fa5;margin-top:10px}'
+    +'@media print{body{background:#fff}.label{border:none;width:80mm}@page{margin:8mm}}'
     +'</style></head><body>'
     +'<div class="label"><div class="pname">'+p.name+'</div>'
     +'<div class="co" style="direction:rtl;font-family:Arial,sans-serif">'+(s.nameAr||s.nameEn||'FasTrack')+'</div>'
     +'<div id="barcode-svg"></div>'
-    +'<div class="code">'+p.barcode+'</div>'
     +'</div>'
     +scriptTag
     +initScript
@@ -12179,20 +12236,23 @@ function printThermalInvoice(inv){
   const sub=inv.subtotal||(inv.total/(1+getVatRate()));
   const vat=inv.vatAmount||(inv.total-sub);
 
-  // 80mm paper @ 203dpi = 576px. Use 576px canvas.
-  const CW=576;
+  // Render at 3x resolution then output at 80mm physical size — crisp text AND a QR
+  // that scanners can read reliably, while staying pixel-identical between screen preview,
+  // the Android RawBT print, and the desktop/laptop print.
+  const SCALE=3;
+  const CW=576*SCALE;        // 80mm @ 203dpi = 576px base, scaled up for sharpness
   const FONT='monospace';
-  const FS=22;       // font size px — readable on 80mm
-  const LH=30;       // line height px
-  const PAD=16;      // left/right padding
-  const TW=CW-PAD*2; // text width
+  const FS=22*SCALE;
+  const LH=30*SCALE;
+  const PAD=16*SCALE;
+  const TW=CW-PAD*2;
 
   function safe(t){
     return(t||'').replace(/[\u0600-\u06ff]/g,'').replace(/[^\x20-\x7e]/g,'').trim();
   }
 
-  // ── Build QR canvas first (so we know its size) ───────────────────────
-  var qrSize=300; // large enough to scan reliably
+  // ── Build QR canvas first (so we know its size) — high-res for reliable scanning ──
+  var qrSize=420; // fixed high-res source, drawn down to physical size for sharp edges
   var qrCv=null;
   if(!isEst){
     try{
@@ -12202,13 +12262,11 @@ function printThermalInvoice(inv){
     }catch(e){qrCv=null;}
   }
 
-  // ── Helper: measure text height needed ───────────────────────────────
   function buildLines(){
     var lines=[];
     function add(t,bold,center,big){lines.push({t:t||'',bold:!!bold,center:!!center,big:!!big});}
     function sep(ch){add((ch||'=').repeat(Math.floor(TW/(FS*0.6))),false,false,false);}
     function lr(l,r){
-      // pad to fill line
       var lS=safe(l), rS=safe(r);
       var maxChars=Math.floor(TW/(FS*0.6));
       var sp=Math.max(1,maxChars-lS.length-rS.length);
@@ -12227,29 +12285,24 @@ function printThermalInvoice(inv){
       });
       sep('=');lr('TOTAL:','SAR '+inv.total.toFixed(2));sep('=');
     } else {
-      // Header
       add(safe(s.nameEn||'AgroFresh'),true,true,true);
       if(s.address)add(safe(s.address),false,true);
       if(s.phone)add('Tel: '+safe(s.phone),false,true);
       if(s.email)add(safe(s.email),false,true);
       if(s.vatNumber)add('VAT: '+safe(s.vatNumber),false,true);
       sep('=');add('*** TAX INVOICE ***',true,true);sep('=');
-      // Info
       lr('Invoice No:',inv.id);
       lr('Date:',fmtDate(inv.date));
       lr('Due Date:',fmtDate(inv.due));
       sep('-');
-      // Customer
       add('BILL TO:',true);
       add('  '+safe(c.name),false);
       if(c.phone)add('  Tel: '+safe(c.phone),false);
       if(c.vatNumber)add('  VAT: '+safe(c.vatNumber),false);
       if(inv.van)lr('  Van:',safe(inv.van));
       sep('=');
-      // Items header
       add('ITEM                  QTY   PRICE  TOTAL',true);
       sep('-');
-      // Items
       inv.items.forEach(function(it){
         var p=getProduct(it.product);
         var nm=safe(p.name);
@@ -12291,10 +12344,10 @@ function printThermalInvoice(inv){
   function renderFull(logoImg){
     var lines=buildLines();
 
-    // Measure total height
     var logoH=logoImg?Math.round(CW*0.25):0;
-    var qrH=qrCv?(qrSize+LH*2+16):0;
-    var textH=lines.length*(LH+2);
+    var qrPrintSize=Math.round(CW*0.62); // 62% of paper width — large, easy to scan
+    var qrH=qrCv?(qrPrintSize+LH*2+16*SCALE):0;
+    var textH=lines.length*(LH+2*SCALE);
     var totalH=PAD+(logoH?logoH+PAD:0)+textH+PAD+(qrH?PAD+qrH+PAD:0)+PAD*2;
 
     var cv=document.createElement('canvas');
@@ -12302,13 +12355,11 @@ function printThermalInvoice(inv){
     cv.height=Math.ceil(totalH);
     var ctx=cv.getContext('2d');
 
-    // White background
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,0,cv.width,cv.height);
 
     var y=PAD;
 
-    // Logo
     if(logoImg){
       var lw=Math.round(logoH*(logoImg.naturalWidth/Math.max(logoImg.naturalHeight,1)));
       lw=Math.min(lw,CW-PAD*4);
@@ -12316,61 +12367,57 @@ function printThermalInvoice(inv){
       y+=logoH+PAD;
     }
 
-    // Text lines
     lines.forEach(function(ln){
-      var fs=ln.big?(FS+4):FS;
+      var fs=ln.big?(FS+4*SCALE):FS;
       ctx.font=(ln.bold?'bold ':'')+fs+'px '+FONT;
       ctx.fillStyle='#000000';
       ctx.textAlign=ln.center?'center':'left';
       var x=ln.center?CW/2:PAD;
       ctx.fillText(ln.t,x,y+fs);
-      y+=LH+(ln.big?4:0);
+      y+=LH+(ln.big?4*SCALE:0);
     });
 
     y+=PAD;
 
-    // QR code — large and centered
     if(qrCv){
-      var qrPrintSize=Math.round(CW*0.65); // 65% of paper = ~374px
       var qrX=Math.floor((CW-qrPrintSize)/2);
-      // White border around QR
       ctx.fillStyle='#ffffff';
-      ctx.fillRect(qrX-8,y-8,qrPrintSize+16,qrPrintSize+16);
+      ctx.fillRect(qrX-8*SCALE,y-8*SCALE,qrPrintSize+16*SCALE,qrPrintSize+16*SCALE);
+      // High-quality downscale for crisp QR modules (critical for scan reliability)
+      ctx.imageSmoothingEnabled=false;
       ctx.drawImage(qrCv,qrX,y,qrPrintSize,qrPrintSize);
-      y+=qrPrintSize+10;
-      // Label
-      ctx.font='bold 20px '+FONT;
+      ctx.imageSmoothingEnabled=true;
+      y+=qrPrintSize+10*SCALE;
+      ctx.font='bold '+(20*SCALE)+'px '+FONT;
       ctx.fillStyle='#000000';
       ctx.textAlign='center';
-      ctx.fillText('Scan to verify - ZATCA',CW/2,y+20);
+      ctx.fillText('Scan to verify - ZATCA',CW/2,y+20*SCALE);
       y+=LH+PAD;
     }
 
-    // Feed space at bottom
     ctx.fillStyle='#ffffff';
     ctx.fillRect(0,y,CW,PAD*4);
 
-    // Send as ONE image to RawBT
+    // ── This canvas IS the single source of truth — same image goes to
+    //    Android (RawBT), and is shown true-to-80mm-size on desktop print ──
     cv.toBlob(function(blob){
       if(!blob){showToast('Print failed','red');return;}
       var reader=new FileReader();
       reader.onload=function(){
-        var b64=reader.result.split(',')[1];
+        var dataUrl=reader.result;
+        var b64=dataUrl.split(',')[1];
         var ua=navigator.userAgent.toLowerCase();
         if(ua.indexOf('android')>-1){
-          // ✅ Single image print — no text URL needed
           window.location.href='rawbt:data:image/png;base64,'+b64;
           showToast('Sending to printer...','amber');
         } else {
-          // Desktop fallback
-          _thermalFallbackPrint(inv.id,_buildPlainReceipt(inv));
+          _printThermalImageDesktop(dataUrl,inv.id);
         }
       };
       reader.readAsDataURL(blob);
     },'image/png',1.0);
   }
 
-  // Load logo then render
   if(s.logo&&!isEst){
     var img=new Image();
     img.crossOrigin='anonymous';
@@ -12380,6 +12427,37 @@ function printThermalInvoice(inv){
   } else {
     renderFull(null);
   }
+}
+
+// Prints the exact same receipt image used for the thermal/RawBT path, sized to true 80mm
+// width on screen and on paper — guarantees the desktop printout matches the on-screen preview
+// pixel-for-pixel, and keeps the QR code crisp and easy to scan.
+function _printThermalImageDesktop(dataUrl,invId){
+  var page='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Receipt_'+invId+'</title>'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'html,body{background:#e9eef3}'
+    +'.print-bar{position:sticky;top:0;left:0;right:0;z-index:99999;background:#185fa5;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;font-family:sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.2)}'
+    +'.print-bar button{padding:9px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;border:none}'
+    +'.back-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3)!important;color:#fff}'
+    +'.print-btn{background:#fff;color:#185fa5}'
+    +'.receipt-wrap{display:flex;justify-content:center;padding:18px 12px 40px}'
+    +'.receipt-img{width:80mm;max-width:100%;height:auto;display:block;background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.15)}'
+    +'@media print{.print-bar{display:none!important}html,body{background:#fff}.receipt-wrap{padding:0}.receipt-img{box-shadow:none;width:80mm}@page{margin:0;size:80mm auto}}'
+    +'</style></head><body>'
+    +'<div class="print-bar">'
+    +'<button class="back-btn" onclick="window.close()"><span style="font-size:16px">&#8592;</span> Back</button>'
+    +'<button class="print-btn" onclick="window.print()"><span style="font-size:15px">&#128438;</span> Print</button>'
+    +'</div>'
+    +'<div class="receipt-wrap"><img class="receipt-img" src="'+dataUrl+'" alt="Receipt"></div>'
+    +'</body></html>';
+
+  var w=window.open('','_blank');
+  if(!w){showToast('Allow popups to print the receipt','amber');return;}
+  w.document.write(page);
+  w.document.close();
+  w.focus();
+  setTimeout(function(){try{w.print();}catch(e){}},700);
 }
 
 function _sendRawBTText(text,invId){
@@ -12546,12 +12624,12 @@ document.addEventListener('DOMContentLoaded',async ()=>{
     db.nextDnId=1001;db.nextSrId=1001;
   }
   populateSelects();
-  _initDesktopSidebarPref();
   // Try to restore a previous login session
   if(restoreSession()){
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='none';
     applyRBAC();
     updateSidebarUser();
+    _initDesktopSidebarPref();
     navigate(_currentUser&&_currentUser.role==='owner'?'owner-dashboard':_currentUser&&_currentUser.role==='van_sales'?'sales-goal':'dashboard',true);
   }else{
     const ls=document.getElementById('login-screen');if(ls)ls.style.display='flex';
