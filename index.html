@@ -161,6 +161,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 .mtab.active i{transform:translateY(-1px)}
 .mtab:active i{transform:scale(.88)}
 @media(max-width:900px){
+  #role-summary-cards{grid-template-columns:repeat(3,1fr)!important}
   #mobile-header{display:flex}
   #mobile-tabbar{display:flex}
   /* Only one profile/logout entry point on mobile — the top-right header avatar.
@@ -255,6 +256,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   .cs-kpi-strip{grid-template-columns:1fr 1fr!important}
 }
 @media(max-width:480px){
+  #role-summary-cards{grid-template-columns:1fr 1fr!important}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .pgtitle{font-size:16px}
   #main{padding:60px 10px calc(70px + env(safe-area-inset-bottom))!important}
@@ -287,15 +289,33 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 @media(max-width:900px){
   .od-grid-4{grid-template-columns:repeat(2,1fr)}
   .od-grid-3{grid-template-columns:repeat(2,1fr)}
+  .od-grid-2{grid-template-columns:1fr}
   .od-hero{padding:22px 18px}
   .od-metric-val{font-size:22px}
+  .od-hero>div>div[style*="display:flex;gap:20px"]{gap:14px!important;flex-wrap:wrap}
 }
 @media(max-width:480px){
-  .od-grid-4,.od-grid-2,.od-grid-3{grid-template-columns:1fr 1fr}
+  .od-grid-4{grid-template-columns:1fr 1fr}
+  .od-grid-3{grid-template-columns:1fr}
+  .od-grid-2{grid-template-columns:1fr}
   .od-metric{padding:14px}
-  .od-metric-val{font-size:18px}
+  .od-metric-val{font-size:17px;letter-spacing:-.5px;word-break:break-word}
   .od-metric-icon{width:38px;height:38px;font-size:18px;margin-bottom:10px}
+  .od-metric-lbl{font-size:10px}
+  .od-metric-trend{font-size:11px}
+  .od-hero{padding:18px 16px;border-radius:16px}
+  .od-hero [style*="font-size:28px"]{font-size:22px!important}
+  .od-hero [style*="font-size:22px;font-weight:800"]{font-size:18px!important}
+  .od-section-title{font-size:10px}
+  .od-refresh{bottom:calc(74px + env(safe-area-inset-bottom) + 14px);width:46px;height:46px;font-size:18px}
+  .od-alert{padding:10px 12px;font-size:12px}
+  .od-alert>div:last-child>div:first-child{word-break:break-word}
+  /* Van performance & top customer rows: stack value under name instead of squeezing on one line */
+  #od-root [style*="justify-content:space-between;align-items:center;margin-bottom:5px"],
+  #od-root [style*="justify-content:space-between;margin-bottom:4px"]{flex-wrap:wrap;gap:4px}
+  #od-root [style*="justify-content:space-between;align-items:center;margin-bottom:5px"]>div:last-child{text-align:left!important}
 }
+
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c5d0db;border-radius:3px}
 </style>
 </head>
@@ -1691,7 +1711,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   <!-- USERS & ACCESS TAB -->
   <div id="settings-panel-users" style="display:none">
     <!-- Role summary cards -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:24px" id="role-summary-cards"></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px" id="role-summary-cards"></div>
     <!-- Add user button + form -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="sec-lbl" style="margin-bottom:0"><i class="ti ti-users" style="font-size:13px"></i>System users</div>
@@ -2365,7 +2385,7 @@ function switchSettingsTab(tab,btn){
 function renderUsersTab(){renderRoleSummaryCards();renderUsersTable();renderRolePermsGrid();}
 function renderRoleSummaryCards(){
   const el=document.getElementById('role-summary-cards');if(!el)return;
-  el.innerHTML=['admin','warehouse','van_sales','accountant'].map(role=>{
+  el.innerHTML=['admin','owner','warehouse','van_sales','accountant'].map(role=>{
     const count=db.systemUsers.filter(u=>u.role===role&&u.status==='active').length;
     const rc=ROLE_COLORS[role];const ico=ROLE_ICONS[role];
     return`<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r2);padding:16px 18px;box-shadow:var(--sha)"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><div style="width:36px;height:36px;border-radius:9px;background:${rc.bg};display:flex;align-items:center;justify-content:center"><i class="ti ${ico}" style="font-size:18px;color:${rc.color}"></i></div><div style="font-size:13px;font-weight:600">${ROLE_LABELS[role]}</div></div><div style="font-size:28px;font-weight:700;color:${rc.color};font-family:var(--mono)">${count}</div><div style="font-size:11px;color:var(--text3);margin-top:3px">active user${count!==1?'s':''}</div></div>`;
@@ -2641,7 +2661,7 @@ function saveUser(){
   if(rolesNeedingLocation.includes(role)&&assignedLocations.length===0)return showToast('Assign at least one location for this role','red');
   const data={name,username:uname,role,assignedLocations,status:document.getElementById('uf-status').value,notes:document.getElementById('uf-notes').value,photo:document.getElementById('uf-photo')?.value||''};
   if(id){const u=db.systemUsers.find(x=>x.id===id);if(u){Object.assign(u,data);if(pass)u.password=pass;}saveAppState();showToast('User updated');}
-  else{if(!pass)return showToast('Password required','red');db.systemUsers.push({id:uid(),...data,password:pass,lastLogin:null});}
+  else{if(!pass)return showToast('Password required','red');db.systemUsers.push({id:uid(),...data,password:pass,lastLogin:null});saveAppState();showToast('User created');}
   document.getElementById('user-form-panel').style.display='none';
   renderUsersTab();
 }
