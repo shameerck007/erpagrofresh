@@ -11540,15 +11540,42 @@ function _sendToRawBT(uri){
 }
 
 // Sends the receipt image to RawBT on Android using two independent strategies:
-//   1) intent:// URL — fastest, no extra tap, but depends on correct Android/
-//      Chrome intent resolution (can be fragile across OEM Chrome builds).
-//   2) Web Share API — opens Android's native share sheet so the user picks
-//      RawBT directly. This bypasses custom-URL-scheme parsing entirely and is
-//      the most reliable method across different phones/Chrome versions.
-// If neither is available, the image downloads to the device with instructions
-// so the user can open it with RawBT manually as a guaranteed last resort.
+//   1) Web Share API (PRIMARY) — opens Android's native share sheet so the user
+//      picks RawBT directly, passing the actual binary file. No URL-length limit,
+//      so it works regardless of receipt image size (logo + high-res QR).
+//   2) intent:// URL (fallback only) — encodes the image as base64 inside a URL.
+//      Only used when Web Share isn't available, since large receipt images can
+//      exceed Android's intent:// URL size limit and get corrupted in transit —
+//      this was the cause of receipts printing as a wall of garbled characters
+//      instead of the actual receipt image.
+// If neither works, the image downloads to the device with instructions so the
+// user can open it with RawBT manually as a guaranteed last resort.
 function _sendAndroidReceiptToPrinter(blob,invId){
   var file=new File([blob],'receipt-'+invId+'.png',{type:'image/png'});
+
+  // PRIMARY METHOD: Web Share API with the actual binary file.
+  // The intent:// custom-scheme method (tryIntentUrl below) has to encode the
+  // whole image as a base64 string inside a URL. Android's intent:// URLs have
+  // a hard practical size limit, and our receipt images (logo + high-res QR)
+  // routinely exceed it. When that happens the intent gets corrupted in transit
+  // and RawBT ends up printing the raw decoded image bytes as literal text
+  // instead of rendering them as a picture — that's the garbled wall of
+  // characters bug. Sharing the file directly via navigator.share has no such
+  // size limit because the binary is passed as a real file, not a URL string,
+  // so it's the reliable path and we try it first.
+  function tryShareApi(){
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      showToast('Opening share menu — choose RawBT','amber');
+      navigator.share({files:[file],title:'Receipt '+invId}).catch(function(e){
+        // AbortError just means the user cancelled the share sheet — not a failure.
+        if(e&&e.name!=='AbortError'){
+          tryIntentUrl();
+        }
+      });
+      return true;
+    }
+    return false;
+  }
 
   function tryIntentUrl(){
     var reader=new FileReader();
@@ -11567,7 +11594,7 @@ function _sendAndroidReceiptToPrinter(blob,invId){
     reader.readAsDataURL(blob);
   }
 
-  tryIntentUrl();
+  if(!tryShareApi())tryIntentUrl();
 }
 
 // Shown if the automatic intent launch doesn't appear to have worked — gives a
