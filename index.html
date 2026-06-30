@@ -11539,26 +11539,24 @@ function _sendToRawBT(uri){
   window.location.href=intentUrl;
 }
 
-// Sends the receipt image to RawBT on Android using two strategies:
-//   1) intent:// URL (PRIMARY) — targets the RawBT package by name, so Android
-//      launches it directly with no picker/popup at all (true one-tap print).
-//      This needs the image encoded as base64 inside a URL, which has a size
-//      limit — exceeding it used to corrupt the print into a wall of garbled
-//      characters. Now that receipts render at the printer's native 576-dot
-//      resolution instead of 3x oversized, the payload is small enough that
-//      this is reliable again, so it's safe to use as the fast default.
-//   2) Web Share API (fallback) — opens Android's share sheet so the user picks
-//      RawBT manually. Slower (extra tap) but has no size limit, so it's used
-//      automatically if the image is unusually large (e.g. very long item
-//      list) or if the intent:// launch doesn't appear to have worked.
-// If neither works, the image downloads to the device with instructions so the
-// user can open it with RawBT manually as a guaranteed last resort.
+// Sends the receipt image to RawBT on Android.
+//
+// IMPORTANT: intent:// custom-scheme launching was tried as a "one-tap, no
+// picker" method (targeting the RawBT package directly), and was tested twice
+// — once with a large 3x-oversized image, once with a small native-resolution
+// image. Both times it produced the same result: RawBT printed a wall of
+// garbled characters instead of the receipt. This means the problem isn't
+// payload size — intent:// image delivery just doesn't work reliably with
+// this RawBT version/device combination. Do not re-enable it as the default
+// without the user explicitly re-testing and confirming it works first.
+//
+// The Web Share API (sharing the actual binary file via Android's native share
+// sheet) is the method that has been confirmed working correctly end-to-end —
+// correct format, correct width, sharp text. It costs one extra tap (picking
+// RawBT from the sheet) compared to the (broken) intent:// shortcut, but it's
+// the reliable path on this setup.
 function _sendAndroidReceiptToPrinter(blob,invId){
   var file=new File([blob],'receipt-'+invId+'.png',{type:'image/png'});
-  // Conservative safety margin for intent:// URL size. Beyond this, base64 +
-  // URL-encoding overhead risks exceeding Android's intent URI limit and
-  // corrupting the print, so we route straight to the share sheet instead.
-  var INTENT_SAFE_BYTES=60000;
 
   function tryShareApi(){
     if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
@@ -11566,7 +11564,9 @@ function _sendAndroidReceiptToPrinter(blob,invId){
       navigator.share({files:[file],title:'Receipt '+invId}).catch(function(e){
         // AbortError just means the user cancelled the share sheet — not a failure.
         if(e&&e.name!=='AbortError'){
-          tryIntentUrl();
+          // Share failed for some other reason — offer the manual download/share
+          // fallback rather than risking the known-broken intent:// path.
+          _offerShareReceiptFallback(file,invId);
         }
       });
       return true;
@@ -11574,27 +11574,14 @@ function _sendAndroidReceiptToPrinter(blob,invId){
     return false;
   }
 
-  function tryIntentUrl(){
-    var reader=new FileReader();
-    reader.onload=function(){
-      var dataUrl=reader.result;
-      _sendToRawBT(dataUrl);
-      showToast('Sending to printer...','amber');
-      // If RawBT doesn't actually open (e.g. intent silently fails on this
-      // device), offer the share-sheet as a one-tap manual alternative.
-      setTimeout(function(){
-        if(document.visibilityState==='visible'){
-          _offerShareReceiptFallback(file,invId);
-        }
-      },2500);
-    };
-    reader.readAsDataURL(blob);
-  }
-
-  if(blob.size<=INTENT_SAFE_BYTES){
-    tryIntentUrl();
-  }else if(!tryShareApi()){
-    tryIntentUrl();
+  if(!tryShareApi()){
+    // Web Share unavailable on this browser — download the file with
+    // instructions to open it manually with RawBT, as a last resort.
+    var url=URL.createObjectURL(file);
+    var a=document.createElement('a');
+    a.href=url;a.download=file.name;document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+    showToast('Receipt saved — open it with RawBT from your downloads or gallery','amber');
   }
 }
 
@@ -12523,7 +12510,7 @@ function printThermalInvoice(inv){
     var lines=buildLines();
 
     var logoH=logoImg?Math.round(CW*0.25):0;
-    var qrPrintSize=Math.round(CW*0.62); // 62% of paper width — large, easy to scan
+    var qrPrintSize=Math.round(CW*0.40); // 40% of paper width — still easily scannable, less paper used
     var qrH=qrCv?(qrPrintSize+LH*2+16*SCALE):0;
     var textH=lines.length*(LH+2*SCALE);
     var totalH=PAD+(logoH?logoH+PAD:0)+textH+PAD+(qrH?PAD+qrH+PAD:0)+PAD*2;
