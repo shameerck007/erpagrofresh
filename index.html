@@ -22,6 +22,7 @@
 <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.21.0/umd/index.min.js"></script>
 <style>
 :root{
@@ -849,7 +850,14 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
 <div class="page" id="page-price-list">
   <div class="pghdr">
     <div><div class="pgtitle">Price List</div><div class="pgsub">Current product prices — print or share as PDF</div></div>
-    <button class="btn btn-primary" onclick="printPriceList()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer;-webkit-tap-highlight-color:transparent">
+        <input type="checkbox" id="pl-include-images" checked style="width:16px;height:16px;cursor:pointer">
+        Include product images
+      </label>
+      <button class="btn btn-primary" onclick="printPriceList()"><i class="ti ti-printer"></i> Print / Save PDF</button>
+      <button class="btn btn-outline" id="pl-whatsapp-btn" onclick="sharePriceListToWhatsApp()" style="color:#25D366;border-color:#25D366"><i class="ti ti-brand-whatsapp"></i> Share to WhatsApp</button>
+    </div>
   </div>
   <div id="pl-page-root"></div>
 </div>
@@ -2051,7 +2059,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--green);box-shadow:0 0
   </div>
 </div>
 <!-- ALL MODALS -->
-<div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg"><label>Item Code <span style="font-size:10px;color:var(--text3);font-weight:400">(optional)</span></label><div style="display:flex;gap:6px"><input type="text" id="ap-code" placeholder="Auto or type custom" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateItemCode()" style="flex-shrink:0" title="Auto generate from product name"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
+<div class="modal-overlay" id="modal-add-product"><div class="modal"><div class="modal-title">Add Product <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-product')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ap-id"><div class="fgrid"><div class="fg full"><label>Product Name *</label><input type="text" id="ap-name" placeholder="e.g. Tomatoes"></div><div class="fg full"><label>Product Picture <span style="font-size:10px;color:var(--text3);font-weight:400">(optional, JPG/PNG, max 5MB)</span></label><div style="display:flex;align-items:center;gap:12px"><div id="ap-img-preview-wrap" style="width:64px;height:64px;border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;background:var(--bg2)"><i class="ti ti-photo" id="ap-img-placeholder-icon" style="font-size:22px;color:var(--text3)"></i><img id="ap-img-preview" style="display:none;width:100%;height:100%;object-fit:cover"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0"><div style="display:flex;gap:6px;flex-wrap:wrap"><input type="file" id="ap-image-input" accept="image/*" style="display:none" onchange="_onProductImageSelected(this)"><button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('ap-image-input').click()"><i class="ti ti-upload"></i> Choose Image</button><button type="button" class="btn btn-outline btn-sm" id="ap-image-remove-btn" style="display:none" onclick="_removeProductImage()"><i class="ti ti-trash"></i> Remove</button></div><div id="ap-image-status" style="font-size:11px;color:var(--text3)"></div></div></div></div><div class="fg"><label>Item Code <span style="font-size:10px;color:var(--text3);font-weight:400">(optional)</span></label><div style="display:flex;gap:6px"><input type="text" id="ap-code" placeholder="Auto or type custom" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateItemCode()" style="flex-shrink:0" title="Auto generate from product name"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Unit</label><select id="ap-unit"><option>Cartoon</option><option>KG</option><option>Box</option><option>Piece</option><option>Bag</option></select></div><div class="fg"><label>Default Price (SAR)</label><input type="number" id="ap-price" step="0.01"></div><div class="fg"><label>Min Stock Level</label><input type="number" id="ap-min" min="0" value="10"></div><div class="fg full"><label>Barcode</label><div style="display:flex;gap:8px"><input type="text" id="ap-barcode" placeholder="Scan or type the barcode value" style="flex:1;font-family:var(--mono)" oninput="_checkBarcodeDuplicate()"><button type="button" class="btn btn-outline btn-sm" onclick="openBarcodeScanner('ap-barcode')" style="flex-shrink:0"><i class="ti ti-scan"></i> Scan</button><button type="button" class="btn btn-outline btn-sm" onclick="generateProductBarcode()" style="flex-shrink:0"><i class="ti ti-wand"></i> Generate</button></div><div id="ap-barcode-warning" style="display:none;font-size:11px;color:var(--red);margin-top:5px"></div></div></div><div style="font-size:11px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:14px 0 8px"><i class="ti ti-package" style="margin-right:5px"></i>Initial Stock by Location</div><div class="fgrid" id="ap-stock-fields"></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-product')">Cancel</button><button class="btn btn-primary" onclick="saveProduct()">Save Product</button></div></div></div>
 <!-- ADD CUSTOMER -->
 <div class="modal-overlay" id="modal-add-customer"><div class="modal"><div class="modal-title">Add / Edit Customer <button class="btn btn-sm btn-outline" onclick="closeModal('modal-add-customer')"><i class="ti ti-x"></i></button></div><input type="hidden" id="ac-id"><div class="fgrid"><div class="fg full"><label>Company Name *</label><input type="text" id="ac-name" placeholder="e.g. Almas Restaurent"></div><div class="fg"><label>Customer Code <span style="font-size:10px;color:var(--text3);font-weight:400">(auto)</span></label><div style="display:flex;gap:6px"><input type="text" id="ac-code" placeholder="e.g. CUST-001" style="flex:1;font-family:var(--mono);text-transform:uppercase" oninput="this.value=this.value.toUpperCase()"><button type="button" class="btn btn-outline btn-sm" onclick="generateCustomerCode()" title="Auto generate customer code"><i class="ti ti-wand"></i></button></div></div><div class="fg"><label>Contact Person Name</label><input type="text" id="ac-contact" placeholder="e.g. Ahmed Al-Rashid"></div><div class="fg"><label>Phone</label><input type="text" id="ac-phone"></div><div class="fg"><label>Area</label><input type="text" id="ac-area"></div><div class="fg"><label>Assigned Van</label><select id="ac-van"></select></div><div class="fg"><label>VAT Number <span style="font-size:10px;color:var(--text3);font-weight:400">(15 digits, optional)</span></label><input type="text" id="ac-vat" placeholder="300012345600003" maxlength="15" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==15)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg"><label>CR Number <span style="font-size:10px;color:var(--text3);font-weight:400">(10 digits, optional)</span></label><input type="text" id="ac-cr" placeholder="1010123456" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'');this.style.borderColor=''" onblur="if(this.value&&this.value.length!==10)this.style.borderColor='var(--red)';else this.style.borderColor=''"></div><div class="fg full"><label>Notes</label><textarea id="ac-notes" rows="2"></textarea></div></div><div class="factions"><button class="btn btn-outline" onclick="closeModal('modal-add-customer')">Cancel</button><button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button></div></div></div>
 <!-- NEW SALE MODAL -->
@@ -2400,11 +2408,31 @@ function saveAppState(immediate){
   _saveTimer=setTimeout(_doSave,250);
   return Promise.resolve();
 }
+// Product photos are stored one-document-per-product in their own Firestore
+// collection (not embedded in the shared 'products' document — see comment at
+// the call site in loadAppState). This pulls them all in with a single
+// collection read and merges each one onto its matching product, in-memory.
+async function _loadProductImages(){
+  try{
+    const snap=await _fsdb.collection('productImages').get();
+    snap.forEach(function(doc){
+      const p=db.products.find(function(x){return x.id===doc.id;});
+      if(p)p.image=doc.data().data||'';
+    });
+  }catch(e){
+    console.warn('Could not load product images:',e.message);
+  }
+}
 async function _doSave(){
   clearTimeout(_saveTimer);
   try{
     const batch=_fsdb.batch(),col=_fsdb.collection('fastrack');
-    const dm={products:db.products,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments,distributions:db.distributions,salesGoals:db.salesGoals||{},salesGoalHistory:db.salesGoalHistory||[],offers:db.offers||[]};
+    // Product photos are excluded here and saved separately (see saveProduct /
+    // _saveProductImage) — embedding them in this shared document would risk
+    // hitting Firestore's 1MB-per-document limit as more products get photos,
+    // which would break saving for the ENTIRE app, not just images.
+    const productsForSave=db.products.map(function(p){const c=Object.assign({},p);delete c.image;return c;});
+    const dm={products:productsForSave,customers:db.customers,invoices:db.invoices,payments:db.payments,transfers:db.transfers,damages:db.damages,expenses:db.expenses,purchaseOrders:db.purchaseOrders,purchaseReturns:db.purchaseReturns,supplierPayments:db.supplierPayments,salesReturns:db.salesReturns,quotations:db.quotations,deliveryNotes:db.deliveryNotes,priceHistory:db.priceHistory,systemUsers:db.systemUsers,vans:db.vans,warehouses:db.warehouses,suppliers:db.suppliers,assets:db.assets,assetMaintenance:db.assetMaintenance,dailyOps:db.dailyOps,partners:db.partners,capitalInvestments:db.capitalInvestments,distributions:db.distributions,salesGoals:db.salesGoals||{},salesGoalHistory:db.salesGoalHistory||[],offers:db.offers||[]};
     Object.entries(dm).forEach(([k,v])=>batch.set(col.doc(k),{data:JSON.stringify(v)}));
     batch.set(col.doc('settings'),{data:JSON.stringify({...db.settings,logo:null})});
     batch.set(col.doc('counters'),{data:JSON.stringify({nextInvId:db.nextInvId,nextPoId:db.nextPoId,nextQuoId:db.nextQuoId,nextDnId:db.nextDnId,nextSrId:db.nextSrId})});
@@ -2458,7 +2486,13 @@ async function loadAppState(){
       if(ROLE_PERMISSIONS.van_sales&&!ROLE_PERMISSIONS.van_sales.includes('price-list')){
         ROLE_PERMISSIONS.van_sales.push('price-list');
       }
-      _hideLoadingScreen();return true;
+      _hideLoadingScreen();
+      // Product photos live in their own Firestore collection (one small document
+      // per product) rather than inside the main 'products' document — this keeps
+      // the main document safely under Firestore's 1MB-per-document limit no
+      // matter how many product photos exist. Merge them in here, in-memory only.
+      await _loadProductImages();
+      return true;
     }catch(e){
       console.warn('FB load failed, retrying in 3s:',e.message);
       _showLoadingScreen('Connection failed — retrying...');
@@ -4494,6 +4528,7 @@ function openAddProductModal(){
   document.getElementById('ap-barcode').value='';
   const bw=document.getElementById('ap-barcode-warning');if(bw)bw.style.display='none';
   _buildProductStockFields(null);
+  _resetProductImageState('');
   const title=document.querySelector('#modal-add-product .modal-title');
   if(title)title.childNodes[0].textContent='Add Product ';
   openModal('modal-add-product');
@@ -4509,9 +4544,152 @@ function editProduct(pid){
   document.getElementById('ap-barcode').value=p.barcode||'';
   const bw=document.getElementById('ap-barcode-warning');if(bw)bw.style.display='none';
   _buildProductStockFields(p);
+  _resetProductImageState(p.image||'');
   const title=document.querySelector('#modal-add-product .modal-title');
   if(title)title.childNodes[0].textContent='Edit Product — '+p.name+' ';
   openModal('modal-add-product');
+}
+// ── PRODUCT IMAGE UPLOAD ────────────────────────────────────────────────────
+const PRODUCT_IMAGE_MAX_BYTES=5*1024*1024; // 5MB raw upload limit — validated at selection time, before any resize/upload attempt
+let _pendingProductImageFile=null;    // newly selected file, staged until Save is pressed
+let _pendingProductImageRemoved=false; // true if user removed an existing image and hasn't picked a new one
+let _currentProductImageUrl='';       // existing image URL when editing (for reference)
+
+function _resetProductImageState(existingUrl){
+  _pendingProductImageFile=null;
+  _pendingProductImageRemoved=false;
+  _currentProductImageUrl=existingUrl||'';
+  const preview=document.getElementById('ap-img-preview');
+  const placeholder=document.getElementById('ap-img-placeholder-icon');
+  const removeBtn=document.getElementById('ap-image-remove-btn');
+  const status=document.getElementById('ap-image-status');
+  const input=document.getElementById('ap-image-input');
+  if(input)input.value='';
+  if(status)status.textContent='';
+  if(existingUrl){
+    if(preview){preview.src=existingUrl;preview.style.display='block';}
+    if(placeholder)placeholder.style.display='none';
+    if(removeBtn)removeBtn.style.display='';
+  }else{
+    if(preview){preview.src='';preview.style.display='none';}
+    if(placeholder)placeholder.style.display='';
+    if(removeBtn)removeBtn.style.display='none';
+  }
+}
+
+function _onProductImageSelected(inputEl){
+  const file=inputEl.files&&inputEl.files[0];
+  const status=document.getElementById('ap-image-status');
+  if(!file)return;
+  // VALIDATION: must actually be an image file.
+  if(!file.type||!file.type.startsWith('image/')){
+    showToast('Please select an image file (JPG or PNG)','red');
+    inputEl.value='';
+    return;
+  }
+  // VALIDATION: raw file size, checked immediately at selection — gives instant
+  // feedback instead of letting the user wait through a resize/upload that
+  // would fail (or bloat Storage) anyway.
+  if(file.size>PRODUCT_IMAGE_MAX_BYTES){
+    const mb=(file.size/(1024*1024)).toFixed(1);
+    showToast('Image is too large ('+mb+'MB). Please choose an image under 5MB.','red');
+    inputEl.value='';
+    return;
+  }
+  _pendingProductImageFile=file;
+  _pendingProductImageRemoved=false;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const preview=document.getElementById('ap-img-preview');
+    const placeholder=document.getElementById('ap-img-placeholder-icon');
+    const removeBtn=document.getElementById('ap-image-remove-btn');
+    if(preview){preview.src=e.target.result;preview.style.display='block';}
+    if(placeholder)placeholder.style.display='none';
+    if(removeBtn)removeBtn.style.display='';
+  };
+  reader.readAsDataURL(file);
+  if(status)status.textContent='Selected — will upload when you save';
+}
+
+function _removeProductImage(){
+  _pendingProductImageFile=null;
+  _pendingProductImageRemoved=true;
+  const preview=document.getElementById('ap-img-preview');
+  const placeholder=document.getElementById('ap-img-placeholder-icon');
+  const removeBtn=document.getElementById('ap-image-remove-btn');
+  const status=document.getElementById('ap-image-status');
+  const input=document.getElementById('ap-image-input');
+  if(input)input.value='';
+  if(preview){preview.src='';preview.style.display='none';}
+  if(placeholder)placeholder.style.display='';
+  if(removeBtn)removeBtn.style.display='none';
+  if(status)status.textContent=_currentProductImageUrl?'Image will be removed when you save':'';
+}
+
+// Every product photo is center-cropped to a square, then scaled to a fixed
+// PRODUCT_IMAGE_SIZE x PRODUCT_IMAGE_SIZE (JPEG, quality 0.82) before upload.
+// This guarantees every product image has IDENTICAL dimensions regardless of
+// the original photo's shape (portrait, landscape, or square) — no stretching
+// or distortion, just a centered crop — which also keeps Firebase Storage
+// usage and price-list/PDF load times small.
+const PRODUCT_IMAGE_SIZE=500; // final width AND height, in pixels, for every product photo
+function _resizeImageForUpload(file){
+  return new Promise(function(resolve,reject){
+    const img=new Image();
+    const url=URL.createObjectURL(file);
+    img.onload=function(){
+      URL.revokeObjectURL(url);
+      // Find the largest centered square within the source image.
+      const side=Math.min(img.width,img.height);
+      const sx=Math.round((img.width-side)/2);
+      const sy=Math.round((img.height-side)/2);
+      const cv=document.createElement('canvas');
+      cv.width=PRODUCT_IMAGE_SIZE;cv.height=PRODUCT_IMAGE_SIZE;
+      const ctx=cv.getContext('2d');
+      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,PRODUCT_IMAGE_SIZE,PRODUCT_IMAGE_SIZE); // flatten transparency onto white for JPEG
+      // draw the cropped square region, scaled to fill the fixed output size exactly
+      ctx.drawImage(img,sx,sy,side,side,0,0,PRODUCT_IMAGE_SIZE,PRODUCT_IMAGE_SIZE);
+      cv.toBlob(function(blob){
+        if(!blob)return reject(new Error('Could not process image'));
+        resolve(blob);
+      },'image/jpeg',0.82);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('Could not read image file'));};
+    img.src=url;
+  });
+}
+
+// Converts a Blob to a base64 data URL string.
+function _blobToBase64(blob){
+  return new Promise(function(resolve,reject){
+    const reader=new FileReader();
+    reader.onload=function(){resolve(reader.result);};
+    reader.onerror=function(){reject(new Error('Could not read image data'));};
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Saves a (resized) product image as its own small Firestore document —
+// collection('productImages').doc(productId) — instead of Firebase Storage
+// (which requires the project's paid Blaze plan and wasn't available here).
+// Keeping each photo in its own document, separate from the shared
+// 'products' document, means the image count/size never risks hitting
+// Firestore's 1MB-per-document limit on the main product list.
+function _saveProductImage(productId,blob){
+  return _blobToBase64(blob).then(function(base64){
+    const timeoutPromise=new Promise(function(_,reject){
+      setTimeout(function(){reject(new Error('Save timed out after 20s — check your internet connection.'));},20000);
+    });
+    const savePromise=_fsdb.collection('productImages').doc(productId).set({data:base64}).then(function(){return base64;});
+    return Promise.race([savePromise,timeoutPromise]);
+  });
+}
+
+// Deletes a product's image document from Firestore.
+function _deleteProductImage(productId){
+  return _fsdb.collection('productImages').doc(productId).delete().catch(function(e){
+    console.warn('Could not delete product image:',e.message);
+  });
 }
 // ── BARCODE SCANNER ──────────────────────────────────────────────────────────
 let _barcodeReader=null;
@@ -4856,7 +5034,7 @@ function printProductBarcode(pid){
     +'</body></html>';
   _printHTML(html);
 }
-function saveProduct(){
+async function saveProduct(){
   const eid=document.getElementById('ap-id').value;
   const name=document.getElementById('ap-name').value.trim();
   const itemCode=document.getElementById('ap-code')?.value.trim().toUpperCase()||'';
@@ -4874,23 +5052,47 @@ function saveProduct(){
   document.querySelectorAll('#ap-stock-fields .ap-stock-input').forEach(function(inp){
     stockVals[inp.dataset.loc]=parseInt(inp.value)||0;
   });
-  if(eid){
-    const p=db.products.find(x=>x.id===eid);
-    if(p){
-      if(p.price!==price&&price>0)db.priceHistory.push({id:'ph'+Date.now(),product:eid,old:p.price,new:price,date:today(),by:_currentUser?.name||'Admin',note:'Manual update'});
-      Object.assign(p,{name,itemCode,unit,price,min,barcode});
-      Object.keys(stockVals).forEach(function(loc){setStock(eid,loc,stockVals[loc]);});
+
+  const saveBtn=document.querySelector('#modal-add-product .btn-primary');
+  const origBtnHtml=saveBtn?saveBtn.innerHTML:'';
+  const productId=eid||('p'+Date.now());
+
+  try{
+    // Handle image save/removal BEFORE writing the product record, so we
+    // never end up with a half-saved/broken image reference if it fails.
+    let imageData=eid?(db.products.find(x=>x.id===eid)?.image||''):'';
+    if(_pendingProductImageFile){
+      if(saveBtn){saveBtn.disabled=true;saveBtn.innerHTML='Saving image...';}
+      const resized=await _resizeImageForUpload(_pendingProductImageFile);
+      imageData=await _saveProductImage(productId,resized);
+    }else if(_pendingProductImageRemoved){
+      imageData='';
+      if(eid)await _deleteProductImage(productId);
     }
-    showToast('Product updated');
-  }else{
-    const newId='p'+Date.now();
-    db.products.push({id:newId,name,itemCode,unit,price,min,barcode});
-    Object.keys(stockVals).forEach(function(loc){setStock(newId,loc,stockVals[loc]);});
-    showToast('Product added');
+
+    if(eid){
+      const p=db.products.find(x=>x.id===eid);
+      if(p){
+        if(p.price!==price&&price>0)db.priceHistory.push({id:'ph'+Date.now(),product:eid,old:p.price,new:price,date:today(),by:_currentUser?.name||'Admin',note:'Manual update'});
+        Object.assign(p,{name,itemCode,unit,price,min,barcode,image:imageData});
+        Object.keys(stockVals).forEach(function(loc){setStock(eid,loc,stockVals[loc]);});
+      }
+      showToast('Product updated');
+    }else{
+      db.products.push({id:productId,name,itemCode,unit,price,min,barcode,image:imageData});
+      Object.keys(stockVals).forEach(function(loc){setStock(productId,loc,stockVals[loc]);});
+      showToast('Product added');
+    }
+    closeModal('modal-add-product');renderStockPage();saveAppState();
+  }catch(err){
+    const reason=(err&&err.message)?err.message:'Please try again.';
+    showToast('Could not save image — product not saved. '+reason,'red');
+    console.error('saveProduct image upload error:',err);
+  }finally{
+    if(saveBtn){saveBtn.disabled=false;saveBtn.innerHTML=origBtnHtml;}
   }
-  closeModal('modal-add-product');renderStockPage();saveAppState();
 }
-function deleteProduct(pid){const p=db.products.find(x=>x.id===pid);showConfirm('Delete Product',p?'Delete "'+p.name+'"? This cannot be undone.':'Delete this product?',null,true).then(async ok=>{if(!ok)return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();await saveAppState(true);showToast('Deleted','amber');});}
+function deleteProduct(pid){const p=db.products.find(x=>x.id===pid);showConfirm('Delete Product',p?'Delete "'+p.name+'"? This cannot be undone.':'Delete this product?',null,true).then(async ok=>{if(!ok)return;db.products=db.products.filter(p=>p.id!==pid);renderStockPage();await saveAppState(true);if(p&&p.image)_deleteProductImage(pid);showToast('Deleted','amber');});}
 // ── WAREHOUSES / STOCK ────────────────────────────────────────────────────────
 function renderSalesGoalPage(){
   const sel=document.getElementById('sg-month-sel');
@@ -6007,9 +6209,12 @@ function renderPriceListPage(){
         const d=STOCK_STATUS_DEFS[stKey];
         html+='<div class="card" style="padding:14px">'
           +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
+          +'<div style="display:flex;gap:10px;flex:1;min-width:0">'
+          +(p.image?'<img src="'+p.image+'" style="width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)">':'<div style="width:40px;height:40px;border-radius:8px;flex-shrink:0;background:var(--bg3);display:flex;align-items:center;justify-content:center"><i class="ti ti-photo" style="color:var(--text3);font-size:16px"></i></div>')
           +'<div style="flex:1;min-width:0">'
           +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+p.name+'</div>'
           +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(p.itemCode||'—')+' &middot; '+p.unit+'</div>'
+          +'</div>'
           +'</div>'
           +'<div style="text-align:right;flex-shrink:0;margin-left:10px">'
           +'<div style="font-size:16px;font-weight:800;color:var(--green);font-family:var(--mono)">SAR '+excl+'</div>'
@@ -6032,6 +6237,7 @@ function renderPriceListPage(){
       +'</div></div>'
       +'<div class="tbl-wrap"><table><thead><tr>'
       +'<th style="width:36px">#</th>'
+      +'<th style="width:48px">Img</th>'
       +'<th style="width:80px">Code</th>'
       +'<th>Product Name</th>'
       +'<th style="width:60px;text-align:center">Unit</th>'
@@ -6040,15 +6246,17 @@ function renderPriceListPage(){
       +'</tr></thead><tbody>';
 
     if(!filtered.length){
-      html+='<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
+      html+='<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text3)">No products found</td></tr>';
     } else {
       html+=filtered.map(function(p,i){
         const excl=(db.settings?.vatMode==='inclusive'?p.price/(1+getVatRate()):p.price).toFixed(2);
         const statusCell=canEditStatus
           ?renderStatusSelector(p.id,getStockStatus(p),p.stockStatusUpdatedBy,p.stockStatusUpdatedOn)
           :stockStatusBadge(p);
+        const imgCell=p.image?'<img src="'+p.image+'" style="width:34px;height:34px;border-radius:6px;object-fit:cover;border:1px solid var(--border)">':'<div style="width:34px;height:34px;border-radius:6px;background:var(--bg3);display:flex;align-items:center;justify-content:center"><i class="ti ti-photo" style="color:var(--text3);font-size:14px"></i></div>';
         return '<tr>'
           +'<td style="text-align:center;color:var(--text3);font-size:12px">'+(i+1)+'</td>'
+          +'<td>'+imgCell+'</td>'
           +'<td style="font-family:var(--mono);font-size:11px;color:var(--text2)">'+(p.itemCode||'—')+'</td>'
           +'<td style="font-weight:500">'+p.name+'</td>'
           +'<td style="text-align:center;font-size:12px;color:var(--text2)">'+p.unit+'</td>'
@@ -6109,23 +6317,27 @@ function closeStatusPicker(){
   if(el)el.remove();
   document.body.style.overflow='';
 }
-function printPriceList(){
+// Builds the price list "sheet" — the styled header/table/footer markup shared
+// between the print/PDF window and the WhatsApp-share image capture, so both
+// stay visually identical and only need to be written in one place.
+function _buildPriceListSheet(includeImages){
   const s=db.settings||{};
   const prods=db.products.filter(p=>p.price>0).sort((a,b)=>a.name.localeCompare(b.name));
-  if(!prods.length){showAlert('No Products','No products with prices found.','warning');return;}
+  if(!prods.length)return null;
   const today_str=new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});
   const vatPct=Math.round(getVatRate()*100);
   const logoHtml=s.logo?'<img src="'+s.logo+'" style="max-height:48px;max-width:110px;object-fit:contain;display:block">':'';
 
   const rows=prods.map((p,i)=>{
     const excl=s.vatMode==='inclusive'?(p.price/(1+getVatRate())):p.price;
-    const incl=s.vatMode==='inclusive'?p.price:(p.price*(1+getVatRate()));
     const bg=i%2===0?'#ffffff':'#f0faf6';
     const stKey=getStockStatus(p);
     const stDef=STOCK_STATUS_DEFS[stKey];
     const statusPill='<span style="display:inline-block;font-size:8.5pt;font-weight:700;padding:3px 9px;border-radius:20px;background:'+stDef.bg+';color:'+stDef.color+'">'+stDef.label+'</span>';
+    const imgCell=p.image?'<img src="'+p.image+'" style="width:32px;height:32px;border-radius:5px;object-fit:cover;border:1px solid #d1fae5;display:block">':'';
     return '<tr style="background:'+bg+'">'
       +'<td style="padding:7px 10px;text-align:center;color:#64748b;font-size:10pt;border-bottom:1px solid #d1fae5">'+(i+1)+'</td>'
+      +(includeImages?'<td style="padding:5px 10px;border-bottom:1px solid #d1fae5">'+imgCell+'</td>':'')
       +'<td style="padding:7px 10px;font-family:Courier New,monospace;font-size:9.5pt;color:#475569;border-bottom:1px solid #d1fae5">'+(p.itemCode||'—')+'</td>'
       +'<td style="padding:7px 10px;font-size:10.5pt;font-weight:500;color:#0f172a;border-bottom:1px solid #d1fae5">'+p.name+'</td>'
       +'<td style="padding:7px 10px;text-align:center;font-size:10pt;color:#64748b;border-bottom:1px solid #d1fae5">'+p.unit+'</td>'
@@ -6134,27 +6346,73 @@ function printPriceList(){
       +'</tr>';
   }).join('');
 
-  // Build info lines — group into max 2 lines
   var infoLine1=[s.address,s.phone].filter(Boolean).join('  ·  ');
   var infoLine2=[s.email,s.vatNumber?'VAT: '+s.vatNumber:'',s.crNumber?'CR: '+s.crNumber:''].filter(Boolean).join('  ·  ');
 
-  const dateStr=new Date().toISOString().slice(0,10);
-  const pg='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PriceList_'+(s.nameEn||'AgroFresh').replace(/\s+/g,'_')+'_'+dateStr+'</title><style>'
-    +'*{margin:0;padding:0;box-sizing:border-box}'
+  const sheetHtml='<div class="sheet">'
+    +'<div class="accent"></div>'
+    +'<div class="header">'
+    +'<div class="co-left">'
+    +(s.logo?'<div style="flex-shrink:0">'+logoHtml+'</div>':'')
+    +'<div class="co-details">'
+    +'<div class="co-name">'+(s.nameEn||'FasTrack')+'</div>'
+    +'<div class="co-info">'
+    +(infoLine1?'<div>'+infoLine1+'</div>':'')
+    +(infoLine2?'<div>'+infoLine2+'</div>':'')
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="co-right">'
+    +'<div class="title-block"><div class="doc-title">PRICE LIST</div><div class="doc-sub">OFFICIAL PRODUCT CATALOG</div></div>'
+    +'<div class="meta-pills">'
+    +'<div class="pill">📅 <strong>'+today_str+'</strong></div>'
+    +'<div class="pill">📦 <strong>'+prods.length+'</strong> items</div>'
+    +'<div class="pill">VAT <strong>'+vatPct+'%</strong></div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="tbl-strip">Product Catalog &nbsp;·&nbsp; All prices in SAR (Saudi Riyals)</div>'
+    +'<table>'
+    +'<thead><tr>'
+    +'<th class="c" style="width:34px">#</th>'
+    +(includeImages?'<th class="c" style="width:44px">Img</th>':'')
+    +'<th style="width:78px">Code</th>'
+    +'<th>Product Name</th>'
+    +'<th class="c" style="width:48px">Unit</th>'
+    +'<th class="r" style="width:130px">Price (SAR)</th>'
+    +'<th class="c" style="width:110px">Status</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'<tfoot>'
+    +'<tr>'
+    +'<td colspan="'+(includeImages?7:6)+'" style="padding:12px 10px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+    +'<div style="font-size:10pt;color:#0f6e56;font-weight:700">🌿 Thank you for choosing AgroFresh</div>'
+    +'<div style="font-size:9pt;color:#065f46;font-weight:600">Fresh Produce &bull; Fair Prices &bull; Trusted Service</div>'
+    +'</div>'
+    +'<div style="margin-top:5px;font-size:8pt;color:#94a3b8;border-top:1px solid #d1fae5;padding-top:5px">Prices may vary based on market conditions and product availability.</div>'
+    +'</td>'
+    +'</tr>'
+    +'</tfoot>'
+    +'</table>'
+    +'<div class="bottom-bar"></div>'
+    +'</div>';
+
+  return {sheetHtml,prods,companyName:(s.nameEn||'AgroFresh')};
+}
+
+// Shared CSS for the price list sheet (used both by the print window and the
+// off-screen render used for the WhatsApp share image).
+function _priceListSheetCss(){
+  return '*{margin:0;padding:0;box-sizing:border-box}'
     +'body{font-family:Arial,Helvetica,sans-serif;background:#f0faf6;color:#0f172a}'
-    +'.print-btn-bar{background:#0f6e56;color:#fff;padding:10px 22px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:99}'
-    +'.print-btn-bar span{font-size:13px;font-weight:600}'
-    +'.print-btn-bar button{background:#fff;color:#0f6e56;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}'
-    +'.sheet{background:#fff;max-width:210mm;margin:16px auto;box-shadow:0 4px 24px rgba(0,0,0,.12)}'
+    +'.sheet{background:#fff;max-width:210mm;margin:0 auto;box-shadow:0 4px 24px rgba(0,0,0,.12)}'
     +'.accent{height:5px;background:linear-gradient(90deg,#0f6e56,#5dcaa5)}'
-    // Header
     +'.header{padding:14px 22px;display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:2px solid #d1fae5}'
-    // Left: logo + company block
     +'.co-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}'
     +'.co-details{flex:1;min-width:0}'
     +'.co-name{font-size:12pt;font-weight:800;color:#0f172a;line-height:1.2;word-break:break-word}'
     +'.co-info{font-size:8pt;color:#64748b;margin-top:5px;line-height:1.8}'
-    // Right: title block + pills
     +'.co-right{flex-shrink:0;text-align:right}'
     +'.title-block{background:#0f6e56;color:#fff;padding:8px 16px;border-radius:5px;text-align:center}'
     +'.title-block .doc-title{font-size:13pt;font-weight:800;letter-spacing:1.5px}'
@@ -6162,7 +6420,6 @@ function printPriceList(){
     +'.meta-pills{display:flex;gap:4px;margin-top:6px;justify-content:flex-end;flex-wrap:wrap}'
     +'.pill{background:#f0faf6;border:1px solid #a7f3d0;border-radius:20px;padding:3px 9px;font-size:8pt;color:#065f46}'
     +'.pill strong{color:#0f172a}'
-    // Table strip
     +'.tbl-strip{background:#0f6e56;padding:5px 22px;font-size:8pt;color:rgba(255,255,255,.85);letter-spacing:.8px;text-transform:uppercase;font-weight:600}'
     +'table{width:100%;border-collapse:collapse}'
     +'thead tr{background:#0f6e56}'
@@ -6170,7 +6427,21 @@ function printPriceList(){
     +'thead th.c{text-align:center}'
     +'thead th.r{text-align:right}'
     +'tfoot td{padding:7px 10px;font-size:8.5pt;color:#64748b;border-top:2px solid #d1fae5;background:#f0faf6}'
-    +'.bottom-bar{height:4px;background:linear-gradient(90deg,#5dcaa5,#0f6e56)}'
+    +'.bottom-bar{height:4px;background:linear-gradient(90deg,#5dcaa5,#0f6e56)}';
+}
+
+function printPriceList(){
+  const includeImages=document.getElementById('pl-include-images')?document.getElementById('pl-include-images').checked:true;
+  const built=_buildPriceListSheet(includeImages);
+  if(!built){showAlert('No Products','No products with prices found.','warning');return;}
+  const s=db.settings||{};
+  const dateStr=new Date().toISOString().slice(0,10);
+  const pg='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>PriceList_'+built.companyName.replace(/\s+/g,'_')+'_'+dateStr+'</title><style>'
+    +_priceListSheetCss()
+    +'.print-btn-bar{background:#0f6e56;color:#fff;padding:10px 22px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:99}'
+    +'.print-btn-bar span{font-size:13px;font-weight:600}'
+    +'.print-btn-bar button{background:#fff;color:#0f6e56;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}'
+    +'.sheet{margin:16px auto}'
     +'@media print{'
     +'.print-btn-bar{display:none!important}'
     +'body{background:#fff}'
@@ -6186,59 +6457,68 @@ function printPriceList(){
     +'<span style="font-size:13px;font-weight:600">📋 Price List &mdash; '+(s.nameEn||'FasTrack')+'</span>'
     +'<button onclick="window.print()" style="background:#fff;color:#0f6e56;border:none;padding:7px 18px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer">🖨️ Print / Save PDF</button>'
     +'</div>'
-    +'<div class="sheet">'
-    +'<div class="accent"></div>'
-    +'<div class="header">'
-    // Left side
-    +'<div class="co-left">'
-    +(s.logo?'<div style="flex-shrink:0">'+logoHtml+'</div>':'')
-    +'<div class="co-details">'
-    +'<div class="co-name">'+(s.nameEn||'FasTrack')+'</div>'
-    +'<div class="co-info">'
-    +(infoLine1?'<div>'+infoLine1+'</div>':'')
-    +(infoLine2?'<div>'+infoLine2+'</div>':'')
-    +'</div>'
-    +'</div>'
-    +'</div>'
-    // Right side
-    +'<div class="co-right">'
-    +'<div class="title-block"><div class="doc-title">PRICE LIST</div><div class="doc-sub">OFFICIAL PRODUCT CATALOG</div></div>'
-    +'<div class="meta-pills">'
-    +'<div class="pill">📅 <strong>'+today_str+'</strong></div>'
-    +'<div class="pill">📦 <strong>'+prods.length+'</strong> items</div>'
-    +'<div class="pill">VAT <strong>'+vatPct+'%</strong></div>'
-    +'</div>'
-    +'</div>'
-    +'</div>'
-    +'<div class="tbl-strip">Product Catalog &nbsp;·&nbsp; All prices in SAR (Saudi Riyals)</div>'
-    +'<table>'
-    +'<thead><tr>'
-    +'<th class="c" style="width:34px">#</th>'
-    +'<th style="width:78px">Code</th>'
-    +'<th>Product Name</th>'
-    +'<th class="c" style="width:48px">Unit</th>'
-    +'<th class="r" style="width:130px">Price (SAR)</th>'
-    +'<th class="c" style="width:110px">Status</th>'
-    +'</tr></thead>'
-    +'<tbody>'+rows+'</tbody>'
-    +'<tfoot>'
-    +'<tr>'
-    +'<td colspan="6" style="padding:12px 10px">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
-    +'<div style="font-size:10pt;color:#0f6e56;font-weight:700">🌿 Thank you for choosing AgroFresh</div>'
-    +'<div style="font-size:9pt;color:#065f46;font-weight:600">Fresh Produce &bull; Fair Prices &bull; Trusted Service</div>'
-    +'</div>'
-    +'<div style="margin-top:5px;font-size:8pt;color:#94a3b8;border-top:1px solid #d1fae5;padding-top:5px">Prices may vary based on market conditions and product availability.</div>'
-    +'</td>'
-    +'</tr>'
-    +'</tfoot>'
-    +'</table>'
-    +'<div class="bottom-bar"></div>'
-    +'</div></body></html>';
+    +built.sheetHtml
+    +'</body></html>';
 
   const w=window.open('','_blank');
   if(!w){showToast('Allow popups to print','amber');return;}
   w.document.write(pg);w.document.close();w.focus();
+}
+
+// Renders the price list into a hidden off-screen container, captures it as a
+// PNG image with html2canvas, then opens the native share sheet so the user
+// can pick WhatsApp (or any other app) and send it directly — no manual
+// save-then-reopen step needed.
+async function sharePriceListToWhatsApp(){
+  const includeImages=document.getElementById('pl-include-images')?document.getElementById('pl-include-images').checked:true;
+  const built=_buildPriceListSheet(includeImages);
+  if(!built){showAlert('No Products','No products with prices found.','warning');return;}
+
+  const shareBtn=document.getElementById('pl-whatsapp-btn');
+  const origHtml=shareBtn?shareBtn.innerHTML:'';
+  if(shareBtn){shareBtn.disabled=true;shareBtn.innerHTML='<i class="ti ti-loader-2"></i> Preparing...';}
+
+  // Build an off-screen, fixed-width container so html2canvas renders it at a
+  // consistent, predictable size regardless of the current window size.
+  const container=document.createElement('div');
+  container.style.cssText='position:fixed;left:-99999px;top:0;width:794px;background:#fff'; // 794px ≈ A4 width at 96dpi
+  const styleEl=document.createElement('style');
+  styleEl.textContent=_priceListSheetCss()+'.sheet{max-width:none;margin:0}';
+  container.appendChild(styleEl);
+  const sheetWrap=document.createElement('div');
+  sheetWrap.innerHTML=built.sheetHtml;
+  container.appendChild(sheetWrap);
+  document.body.appendChild(container);
+
+  try{
+    const canvas=await html2canvas(container,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+    document.body.removeChild(container);
+    const blob=await new Promise(function(resolve){canvas.toBlob(resolve,'image/png');});
+    if(!blob)throw new Error('Could not generate image');
+
+    const dateStr=new Date().toISOString().slice(0,10);
+    const file=new File([blob],'PriceList_'+built.companyName.replace(/\s+/g,'_')+'_'+dateStr+'.png',{type:'image/png'});
+
+    if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){
+      await navigator.share({files:[file],title:'Price List — '+built.companyName}).catch(function(e){
+        if(e&&e.name!=='AbortError')throw e;
+      });
+    }else{
+      // Desktop / unsupported browsers: download the image so it can be
+      // attached manually in WhatsApp Web.
+      const url=URL.createObjectURL(file);
+      const a=document.createElement('a');
+      a.href=url;a.download=file.name;document.body.appendChild(a);a.click();
+      setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},1000);
+      showToast('Image saved — attach it in WhatsApp Web','amber');
+    }
+  }catch(err){
+    if(document.body.contains(container))document.body.removeChild(container);
+    showToast('Could not prepare price list image. '+(err&&err.message?err.message:''),'red');
+    console.error('sharePriceListToWhatsApp error:',err);
+  }finally{
+    if(shareBtn){shareBtn.disabled=false;shareBtn.innerHTML=origHtml;}
+  }
 }
 
 function renderWarehouses(){
