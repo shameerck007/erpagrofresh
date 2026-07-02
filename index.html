@@ -4133,9 +4133,26 @@ function renderDashboard(){
   document.getElementById('dash-dues').innerHTML=dues.length?dues.map(inv=>{const bal=inv.total-inv.paid,dd=daysDiff(inv.due),c=getCustomer(inv.customer);const cls=dd<0?'s-overdue':dd<=7?'s-due-soon':'s-pending';return`<div class="tl-item"><div class="tl-dot" style="background:${dd<0?'var(--red)':dd<=7?'var(--amber)':'var(--blue)'}"></div><div style="flex:1"><div class="tl-title">${inv.id} — ${c.name}</div><div class="tl-meta">${fmtShort(bal)} due ${fmtDate(inv.due)}</div></div><span class="badge ${cls}">${dd<0?'Overdue':dd<=7?'Due soon':'Pending'}</span></div>`;}).join(''):`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="ti ti-check-circle" style="font-size:28px;display:block;margin-bottom:8px;color:var(--green)"></i>All invoices up to date</div>`;
   const dashVans=db.vans;
   document.getElementById('dash-vans').innerHTML=dashVans.map(van=>{const vops=todayOps.filter(o=>o.van===van.name);const rev=vops.reduce((s,o)=>s+o.sold*o.price,0);const sold=vops.reduce((s,o)=>s+o.sold,0);const taken=vops.reduce((s,o)=>s+o.taken,0);const rate=taken>0?Math.round(sold/taken*100):0;return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:8px;background:rgba(24,95,165,.12);display:flex;align-items:center;justify-content:center"><i class="ti ti-truck" style="color:var(--green)"></i></div><div><div style="font-weight:500;font-size:13px">${van.name} — ${van.rep}</div><div style="font-size:11px;color:var(--text3)">${vops.length} entries · ${rate}% sell-through</div></div></div><div style="text-align:right"><div style="font-weight:700;color:var(--green);font-family:var(--mono)">${fmtShort(rev)}</div></div></div>`;}).join('');
-  const whTotal=p=>db.warehouses.reduce((s,w)=>s+stockAt(p.id,w.id),0);
+  // Total stock across ALL locations — warehouses AND vans. Previously this
+  // only summed db.warehouses, so any stock sitting in a van (e.g. loaded
+  // onto a delivery van but not yet sold) was invisible here, making
+  // available stock look lower than it actually was.
+  const whTotal=p=>allLocations().reduce((s,loc)=>s+stockAt(p.id,loc),0);
+  // Small per-location hint (e.g. "🏭 WH1: 0 · 🚚 Van 1: 1") so it's clear
+  // WHERE the stock actually is — only lists locations that have any stock,
+  // to keep it compact; shows nothing if every location is at zero.
+  const locBreakdown=p=>allLocations().map(function(loc){
+    const qty=stockAt(p.id,loc);
+    if(qty<=0)return null;
+    const isVan=db.vans.some(function(v){return v.name===loc;});
+    return (isVan?'🚚 ':'🏭 ')+loc+': '+qty;
+  }).filter(Boolean).join('  &middot;  ');
   const low=db.products.filter(p=>whTotal(p)<p.min*2);
-  document.getElementById('dash-stock').innerHTML=low.length?low.map(p=>{const total=whTotal(p);return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:10px"><div class="tl-dot" style="background:${total<p.min?'var(--red)':'var(--amber)'}"></div><span style="font-size:13px;font-weight:500">${p.name}</span></div><span style="font-family:var(--mono);font-size:12px;color:${total<p.min?'var(--red)':'var(--amber)'};font-weight:700">${total} / min ${p.min*2}</span></div>`;}).join(''):`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="ti ti-package" style="font-size:28px;display:block;margin-bottom:8px;color:var(--green)"></i>Stock levels OK</div>`;
+  document.getElementById('dash-stock').innerHTML=low.length?low.map(p=>{
+    const total=whTotal(p);
+    const breakdown=locBreakdown(p);
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:10px;min-width:0"><div class="tl-dot" style="background:${total<p.min?'var(--red)':'var(--amber)'};flex-shrink:0"></div><div style="min-width:0"><div style="font-size:13px;font-weight:500">${p.name}</div>${breakdown?`<div style="font-size:10.5px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${breakdown}</div>`:''}</div></div><span style="font-family:var(--mono);font-size:12px;color:${total<p.min?'var(--red)':'var(--amber)'};font-weight:700;flex-shrink:0;margin-left:8px">${total} / min ${p.min*2}</span></div>`;
+  }).join(''):`<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px"><i class="ti ti-package" style="font-size:28px;display:block;margin-bottom:8px;color:var(--green)"></i>Stock levels OK</div>`;
   const acts=[...db.dailyOps.filter(o=>o.date===today()).slice(0,4).map(o=>{const p=getProduct(o.product);return{icon:'ti-truck',color:'var(--green)',title:`${o.van} dispatched ${p.name}`,sub:`${o.taken} loaded · ${o.sold} sold`};}), ...db.damages.slice(0,2).map(d=>{const p=getProduct(d.product);return{icon:'ti-alert-triangle',color:'var(--red)',title:`Damage: ${p.name}`,sub:`${d.qty} units at ${d.location}`};})];
   document.getElementById('dash-activity').innerHTML=(acts.length?acts:[{icon:'ti-info-circle',color:'var(--text3)',title:'No recent activity',sub:'Dispatches and transfers will appear here'}]).map(a=>`<div class="tl-item"><div class="tl-dot" style="background:${a.color}"></div><div><div class="tl-title">${a.title}</div><div class="tl-meta">${a.sub}</div></div></div>`).join('');
 }
